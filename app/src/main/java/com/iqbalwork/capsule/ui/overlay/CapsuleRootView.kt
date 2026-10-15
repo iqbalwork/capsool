@@ -263,7 +263,9 @@ private fun CardContent(card: CapsuleCardType, state: CapsuleState, dispatch: (A
         CapsuleCardType.SHORTCUTS -> ExpandedShortcutsCard(
             shortcuts = state.settings.shortcuts,
             themedIcons = state.settings.themedShortcutIcons,
-            onAction = dispatch
+            onAction = dispatch,
+            barcode = state.settings.barcode,
+            barcodeEnabled = state.settings.barcodeCardEnabled
         )
     }
 }

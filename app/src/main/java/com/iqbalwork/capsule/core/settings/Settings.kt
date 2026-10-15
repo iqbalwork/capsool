@@ -1,5 +1,6 @@
 package com.iqbalwork.capsule.core.settings
 
+import com.iqbalwork.capsule.model.BarcodeContent
 import com.iqbalwork.capsule.model.EventCategory
 
 /**
@@ -152,6 +153,8 @@ data class Settings(
     val progressEnabled: Boolean = true,
     val timerEnabled: Boolean = true,
     val brightnessMax: Int = DEFAULT_BRIGHTNESS_MAX,
+    val barcode: BarcodeContent = BarcodeContent(),
+    val barcodeCardEnabled: Boolean = true,
     val disclosureAccepted: Boolean = false
 ) {
     fun geometry(orientation: Orientation): Geometry =

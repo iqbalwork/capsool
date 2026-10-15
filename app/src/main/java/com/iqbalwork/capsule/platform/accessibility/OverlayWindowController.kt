@@ -27,6 +27,8 @@ import com.iqbalwork.capsule.core.settings.Geometry
 import com.iqbalwork.capsule.core.store.CapsuleMode
 import com.iqbalwork.capsule.core.store.CapsuleStore
 import com.iqbalwork.capsule.core.store.UserIntent
+import com.iqbalwork.capsule.model.CapsuleCardType
+import com.iqbalwork.capsule.platform.barcode.BarcodeValidator
 import com.iqbalwork.capsule.ui.overlay.OverlayRoot
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -64,7 +66,12 @@ class OverlayWindowController(
     private var lastLayout: LayoutKey? = null
     private val placement = mutableStateOf<WindowPlacement?>(null)
 
-    private data class LayoutKey(val mode: CapsuleMode, val geometry: Geometry, val focusable: Boolean)
+    private data class LayoutKey(
+        val mode: CapsuleMode,
+        val geometry: Geometry,
+        val focusable: Boolean,
+        val barcodeShowing: Boolean = false
+    )
 
     fun attach() {
         if (view != null) return
@@ -111,7 +118,19 @@ class OverlayWindowController(
 
         layoutJob = scope.launch {
             store.state
-                .map { LayoutKey(it.mode, it.settings.geometry(it.visibility.orientation), focusable = it.replyingTo != null) }
+                .map {
+                    val barcodeShowing = it.mode == CapsuleMode.EXPANDED &&
+                        it.activeCard == CapsuleCardType.SHORTCUTS &&
+                        it.settings.barcodeCardEnabled &&
+                        it.settings.barcode.enabled &&
+                        BarcodeValidator.validate(it.settings.barcode.content, it.settings.barcode.format).isValid
+                    LayoutKey(
+                        mode = it.mode,
+                        geometry = it.settings.geometry(it.visibility.orientation),
+                        focusable = it.replyingTo != null,
+                        barcodeShowing = barcodeShowing
+                    )
+                }
                 .distinctUntilChanged()
                 .collect { applyLayout(it) }
         }
@@ -181,6 +200,7 @@ class OverlayWindowController(
         if (key.focusable) flags = flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()
         layoutParams.flags = flags
         layoutParams.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING
+        layoutParams.screenBrightness = if (key.barcodeShowing) 1f else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
         runCatching { windowManager.updateViewLayout(composeView, layoutParams) }
             .onFailure { Log.w(TAG, "Overlay relayout failed", it) }
         if (FIXED_SIZE_WINDOW) {
