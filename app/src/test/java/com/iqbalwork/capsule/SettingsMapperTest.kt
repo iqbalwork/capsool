@@ -54,6 +54,8 @@ class SettingsMapperTest {
             temperatureFahrenheit = true,
             sliderStyle = SliderStyle.ROUNDED,
             brightnessMax = 4095,
+            progressEnabled = false,
+            timerEnabled = false,
             disclosureAccepted = true
         )
         val prefs = mutablePreferencesOf()

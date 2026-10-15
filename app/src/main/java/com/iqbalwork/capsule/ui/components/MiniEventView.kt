@@ -17,6 +17,7 @@ import androidx.compose.material.icons.rounded.AirplanemodeInactive
 import androidx.compose.material.icons.rounded.BatteryAlert
 import androidx.compose.material.icons.rounded.BatteryFull
 import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material.icons.rounded.DownloadDone
 import androidx.compose.material.icons.rounded.BrightnessAuto
 import androidx.compose.material.icons.rounded.BrightnessMedium
 import androidx.compose.material.icons.rounded.Headphones
@@ -126,11 +127,12 @@ fun MiniEventType.icon(): ImageVector = when (this) {
     MiniEventType.DEVICE_UNLOCKED -> Icons.Rounded.LockOpen
     MiniEventType.AUTO_BRIGHTNESS_ON -> Icons.Rounded.BrightnessAuto
     MiniEventType.AUTO_BRIGHTNESS_OFF -> Icons.Rounded.BrightnessMedium
+    MiniEventType.PROGRESS_DONE -> Icons.Rounded.DownloadDone
 }
 
 @Composable
 private fun MiniEventType.accent(): Color = when (this) {
-    MiniEventType.CHARGER_CONNECTED, MiniEventType.FULLY_CHARGED -> ChargingGreen
+    MiniEventType.CHARGER_CONNECTED, MiniEventType.FULLY_CHARGED, MiniEventType.PROGRESS_DONE -> ChargingGreen
     MiniEventType.LOW_BATTERY -> AlertRed
     MiniEventType.AIRPLANE_ON, MiniEventType.AIRPLANE_OFF -> AirplaneAmber
     MiniEventType.WIFI_CONNECTED, MiniEventType.WIFI_DISCONNECTED -> WifiBlue

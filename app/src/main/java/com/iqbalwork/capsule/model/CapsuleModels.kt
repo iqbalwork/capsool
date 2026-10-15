@@ -8,6 +8,7 @@ enum class CapsuleCardType(val displayName: String) {
     CHARGING("Battery & Charging"),
     NOTIFICATION("Notifications"),
     TIMER("Timer & Stopwatch"),
+    PROGRESS("Downloads & uploads"),
     SHORTCUTS("Shortcuts & Barcode")
 }
 
@@ -114,12 +115,49 @@ data class CapsuleNotification(
     val isPublic: Boolean = false
 )
 
+/** One of the clock app's own notification buttons, run by index (spec §2.5.6). */
+data class TimerAction(val index: Int, val title: String)
+
+/**
+ * A timer or stopwatch read from a chronometer notification (F-41). Time is derived from
+ * [baseTimeMs] (wall clock: the countdown's end, or the stopwatch's start) while running.
+ */
 data class TimerState(
-    val remainingSeconds: Int,
-    val totalSeconds: Int,
+    val key: String,
+    val packageName: String,
+    val appName: String,
+    val label: String,
+    val isCountdown: Boolean,
+    val baseTimeMs: Long,
     val isRunning: Boolean,
-    val label: String
+    /** What the clock app shows while paused (e.g. "4:05"), since no live base time exists then. */
+    val staticText: String = "",
+    val actions: List<TimerAction> = emptyList(),
+    val appIcon: Bitmap? = null
+) {
+    /** Seconds to show: remaining for a countdown, elapsed for a stopwatch. Never negative. */
+    fun displaySeconds(nowMs: Long): Long =
+        (if (isCountdown) (baseTimeMs - nowMs + 999) / 1000 else (nowMs - baseTimeMs) / 1000).coerceAtLeast(0)
+}
+
+/** A download, upload or other progress notification (F-40). [fraction] null = indeterminate. */
+data class ProgressItem(
+    val key: String,
+    val packageName: String,
+    val appName: String,
+    val title: String,
+    val fraction: Float?,
+    val appIcon: Bitmap? = null,
+    val color: Long
 )
+
+/** H:MM:SS above an hour, otherwise M:SS. */
+fun formatClock(seconds: Long): String {
+    val h = seconds / 3600
+    val m = (seconds % 3600) / 60
+    val s = seconds % 60
+    return if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%d:%02d".format(m, s)
+}
 
 enum class ShortcutType {
     APP,
@@ -142,7 +180,7 @@ data class ShortcutsState(
 )
 
 /** Groups of mini events the user can switch on or off (F-60..F-69). */
-enum class EventCategory { CHARGING, LOW_BATTERY, RINGER, HEADPHONES, WIFI, AIRPLANE, UNLOCK, BRIGHTNESS_MODE }
+enum class EventCategory { CHARGING, LOW_BATTERY, RINGER, HEADPHONES, WIFI, AIRPLANE, UNLOCK, BRIGHTNESS_MODE, DOWNLOADS }
 
 enum class MiniEventType(val category: EventCategory) {
     CHARGER_CONNECTED(EventCategory.CHARGING),
@@ -160,7 +198,8 @@ enum class MiniEventType(val category: EventCategory) {
     AIRPLANE_OFF(EventCategory.AIRPLANE),
     DEVICE_UNLOCKED(EventCategory.UNLOCK),
     AUTO_BRIGHTNESS_ON(EventCategory.BRIGHTNESS_MODE),
-    AUTO_BRIGHTNESS_OFF(EventCategory.BRIGHTNESS_MODE)
+    AUTO_BRIGHTNESS_OFF(EventCategory.BRIGHTNESS_MODE),
+    PROGRESS_DONE(EventCategory.DOWNLOADS)
 }
 
 /** A 2-4 second event in the capsule. [level] is a 0-100 value shown as a ring (battery). */

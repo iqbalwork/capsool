@@ -93,6 +93,8 @@ object SettingsMapper {
     private val TemperatureFahrenheit = booleanPreferencesKey("battery.fahrenheit")
     private val SliderStyleKey = stringPreferencesKey("sliders.style")
     private val BrightnessMax = intPreferencesKey("sliders.brightnessMax")
+    private val ProgressEnabled = booleanPreferencesKey("cards.progress.enabled")
+    private val TimerEnabled = booleanPreferencesKey("cards.timer.enabled")
     private val DisclosureAccepted = booleanPreferencesKey("onboarding.disclosureAccepted")
     private fun gestureKey(type: GestureType) = stringPreferencesKey("gestures.${type.name.lowercase()}")
 
@@ -141,6 +143,8 @@ object SettingsMapper {
             temperatureFahrenheit = prefs[TemperatureFahrenheit] ?: defaults.temperatureFahrenheit,
             sliderStyle = enumOrDefault(prefs[SliderStyleKey], defaults.sliderStyle),
             brightnessMax = prefs[BrightnessMax] ?: defaults.brightnessMax,
+            progressEnabled = prefs[ProgressEnabled] ?: defaults.progressEnabled,
+            timerEnabled = prefs[TimerEnabled] ?: defaults.timerEnabled,
             disclosureAccepted = prefs[DisclosureAccepted] ?: defaults.disclosureAccepted
         )
     }
@@ -182,6 +186,8 @@ object SettingsMapper {
         prefs[TemperatureFahrenheit] = settings.temperatureFahrenheit
         prefs[SliderStyleKey] = settings.sliderStyle.name
         prefs[BrightnessMax] = settings.brightnessMax
+        prefs[ProgressEnabled] = settings.progressEnabled
+        prefs[TimerEnabled] = settings.timerEnabled
         prefs[DisclosureAccepted] = settings.disclosureAccepted
     }
 

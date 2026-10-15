@@ -7,6 +7,7 @@ import com.iqbalwork.capsule.model.ChargingState
 import com.iqbalwork.capsule.model.MediaState
 import com.iqbalwork.capsule.model.MiniEvent
 import com.iqbalwork.capsule.model.CapsuleNotification
+import com.iqbalwork.capsule.model.ProgressItem
 import com.iqbalwork.capsule.model.SliderState
 import com.iqbalwork.capsule.model.TimerState
 
@@ -30,6 +31,7 @@ private val CardPriority = listOf(
     CapsuleCardType.NOTIFICATION,
     CapsuleCardType.TIMER,
     CapsuleCardType.MEDIA,
+    CapsuleCardType.PROGRESS,
     CapsuleCardType.CHARGING,
     CapsuleCardType.SLIDERS
 )
@@ -50,14 +52,17 @@ data class CapsuleState(
     val controlsOpen: Boolean = false,
     /** Key of the notification being replied to; the overlay takes keyboard focus meanwhile. */
     val replyingTo: String? = null,
-    val timer: TimerState? = null
+    val timer: TimerState? = null,
+    /** In the order they started; the card shows the first few. */
+    val progress: List<ProgressItem> = emptyList()
 ) {
     /** Cards that currently have something real to show, in priority order. */
     val activeCards: List<CapsuleCardType>
         get() = CardPriority.filter { card ->
             when (card) {
                 CapsuleCardType.NOTIFICATION -> settings.notificationsEnabled && notifications.isNotEmpty()
-                CapsuleCardType.TIMER -> timer != null
+                CapsuleCardType.TIMER -> settings.timerEnabled && timer != null
+                CapsuleCardType.PROGRESS -> settings.progressEnabled && progress.isNotEmpty()
                 CapsuleCardType.MEDIA -> mediaVisible
                 CapsuleCardType.CHARGING -> settings.chargingCardEnabled && charging.isCharging
                 // Controls on request, and on their own while the flashlight is on (F-53).

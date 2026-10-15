@@ -101,14 +101,8 @@ object CapsuleReducer {
             listOf(Effect.NotificationOpen(intent.key))
         )
 
-        // Timer controls are wired to the clock app's notification actions in M5.
-        UserIntent.TimerAddMinute -> Reduction(state.copy(timer = state.timer?.let {
-            it.copy(remainingSeconds = it.remainingSeconds + 60, totalSeconds = it.totalSeconds + 60)
-        }))
-        UserIntent.TimerTogglePause -> Reduction(state.copy(timer = state.timer?.let { it.copy(isRunning = !it.isRunning) }))
-        UserIntent.TimerReset -> Reduction(state.copy(timer = state.timer?.let {
-            it.copy(remainingSeconds = it.totalSeconds, isRunning = false)
-        }))
+        // No optimistic update: the clock app answers with an updated notification.
+        is UserIntent.TimerAction -> Reduction(state, listOf(Effect.NotificationAction(intent.key, intent.index)))
 
         is UserIntent.LaunchShortcut -> Reduction(state.copy(isExpanded = false), listOf(Effect.LaunchShortcut(intent.id)))
     }
@@ -188,6 +182,14 @@ object CapsuleReducer {
             if (beingRead || state.replyingTo == event.key) state else state.withoutNotification(event.key)
         }
         is SystemEvent.TimerUpdated -> state.copy(timer = event.timer)
+        is SystemEvent.ProgressUpdated -> state.copy(
+            progress = if (state.progress.any { it.key == event.item.key }) {
+                state.progress.map { if (it.key == event.item.key) event.item else it }
+            } else {
+                state.progress + event.item
+            }
+        )
+        is SystemEvent.ProgressRemoved -> state.copy(progress = state.progress.filter { it.key != event.key })
         is SystemEvent.MiniEventStarted ->
             if (event.event.type.category in state.settings.enabledEvents) state.copy(miniEvent = event.event) else state
         is SystemEvent.MiniEventFinished ->

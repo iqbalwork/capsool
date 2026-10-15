@@ -26,7 +26,10 @@ class CapsuleReducerTest {
 
     private val loaded = CapsuleState(settingsLoaded = true)
     private val media = MediaState(title = "Song", artist = "Artist", isPlaying = true, durationMs = 100_000L)
-    private val timer = TimerState(remainingSeconds = 60, totalSeconds = 60, isRunning = true, label = "Timer")
+    private val timer = TimerState(
+        key = "t", packageName = "clock", appName = "Clock", label = "Timer",
+        isCountdown = true, baseTimeMs = 60_000L, isRunning = true
+    )
 
     private fun reduce(state: CapsuleState, vararg actions: com.iqbalwork.capsule.core.store.Action): CapsuleState =
         actions.fold(state) { s, a -> CapsuleReducer.reduce(s, a).state }

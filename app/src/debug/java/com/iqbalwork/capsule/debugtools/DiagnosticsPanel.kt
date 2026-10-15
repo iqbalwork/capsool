@@ -21,7 +21,6 @@ import com.iqbalwork.capsule.model.ChargingType
 import com.iqbalwork.capsule.model.MediaState
 import com.iqbalwork.capsule.model.MiniEvent
 import com.iqbalwork.capsule.model.MiniEventType
-import com.iqbalwork.capsule.model.TimerState
 
 /** Debug-only simulators. They feed fake SystemEvents so cards can be checked before real sources exist. */
 object DiagnosticsPanel {
@@ -71,11 +70,21 @@ object DiagnosticsPanel {
             )
         },
         Simulation("Stop media") { listOf(SystemEvent.MediaUpdated(null)) },
-        Simulation("Timer running") {
-            listOf(SystemEvent.TimerUpdated(TimerState(remainingSeconds = 245, totalSeconds = 300, isRunning = true, label = "Timer")))
-        },
-        Simulation("Clear timer") { listOf(SystemEvent.TimerUpdated(null)) }
     )
+
+    @Composable
+    private fun RealCard(title: String, subtitle: String, onClick: () -> Unit) {
+        Card(
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(title, style = MaterialTheme.typography.bodyLarge)
+                Text(subtitle, style = MaterialTheme.typography.bodySmall)
+            }
+        }
+    }
 
     private fun miniEvent(type: MiniEventType, title: String, subtitle: String = "", level: Int? = null) =
         MiniEvent(id = System.nanoTime(), type = type, title = title, subtitle = subtitle, level = level)
@@ -122,6 +131,16 @@ object DiagnosticsPanel {
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
+                }
+            }
+            item {
+                RealCard("Real download (progress notification)", "Counts to 100% over ~6 s, then completes.") {
+                    DebugOngoing.startDownload(context)
+                }
+            }
+            item {
+                RealCard("Real 2-minute timer (chronometer notification)", "+1:00, Pause/Resume and Stop buttons work.") {
+                    DebugOngoing.startTimer(context)
                 }
             }
             items(simulations) { simulation ->

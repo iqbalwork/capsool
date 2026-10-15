@@ -109,6 +109,8 @@ data class Settings(
     val lowBatteryThreshold: Int = 15,
     val temperatureFahrenheit: Boolean = false,
     val sliderStyle: SliderStyle = SliderStyle.PILL,
+    val progressEnabled: Boolean = true,
+    val timerEnabled: Boolean = true,
     val brightnessMax: Int = DEFAULT_BRIGHTNESS_MAX,
     val disclosureAccepted: Boolean = false
 ) {

@@ -28,7 +28,8 @@ class PlatformEffectHandler(
             is Effect.Global -> performGlobal(effect.action)
             is Effect.Media, is Effect.MediaSeek, Effect.MediaOpenApp -> mediaSource.execute(effect)
             is Effect.NotificationReply, is Effect.NotificationMarkRead,
-            is Effect.NotificationDismiss, is Effect.NotificationOpen -> notificationSource.execute(effect)
+            is Effect.NotificationDismiss, is Effect.NotificationOpen,
+            is Effect.NotificationAction -> notificationSource.execute(effect)
             is Effect.Volume, is Effect.Ringer, is Effect.Brightness, is Effect.AdaptiveBrightness,
             is Effect.Torch, is Effect.OpenPermission, Effect.RefreshControls -> controls.execute(effect)
             // Wired in a later milestone: shortcuts (M6).

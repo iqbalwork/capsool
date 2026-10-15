@@ -7,6 +7,7 @@ import com.iqbalwork.capsule.model.ChargingState
 import com.iqbalwork.capsule.model.MediaState
 import com.iqbalwork.capsule.model.MiniEvent
 import com.iqbalwork.capsule.model.CapsuleNotification
+import com.iqbalwork.capsule.model.ProgressItem
 import com.iqbalwork.capsule.model.SliderState
 import com.iqbalwork.capsule.model.TimerState
 
@@ -39,9 +40,8 @@ sealed interface UserIntent : Action {
     data class NotificationDismiss(val key: String) : UserIntent
     data class NotificationOpen(val key: String) : UserIntent
 
-    data object TimerAddMinute : UserIntent
-    data object TimerTogglePause : UserIntent
-    data object TimerReset : UserIntent
+    /** Runs the clock app's own notification button at [index] (+1 min, pause, stop…). */
+    data class TimerAction(val key: String, val index: Int) : UserIntent
 
     data class LaunchShortcut(val id: String) : UserIntent
 }
@@ -59,6 +59,8 @@ sealed interface SystemEvent : Action {
     data class NotificationRemoved(val key: String) : SystemEvent
     data class NotificationTimedOut(val key: String) : SystemEvent
     data class TimerUpdated(val timer: TimerState?) : SystemEvent
+    data class ProgressUpdated(val item: ProgressItem) : SystemEvent
+    data class ProgressRemoved(val key: String) : SystemEvent
     data class MiniEventStarted(val event: MiniEvent) : SystemEvent
     data class MiniEventFinished(val id: Long) : SystemEvent
     data object ExpandedTimedOut : SystemEvent

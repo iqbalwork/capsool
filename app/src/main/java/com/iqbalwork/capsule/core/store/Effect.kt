@@ -25,6 +25,7 @@ sealed interface Effect {
     data class NotificationMarkRead(val key: String) : Effect
     data class NotificationDismiss(val key: String) : Effect
     data class NotificationOpen(val key: String) : Effect
+    data class NotificationAction(val key: String, val index: Int) : Effect
     data class Global(val action: GlobalAction) : Effect
     data class LaunchShortcut(val id: String) : Effect
 }

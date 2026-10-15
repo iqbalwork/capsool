@@ -23,7 +23,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AvTimer
 import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material.icons.rounded.Timer
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material.icons.rounded.FlashlightOn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -94,13 +97,31 @@ fun MiniCapsuleView(
                     } ?: Spacer(Modifier.size(18.dp))
                 }
                 state.activeCard == CapsuleCardType.TIMER && timer != null -> {
-                    Spacer(Modifier.size(8.dp))
-                    Text(
-                        text = "%02d:%02d".format(timer.remainingSeconds / 60, timer.remainingSeconds % 60),
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
+                    val now by rememberTicker(timer.isRunning)
+                    Icon(
+                        if (timer.isCountdown) Icons.Rounded.Timer else Icons.Rounded.AvTimer,
+                        contentDescription = null,
+                        tint = TimerAmber,
+                        modifier = Modifier.size(18.dp)
                     )
+                    Text(
+                        text = timer.displayText(now),
+                        color = if (timer.isRunning) TimerAmber else TimerAmber.copy(alpha = 0.6f),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum")
+                    )
+                }
+                state.activeCard == CapsuleCardType.PROGRESS && state.progress.isNotEmpty() -> {
+                    val item = state.progress.first()
+                    val accent = mediaPalette(Color(item.color)).accent
+                    AppIconBadge(item, accent, size = 22)
+                    val fraction = item.fraction
+                    if (fraction != null) {
+                        LevelRing(level = (fraction * 100).toInt(), color = accent, size = 18.dp, stroke = 3.dp)
+                    } else {
+                        CircularProgressIndicator(color = accent, strokeWidth = 2.dp, modifier = Modifier.size(16.dp))
+                    }
                 }
                 state.activeCard == CapsuleCardType.MEDIA && media != null -> {
                     RotatingDiscIcon(artwork = media.artwork, dominantColor = Color(media.dominantColor))

@@ -13,5 +13,14 @@
                 <action android:name="com.iqbalwork.capsule.debug.READ" />
             </intent-filter>
         </receiver>
+        <receiver
+            android:name=".debugtools.DebugTimerReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.iqbalwork.capsule.debug.TIMER_ADD" />
+                <action android:name="com.iqbalwork.capsule.debug.TIMER_PAUSE" />
+                <action android:name="com.iqbalwork.capsule.debug.TIMER_STOP" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

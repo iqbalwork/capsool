@@ -354,6 +354,18 @@ private fun EventsSection(
             checked = settings.chargingCardEnabled,
             onChange = { on -> onUpdate { it.copy(chargingCardEnabled = on) } }
         )
+        SwitchRow(
+            title = "Downloads and uploads",
+            description = "Progress from any app that shows a progress bar in its notification.",
+            checked = settings.progressEnabled,
+            onChange = { on -> onUpdate { it.copy(progressEnabled = on) } }
+        )
+        SwitchRow(
+            title = "Timers and stopwatches",
+            description = "From your clock app, with its own buttons.",
+            checked = settings.timerEnabled,
+            onChange = { on -> onUpdate { it.copy(timerEnabled = on) } }
+        )
         Text("Pop-ups for", style = MaterialTheme.typography.bodyLarge)
         EventCategory.entries.forEach { category ->
             SwitchRow(
@@ -400,6 +412,7 @@ private val EventCategory.label: String
         EventCategory.AIRPLANE -> "Airplane mode"
         EventCategory.UNLOCK -> "Unlocking the phone"
         EventCategory.BRIGHTNESS_MODE -> "Auto-brightness"
+        EventCategory.DOWNLOADS -> "Download finished"
     }
 
 private val EventCategory.description: String?

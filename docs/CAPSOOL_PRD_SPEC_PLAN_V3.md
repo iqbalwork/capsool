@@ -693,12 +693,21 @@ Acceptance di device (✅ = emulator Pixel 10 Pro / API 37; izin diberi lewat `a
 - [~] Brightness: ✅ geser mengubah `screen_brightness` mengikuti kurva gamma (tengah slider ≈ 14/255, seperti slider sistem); posisi awal benar (102 → ~83 %). Kalibrasi di Samsung/Xiaomi: belum.
 - [ ] Senter on/off & strength: belum (emulator tanpa flash; jalur "No flashlight" ✅). Pesan "Camera in use": ✅ unit test, belum di device.
 
-### M5 — Progress & timer (F-40, F-41)
-Acceptance di device:
-- [ ] Download/update app dari Play Store → progress tampil & bergerak; selesai → mini event "Selesai".
-- [ ] Download file di Chrome → progress tampil.
-- [ ] Timer Google Clock 2 menit → hitung mundur di kapsul selisih ≤ 1 s dengan app jam; +1 menit dan pause dari kapsul bekerja; stopwatch tampil hitung naik.
-- [ ] Timer selesai → kapsul menampilkan status selesai dengan tombol stop.
+### M5 — Progress & timer (F-40, F-41, F-43 sebagian)
+Pekerjaan:
+- [x] `OngoingClassifier` pure: chronometer + ongoing → timer (timer yang di-pause tetap timer selama notifikasinya masih ongoing); `EXTRA_PROGRESS_MAX`/indeterminate → progress; panggilan, navigasi, dan MediaStyle dikecualikan. Tanpa daftar package hardcode.
+- [x] `NotificationSource` merutekan progress/timer sebelum filter pesan; update progress di-throttle 500 ms (item baru, selesai, dan perubahan determinate/indeterminate selalu lolos).
+- [x] Progress selesai: notifikasi hilang di ≥ 90 % atau berubah jadi notifikasi selesai → mini event "Done · nama file" (kategori event baru "Download finished"); hilang di bawah itu = dibatalkan, tanpa event.
+- [x] Timer: waktu dihitung dari `notification.when` (countdown/stopwatch), berdetak tiap detik hanya saat terlihat dan berjalan; saat pause menampilkan teks app; tombol = aksi notifikasi asli app jam (dijalankan per index).
+- [x] UI: pill timer (ikon + waktu berjalan), pill progress (ikon app + cincin/spinner), kartu timer (waktu besar + tombol app), kartu progress (maks 3 baris + "+N more").
+- [x] Pengaturan: kartu progress dan kartu timer bisa dimatikan.
+- [x] Debug-only: notifikasi download dan timer 2 menit asli (+1:00 / Pause-Resume / Stop berfungsi).
+- [ ] F-43 pilih app progress + gaya ikon/warna — belum (blokir per app dari halaman notifikasi sudah berlaku juga untuk progress/timer).
+
+Acceptance di device (✅ = emulator Pixel 10 Pro / API 37 dengan notifikasi debug asli; 2026-10-15):
+- [~] Download dari Play Store/Chrome → progress tampil & bergerak: ✅ untuk notifikasi progress standar (pill cincin, kartu 45 %, "Done" di akhir). ❌ belum dengan Play Store/Chrome asli.
+- [~] Timer → hitung mundur sinkron ✅ (1:59 → 1:56 → 1:53); +1:00 ✅, pause/resume ✅ (label "Resume" dari app), stop ✅. ❌ belum dengan Google Clock asli; stopwatch: ✅ unit test.
+- [ ] Timer selesai → status selesai dengan tombol stop: belum dicek (tergantung notifikasi alarm app jam).
 
 ### M6 — Pintasan, gesture lengkap & otomasi (F-54..F-56, F-70..F-73)
 Acceptance di device:

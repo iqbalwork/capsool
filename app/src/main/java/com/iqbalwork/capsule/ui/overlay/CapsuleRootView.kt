@@ -50,6 +50,7 @@ import com.iqbalwork.capsule.platform.accessibility.OverlayPlacement
 import com.iqbalwork.capsule.ui.components.ExpandedChargingCard
 import com.iqbalwork.capsule.ui.components.ExpandedMediaCard
 import com.iqbalwork.capsule.ui.components.ExpandedNotificationCard
+import com.iqbalwork.capsule.ui.components.ExpandedProgressCard
 import com.iqbalwork.capsule.ui.components.ExpandedShortcutsCard
 import com.iqbalwork.capsule.ui.components.ExpandedSliderCard
 import com.iqbalwork.capsule.ui.components.ExpandedTimerCard
@@ -258,7 +259,8 @@ private fun CardContent(card: CapsuleCardType, state: CapsuleState, dispatch: (A
                 onAction = dispatch
             )
         }
-        CapsuleCardType.TIMER -> state.timer?.let { ExpandedTimerCard(timerState = it, onAction = dispatch) }
+        CapsuleCardType.TIMER -> state.timer?.let { ExpandedTimerCard(timer = it, onAction = dispatch) }
+        CapsuleCardType.PROGRESS -> ExpandedProgressCard(items = state.progress)
         // Static shortcut cards arrive in M6.
         CapsuleCardType.SHORTCUTS -> ExpandedShortcutsCard(shortcutsState = ShortcutsState(), onAction = dispatch)
     }
