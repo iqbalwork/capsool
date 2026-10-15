@@ -240,7 +240,11 @@ private fun ExpandedCarousel(state: CapsuleState, dispatch: (Action) -> Unit, mo
 private fun CardContent(card: CapsuleCardType, state: CapsuleState, dispatch: (Action) -> Unit) {
     when (card) {
         CapsuleCardType.MEDIA -> state.media?.let { ExpandedMediaCard(mediaState = it, onAction = dispatch) }
-        CapsuleCardType.SLIDERS -> ExpandedSliderCard(sliderState = state.sliders, onAction = dispatch)
+        CapsuleCardType.SLIDERS -> ExpandedSliderCard(
+            sliders = state.sliders,
+            style = state.settings.sliderStyle,
+            onAction = dispatch
+        )
         CapsuleCardType.CHARGING -> ExpandedChargingCard(
             chargingState = state.charging,
             fahrenheit = state.settings.temperatureFahrenheit

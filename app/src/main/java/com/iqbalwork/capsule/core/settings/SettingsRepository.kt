@@ -91,6 +91,8 @@ object SettingsMapper {
     private val MiniEventDurationKey = stringPreferencesKey("events.duration")
     private val LowBatteryThreshold = intPreferencesKey("battery.lowThreshold")
     private val TemperatureFahrenheit = booleanPreferencesKey("battery.fahrenheit")
+    private val SliderStyleKey = stringPreferencesKey("sliders.style")
+    private val BrightnessMax = intPreferencesKey("sliders.brightnessMax")
     private val DisclosureAccepted = booleanPreferencesKey("onboarding.disclosureAccepted")
     private fun gestureKey(type: GestureType) = stringPreferencesKey("gestures.${type.name.lowercase()}")
 
@@ -137,6 +139,8 @@ object SettingsMapper {
             miniEventDuration = enumOrDefault(prefs[MiniEventDurationKey], defaults.miniEventDuration),
             lowBatteryThreshold = prefs[LowBatteryThreshold] ?: defaults.lowBatteryThreshold,
             temperatureFahrenheit = prefs[TemperatureFahrenheit] ?: defaults.temperatureFahrenheit,
+            sliderStyle = enumOrDefault(prefs[SliderStyleKey], defaults.sliderStyle),
+            brightnessMax = prefs[BrightnessMax] ?: defaults.brightnessMax,
             disclosureAccepted = prefs[DisclosureAccepted] ?: defaults.disclosureAccepted
         )
     }
@@ -176,6 +180,8 @@ object SettingsMapper {
         prefs[MiniEventDurationKey] = settings.miniEventDuration.name
         prefs[LowBatteryThreshold] = settings.lowBatteryThreshold
         prefs[TemperatureFahrenheit] = settings.temperatureFahrenheit
+        prefs[SliderStyleKey] = settings.sliderStyle.name
+        prefs[BrightnessMax] = settings.brightnessMax
         prefs[DisclosureAccepted] = settings.disclosureAccepted
     }
 

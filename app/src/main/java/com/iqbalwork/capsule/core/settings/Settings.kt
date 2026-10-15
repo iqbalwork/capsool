@@ -54,6 +54,12 @@ enum class MiniEventDuration(val millis: Long) {
 /** Unlock greetings are opt-in; every other event starts enabled. */
 val DefaultEventCategories: Set<EventCategory> = EventCategory.entries.toSet() - EventCategory.UNLOCK
 
+/** F-51: visual style of the Controls card sliders. */
+enum class SliderStyle { PILL, SPLIT, ROUNDED }
+
+/** Brightness value most devices use for 100%; recalibrated per device (spec §2.5.5). */
+const val DEFAULT_BRIGHTNESS_MAX = 255
+
 enum class GestureType { TAP, DOUBLE_TAP, LONG_PRESS, SWIPE_LEFT, SWIPE_RIGHT }
 
 enum class GestureAction {
@@ -62,6 +68,7 @@ enum class GestureAction {
     NEXT_CARD,
     PREVIOUS_CARD,
     MEDIA_PLAY_PAUSE,
+    OPEN_CONTROLS,
     OPEN_NOTIFICATIONS,
     OPEN_QUICK_SETTINGS
 }
@@ -69,7 +76,7 @@ enum class GestureAction {
 val DefaultGestures: Map<GestureType, GestureAction> = mapOf(
     GestureType.TAP to GestureAction.TOGGLE_EXPAND,
     GestureType.DOUBLE_TAP to GestureAction.MEDIA_PLAY_PAUSE,
-    GestureType.LONG_PRESS to GestureAction.OPEN_NOTIFICATIONS,
+    GestureType.LONG_PRESS to GestureAction.OPEN_CONTROLS,
     GestureType.SWIPE_LEFT to GestureAction.NEXT_CARD,
     GestureType.SWIPE_RIGHT to GestureAction.PREVIOUS_CARD
 )
@@ -101,6 +108,8 @@ data class Settings(
     val miniEventDuration: MiniEventDuration = MiniEventDuration.SECONDS_3,
     val lowBatteryThreshold: Int = 15,
     val temperatureFahrenheit: Boolean = false,
+    val sliderStyle: SliderStyle = SliderStyle.PILL,
+    val brightnessMax: Int = DEFAULT_BRIGHTNESS_MAX,
     val disclosureAccepted: Boolean = false
 ) {
     fun geometry(orientation: Orientation): Geometry =

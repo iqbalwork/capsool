@@ -1,309 +1,244 @@
 package com.iqbalwork.capsule.ui.components
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.BrightnessAuto
+import androidx.compose.material.icons.rounded.BrightnessMedium
+import androidx.compose.material.icons.rounded.FlashlightOff
+import androidx.compose.material.icons.rounded.FlashlightOn
+import androidx.compose.material.icons.rounded.NotificationsActive
+import androidx.compose.material.icons.rounded.NotificationsOff
+import androidx.compose.material.icons.rounded.Vibration
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.iqbalwork.capsule.core.settings.SliderStyle
 import com.iqbalwork.capsule.core.store.UserIntent
 import com.iqbalwork.capsule.model.RingerMode
 import com.iqbalwork.capsule.model.SliderState
-import com.iqbalwork.capsule.model.VolumeSliderStyle
-import com.iqbalwork.capsule.ui.theme.CapsuleTokens
+import com.iqbalwork.capsule.model.TorchState
 
+/**
+ * The Controls card (F-50..F-53): media volume with the ringer toggle, brightness with
+ * auto-brightness, and the flashlight. Each row's icon is a toggle.
+ */
 @Composable
 fun ExpandedSliderCard(
-    sliderState: SliderState,
+    sliders: SliderState,
+    style: SliderStyle,
     onAction: (UserIntent) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(12.dp),
-        verticalArrangement = Arrangement.SpaceBetween
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)
     ) {
-        // --- 1. Volume Section with 3 Visual Styles ---
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "🔊 Volume (${(sliderState.volumeLevel * 100).toInt()}%)",
-                        color = CapsuleTokens.OnSurface,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Style Switcher Pill
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(CapsuleTokens.SurfaceContainerHighest)
-                            .clickable { onAction(UserIntent.CycleVolumeStyle) }
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    ) {
-                        val styleBadge = when (sliderState.volumeStyle) {
-                            VolumeSliderStyle.ANDROID_15 -> "A15 Pill"
-                            VolumeSliderStyle.ANDROID_16 -> "A16 Split"
-                            VolumeSliderStyle.SAMSUNG_ONE_UI -> "One UI"
-                        }
-                        Text(
-                            text = styleBadge,
-                            color = CapsuleTokens.Primary,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(6.dp))
-
-                    // Ringer Mode Toggle
-                    Box(
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .background(CapsuleTokens.PrimaryContainer)
-                            .clickable { onAction(UserIntent.CycleRinger) }
-                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                    ) {
-                        val ringerIcon = when (sliderState.ringerMode) {
-                            RingerMode.NORMAL -> "🔔 Ring"
-                            RingerMode.VIBRATE -> "📳 Vib"
-                            RingerMode.SILENT -> "🔕 Silent"
-                        }
-                        Text(
-                            text = ringerIcon,
-                            color = CapsuleTokens.OnPrimary,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Volume Visual Component
-            when (sliderState.volumeStyle) {
-                VolumeSliderStyle.ANDROID_15 -> {
-                    // Android 15: Single Continuous Thick Pill
-                    Android15VolumePill(
-                        volume = sliderState.volumeLevel,
-                        onVolumeChange = { onAction(UserIntent.SetVolume(it)) }
-                    )
-                }
-                VolumeSliderStyle.ANDROID_16 -> {
-                    // Android 16: Split Segmented Pills
-                    Android16SegmentedPills(
-                        volume = sliderState.volumeLevel,
-                        onVolumeChange = { onAction(UserIntent.SetVolume(it)) }
-                    )
-                }
-                VolumeSliderStyle.SAMSUNG_ONE_UI -> {
-                    // Samsung One UI: Rounded Floating Slider
-                    SamsungOneUISlider(
-                        volume = sliderState.volumeLevel,
-                        onVolumeChange = { onAction(UserIntent.SetVolume(it)) }
-                    )
-                }
-            }
-        }
-
-        // --- 2. Brightness Section ---
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "☀️ Brightness (${(sliderState.brightnessLevel * 100).toInt()}%)",
-                    color = CapsuleTokens.OnSurface,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = if (sliderState.isAdaptiveBrightness) "Adaptive: ON" else "Manual",
-                    color = CapsuleTokens.OnSurfaceVariant,
-                    fontSize = 10.sp
-                )
-            }
-            Slider(
-                value = sliderState.brightnessLevel,
-                onValueChange = { onAction(UserIntent.SetBrightness(it)) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(20.dp),
-                colors = SliderDefaults.colors(
-                    thumbColor = Color(0xFFFFD54F),
-                    activeTrackColor = Color(0xFFFFD54F),
-                    inactiveTrackColor = CapsuleTokens.OutlineVariant
-                )
-            )
-        }
-
-        // --- 3. Flashlight Section ---
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(CapsuleTokens.SurfaceContainerHigh)
-                .padding(horizontal = 10.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+        ControlRow(
+            icon = when (sliders.ringerMode) {
+                RingerMode.NORMAL -> Icons.Rounded.NotificationsActive
+                RingerMode.VIBRATE -> Icons.Rounded.Vibration
+                RingerMode.SILENT -> Icons.Rounded.NotificationsOff
+            },
+            description = "Ringer: ${sliders.ringerMode.displayName}",
+            active = sliders.ringerMode != RingerMode.NORMAL,
+            onIcon = { onAction(UserIntent.CycleRinger) }
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .background(
-                            if (sliderState.isTorchOn) CapsuleTokens.Primary else CapsuleTokens.SurfaceContainerHighest
-                        )
-                        .clickable { onAction(UserIntent.ToggleTorch) },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = if (sliderState.isTorchOn) "🔦" else "🔦",
-                        color = if (sliderState.isTorchOn) CapsuleTokens.OnPrimary else CapsuleTokens.OnSurfaceVariant,
-                        fontSize = 16.sp
-                    )
-                }
+            StyledSlider(sliders.volumeLevel, style, onValueChange = { onAction(UserIntent.SetVolume(it)) })
+        }
 
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Text(
-                    text = if (sliderState.isTorchOn) "Torch ON" else "Torch OFF",
-                    color = CapsuleTokens.OnSurface,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
+        ControlRow(
+            icon = if (sliders.isAdaptiveBrightness) Icons.Rounded.BrightnessAuto else Icons.Rounded.BrightnessMedium,
+            description = "Auto-brightness",
+            active = sliders.isAdaptiveBrightness,
+            onIcon = { onAction(UserIntent.ToggleAdaptiveBrightness) }
+        ) {
+            if (sliders.canWriteBrightness) {
+                StyledSlider(sliders.brightnessLevel, style, onValueChange = { onAction(UserIntent.SetBrightness(it)) })
+            } else {
+                Hint("Tap to allow brightness control") { onAction(UserIntent.SetBrightness(sliders.brightnessLevel)) }
             }
+        }
 
-            // Strength slider
-            Box(modifier = Modifier.width(140.dp)) {
-                Slider(
-                    value = sliderState.torchStrengthLevel,
-                    onValueChange = { onAction(UserIntent.SetTorchLevel(it)) },
-                    modifier = Modifier.height(20.dp),
-                    colors = SliderDefaults.colors(
-                        thumbColor = CapsuleTokens.Primary,
-                        activeTrackColor = CapsuleTokens.Primary,
-                        inactiveTrackColor = CapsuleTokens.OutlineVariant
-                    )
+        val torchUsable = sliders.torch == TorchState.ON || sliders.torch == TorchState.OFF
+        ControlRow(
+            icon = if (sliders.isTorchOn) Icons.Rounded.FlashlightOn else Icons.Rounded.FlashlightOff,
+            description = "Flashlight",
+            active = sliders.isTorchOn,
+            enabled = torchUsable,
+            onIcon = { onAction(UserIntent.ToggleTorch) }
+        ) {
+            when {
+                sliders.torch == TorchState.NONE -> Hint("No flashlight on this device")
+                sliders.torch == TorchState.BUSY -> Hint("Camera in use")
+                sliders.torchStrengthSupported -> StyledSlider(
+                    value = if (sliders.isTorchOn) sliders.torchStrengthLevel else 0f,
+                    style = style,
+                    onValueChange = { onAction(UserIntent.SetTorchLevel(it)) }
                 )
+                else -> Hint(if (sliders.isTorchOn) "On" else "Off")
             }
         }
     }
 }
 
 @Composable
-fun Android15VolumePill(
-    volume: Float,
-    onVolumeChange: (Float) -> Unit,
-    modifier: Modifier = Modifier
+private fun ControlRow(
+    icon: ImageVector,
+    description: String,
+    active: Boolean,
+    onIcon: () -> Unit,
+    enabled: Boolean = true,
+    content: @Composable RowScope.() -> Unit
 ) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(26.dp)
-            .clip(RoundedCornerShape(13.dp))
-            .background(CapsuleTokens.SurfaceContainerHighest)
-            .pointerInput(Unit) {
-                detectTapGestures { offset ->
-                    val frac = (offset.x / size.width.toFloat()).coerceIn(0f, 1f)
-                    onVolumeChange(frac)
-                }
-            }
-    ) {
+    val accent = MaterialTheme.colorScheme.primary
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.height(44.dp)) {
         Box(
             modifier = Modifier
-                .fillMaxHeight()
-                .fillMaxWidth(fraction = volume)
-                .background(CapsuleTokens.Primary)
-        )
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(if (active) accent else Color.White.copy(alpha = if (enabled) 0.12f else 0.05f))
+                .clickable(enabled = enabled, onClick = onIcon),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                icon,
+                contentDescription = description,
+                tint = when {
+                    active -> MaterialTheme.colorScheme.onPrimary
+                    enabled -> Color.White
+                    else -> Color.White.copy(alpha = 0.35f)
+                },
+                modifier = Modifier.size(22.dp)
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        content()
     }
 }
 
 @Composable
-fun Android16SegmentedPills(
-    volume: Float,
-    onVolumeChange: (Float) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val segments = 8
-    val activeCount = (volume * segments).toInt()
+private fun RowScope.Hint(text: String, onClick: (() -> Unit)? = null) {
+    Text(
+        text = text,
+        color = if (onClick != null) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.6f),
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = Modifier
+            .weight(1f)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+    )
+}
 
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(26.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        for (i in 0 until segments) {
-            val isActive = i < activeCount
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(
-                        if (isActive) CapsuleTokens.Primary else CapsuleTokens.SurfaceContainerHighest
-                    )
-                    .clickable {
-                        val newVol = (i + 1).toFloat() / segments.toFloat()
-                        onVolumeChange(newVol)
-                    }
+/** F-51: three looks for the same 0..1 control. */
+@Composable
+private fun RowScope.StyledSlider(value: Float, style: SliderStyle, onValueChange: (Float) -> Unit) {
+    val accent = MaterialTheme.colorScheme.primary
+    when (style) {
+        SliderStyle.SPLIT -> {
+            var local by remember { mutableStateOf<Float?>(null) }
+            Slider(
+                value = local ?: value,
+                onValueChange = {
+                    local = it
+                    onValueChange(it)
+                },
+                onValueChangeFinished = { local = null },
+                colors = SliderDefaults.colors(
+                    thumbColor = accent,
+                    activeTrackColor = accent,
+                    inactiveTrackColor = Color.White.copy(alpha = 0.18f)
+                ),
+                modifier = Modifier.weight(1f)
             )
+        }
+        SliderStyle.PILL -> DragSlider(value, onValueChange, Modifier.weight(1f)) { shown ->
+            val radius = CornerRadius(size.height / 2, size.height / 2)
+            drawRoundRect(Color.White.copy(alpha = 0.14f), cornerRadius = radius)
+            val fill = (size.width * shown).coerceAtLeast(size.height)
+            drawRoundRect(accent, size = Size(fill, size.height), cornerRadius = radius)
+        }
+        SliderStyle.ROUNDED -> DragSlider(value, onValueChange, Modifier.weight(1f)) { shown ->
+            val track = 8.dp.toPx()
+            val thumb = 11.dp.toPx()
+            val top = (size.height - track) / 2
+            val usable = size.width - 2 * thumb
+            val x = thumb + usable * shown
+            drawRoundRect(Color.White.copy(alpha = 0.18f), Offset(0f, top), Size(size.width, track), CornerRadius(track / 2))
+            drawRoundRect(accent, Offset(0f, top), Size(x, track), CornerRadius(track / 2))
+            drawCircle(Color.White, radius = thumb, center = Offset(x, size.height / 2))
         }
     }
 }
 
+/**
+ * Tap or drag anywhere on the track. Pointer events are consumed, so dragging a slider is never
+ * read as a swipe to the next card.
+ */
 @Composable
-fun SamsungOneUISlider(
-    volume: Float,
-    onVolumeChange: (Float) -> Unit,
-    modifier: Modifier = Modifier
+private fun DragSlider(
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    modifier: Modifier,
+    draw: DrawScope.(Float) -> Unit
 ) {
-    Slider(
-        value = volume,
-        onValueChange = onVolumeChange,
+    var local by remember { mutableStateOf<Float?>(null) }
+    val shown = (local ?: value).coerceIn(0f, 1f)
+    Canvas(
         modifier = modifier
-            .fillMaxWidth()
-            .height(26.dp),
-        colors = SliderDefaults.colors(
-            thumbColor = CapsuleTokens.Primary,
-            activeTrackColor = CapsuleTokens.Primary,
-            inactiveTrackColor = CapsuleTokens.SurfaceContainerHighest
-        )
-    )
+            .height(40.dp)
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    val down = awaitFirstDown()
+                    fun update(x: Float) {
+                        val fraction = (x / size.width).coerceIn(0f, 1f)
+                        local = fraction
+                        onValueChange(fraction)
+                    }
+                    update(down.position.x)
+                    down.consume()
+                    while (true) {
+                        val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
+                        if (!change.pressed) break
+                        update(change.position.x)
+                        change.consume()
+                    }
+                    local = null
+                }
+            }
+    ) { draw(shown) }
 }

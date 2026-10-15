@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material.icons.rounded.FlashlightOn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -117,6 +118,10 @@ fun MiniCapsuleView(
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
+                }
+                state.activeCard == CapsuleCardType.SLIDERS && state.sliders.isTorchOn -> {
+                    Icon(Icons.Rounded.FlashlightOn, contentDescription = null, tint = Color(0xFFFFE082), modifier = Modifier.size(18.dp))
+                    Text("On", color = Color(0xFFFFE082), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
                 // Idle pill stays plain so it blends with the camera cutout.
                 else -> Spacer(Modifier.size(8.dp))

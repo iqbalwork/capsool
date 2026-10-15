@@ -676,13 +676,22 @@ Acceptance di device (✅ = emulator Pixel 10 Pro / API 37, event dipicu via `du
 - [ ] Earbuds Bluetooth → nama + baterai: belum (emulator tanpa Bluetooth); alur izin belum dicek.
 - [x] Wi-Fi on/off ✅, mode pesawat ✅, auto-brightness ✅, unlock: belum dicek (default mati); event bisa dimatikan per kategori ✅ unit test.
 
-### M4 — Slider & senter (F-50..F-53)
-Acceptance di device:
-- [ ] Geser volume di kapsul → volume media berubah; tekan tombol volume fisik → slider kapsul ikut berubah.
-- [ ] Siklus ringer berfungsi; saat izin DND belum ada, user diarahkan ke settings dan siklus tetap jalan tanpa crash.
-- [ ] Brightness: wizard kalibrasi di Samsung/Xiaomi menghasilkan slider yang 100%-nya = 100% sistem; posisi 50% terasa sama dengan 50% slider sistem.
-- [ ] Senter on/off; di Pixel/Samsung Android 13+ dengan dukungan strength, slider kekuatan mengubah terang senter; di device tanpa dukungan, slider tidak tampil.
-- [ ] Buka kamera → toggle senter menampilkan pesan "kamera sedang dipakai", bukan crash.
+### M4 — Slider & senter (F-50..F-53, F-51)
+Pekerjaan:
+- [x] Kartu Controls (`SLIDERS`): dibuka dengan tap pill saat tidak ada aktivitas atau long press (gesture default baru `OPEN_CONTROLS`); muncul sendiri sebagai kartu dinamis saat senter menyala; tertutup bersama kartu.
+- [x] `ControlsSource`: volume media (`STREAM_MUSIC`), mode dering, brightness (Settings.System + kurva gamma `BrightnessCurve`), auto-brightness, senter (`TorchCallback`, strength API 33+); satu `ContentObserver` Settings.System untuk perubahan dari luar.
+- [x] Ringer: ring → vibrate → silent; tanpa akses DND, silent dilewati dan user diarahkan ke pengaturan akses DND. Perubahan ringer dari kapsul tidak memicu mini event dobel (`isOwnRingerChange`, 1 s).
+- [x] Brightness/auto tanpa izin → buka `ACTION_MANAGE_WRITE_SETTINGS`; izin dibaca ulang setiap kali Controls dibuka (pemberian izin di Settings tidak mengirim broadcast).
+- [x] Senter: tanpa flash → "No flashlight on this device"; kamera memakai flash → "Camera in use"; strength < 5 % = mati.
+- [x] 3 gaya slider (F-51): Pill, Split (M3 Slider), Rounded; slider kustom meng-consume event sehingga drag tidak dibaca sebagai swipe ganti kartu.
+- [x] Pengaturan "Controls": gaya slider, status izin brightness & silent, kalibrasi brightness maksimum (baca nilai sistem saat user set ke maksimal) + reset.
+- [x] Manifest: `WRITE_SETTINGS` dan `ACCESS_NOTIFICATION_POLICY` dideklarasikan (tanpa ini app tidak muncul di daftar izin Settings — ketemu saat tes).
+
+Acceptance di device (✅ = emulator Pixel 10 Pro / API 37; izin diberi lewat `appops`/`cmd notification` lalu dikembalikan; 2026-10-15):
+- [x] Geser volume → volume media berubah ✅ (10/15); tombol volume fisik → slider ikut ✅.
+- [~] Siklus ringer ✅ ring → vibrate → ring; mode silent dikembalikan sistem emulator ke vibrate (card menampilkan status asli). Perlu dicek di HP fisik. Tanpa izin DND: ✅ unit test (lewati silent + buka pengaturan).
+- [~] Brightness: ✅ geser mengubah `screen_brightness` mengikuti kurva gamma (tengah slider ≈ 14/255, seperti slider sistem); posisi awal benar (102 → ~83 %). Kalibrasi di Samsung/Xiaomi: belum.
+- [ ] Senter on/off & strength: belum (emulator tanpa flash; jalur "No flashlight" ✅). Pesan "Camera in use": ✅ unit test, belum di device.
 
 ### M5 — Progress & timer (F-40, F-41)
 Acceptance di device:

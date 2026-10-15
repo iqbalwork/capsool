@@ -38,6 +38,8 @@ private const val HEADPHONE_BATTERY_WINDOW_MS = 15_000L
  */
 class SystemEventSource(
     private val context: Context,
+    /** True right after Capsool itself changed the ringer: no pop-up for our own change. */
+    private val isOwnRingerChange: () -> Boolean,
     private val dispatch: (SystemEvent) -> Unit
 ) {
     private val handler = Handler(Looper.getMainLooper())
@@ -51,7 +53,8 @@ class SystemEventSource(
         override fun onReceive(context: Context, intent: Intent) {
             if (isInitialStickyBroadcast) return
             when (intent.action) {
-                AudioManager.RINGER_MODE_CHANGED_ACTION -> ringerChanged(intent.getIntExtra(AudioManager.EXTRA_RINGER_MODE, -1))
+                AudioManager.RINGER_MODE_CHANGED_ACTION ->
+                    if (!isOwnRingerChange()) ringerChanged(intent.getIntExtra(AudioManager.EXTRA_RINGER_MODE, -1))
                 Intent.ACTION_AIRPLANE_MODE_CHANGED -> emit(
                     if (intent.getBooleanExtra("state", false)) MiniEventType.AIRPLANE_ON else MiniEventType.AIRPLANE_OFF,
                     if (intent.getBooleanExtra("state", false)) "Airplane mode on" else "Airplane mode off"

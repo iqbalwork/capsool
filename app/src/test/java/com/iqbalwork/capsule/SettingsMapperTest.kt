@@ -12,6 +12,7 @@ import com.iqbalwork.capsule.core.settings.NotificationDelay
 import com.iqbalwork.capsule.core.settings.NotificationDisplay
 import com.iqbalwork.capsule.core.settings.Settings
 import com.iqbalwork.capsule.core.settings.SettingsMapper
+import com.iqbalwork.capsule.core.settings.SliderStyle
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -51,6 +52,8 @@ class SettingsMapperTest {
             miniEventDuration = MiniEventDuration.SECONDS_6,
             lowBatteryThreshold = 22,
             temperatureFahrenheit = true,
+            sliderStyle = SliderStyle.ROUNDED,
+            brightnessMax = 4095,
             disclosureAccepted = true
         )
         val prefs = mutablePreferencesOf()

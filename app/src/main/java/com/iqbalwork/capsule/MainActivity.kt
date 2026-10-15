@@ -26,7 +26,8 @@ class MainActivity : ComponentActivity() {
                     notificationAccess = notificationAccess,
                     dispatch = graph.store::dispatch,
                     onUpdateSettings = graph::updateSettings,
-                    onBluetoothGranted = graph.systemEvents::refreshBluetooth
+                    onBluetoothGranted = graph.systemEvents::refreshBluetooth,
+                    onControlsPermissionsChanged = graph.controls::refresh
                 )
             }
         }

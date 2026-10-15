@@ -30,7 +30,8 @@ private val CardPriority = listOf(
     CapsuleCardType.NOTIFICATION,
     CapsuleCardType.TIMER,
     CapsuleCardType.MEDIA,
-    CapsuleCardType.CHARGING
+    CapsuleCardType.CHARGING,
+    CapsuleCardType.SLIDERS
 )
 
 data class CapsuleState(
@@ -45,6 +46,8 @@ data class CapsuleState(
     val charging: ChargingState = ChargingState(),
     /** Newest first. The card shows the first one. */
     val notifications: List<CapsuleNotification> = emptyList(),
+    /** The Controls card was opened on purpose (idle tap / gesture); it closes with the card. */
+    val controlsOpen: Boolean = false,
     /** Key of the notification being replied to; the overlay takes keyboard focus meanwhile. */
     val replyingTo: String? = null,
     val timer: TimerState? = null
@@ -57,6 +60,8 @@ data class CapsuleState(
                 CapsuleCardType.TIMER -> timer != null
                 CapsuleCardType.MEDIA -> mediaVisible
                 CapsuleCardType.CHARGING -> settings.chargingCardEnabled && charging.isCharging
+                // Controls on request, and on their own while the flashlight is on (F-53).
+                CapsuleCardType.SLIDERS -> controlsOpen || sliders.isTorchOn
                 else -> false
             }
         }

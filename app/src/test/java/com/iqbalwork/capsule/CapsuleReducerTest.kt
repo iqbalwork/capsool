@@ -55,10 +55,10 @@ class CapsuleReducerTest {
     }
 
     @Test
-    fun tapWithoutActivityDoesNotExpand() {
+    fun tapWithoutActivityOpensControls() {
         val state = reduce(loaded, UserIntent.Gesture(GestureType.TAP))
-        assertFalse(state.isExpanded)
-        assertEquals(CapsuleMode.IDLE, state.mode)
+        assertEquals(CapsuleMode.EXPANDED, state.mode)
+        assertEquals(CapsuleCardType.SLIDERS, state.activeCard)
     }
 
     @Test

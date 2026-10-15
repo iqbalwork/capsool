@@ -26,9 +26,9 @@ sealed interface UserIntent : Action {
     data object MediaOpenApp : UserIntent
 
     data class SetVolume(val level: Float) : UserIntent
-    data object CycleVolumeStyle : UserIntent
     data object CycleRinger : UserIntent
     data class SetBrightness(val level: Float) : UserIntent
+    data object ToggleAdaptiveBrightness : UserIntent
     data object ToggleTorch : UserIntent
     data class SetTorchLevel(val level: Float) : UserIntent
 

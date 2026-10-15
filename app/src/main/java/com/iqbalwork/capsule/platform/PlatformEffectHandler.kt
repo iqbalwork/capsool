@@ -3,6 +3,7 @@ package com.iqbalwork.capsule.platform
 import android.accessibilityservice.AccessibilityService
 import android.util.Log
 import com.iqbalwork.capsule.core.store.Effect
+import com.iqbalwork.capsule.platform.controls.ControlsSource
 import com.iqbalwork.capsule.platform.media.MediaSource
 import com.iqbalwork.capsule.platform.notification.NotificationSource
 
@@ -14,7 +15,8 @@ private const val TAG = "CapsoolEffects"
  */
 class PlatformEffectHandler(
     private val mediaSource: MediaSource,
-    private val notificationSource: NotificationSource
+    private val notificationSource: NotificationSource,
+    private val controls: ControlsSource
 ) {
 
     /** Set while the accessibility service is connected; global actions need it. */
@@ -27,7 +29,9 @@ class PlatformEffectHandler(
             is Effect.Media, is Effect.MediaSeek, Effect.MediaOpenApp -> mediaSource.execute(effect)
             is Effect.NotificationReply, is Effect.NotificationMarkRead,
             is Effect.NotificationDismiss, is Effect.NotificationOpen -> notificationSource.execute(effect)
-            // Wired in later milestones: sliders & torch (M4), shortcuts (M6).
+            is Effect.Volume, is Effect.Ringer, is Effect.Brightness, is Effect.AdaptiveBrightness,
+            is Effect.Torch, is Effect.OpenPermission, Effect.RefreshControls -> controls.execute(effect)
+            // Wired in a later milestone: shortcuts (M6).
             else -> Log.d(TAG, "Effect not wired yet: ${effect::class.simpleName}")
         }
     }

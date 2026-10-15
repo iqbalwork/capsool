@@ -5,7 +5,10 @@ import com.iqbalwork.capsule.core.settings.NotificationDisplay
 import com.iqbalwork.capsule.model.CapsuleCardType
 import com.iqbalwork.capsule.model.MediaState
 import com.iqbalwork.capsule.model.RingerMode
-import com.iqbalwork.capsule.model.VolumeSliderStyle
+import com.iqbalwork.capsule.model.TorchState
+
+/** Torch strengths below this turn the flashlight off instead. */
+private const val TORCH_OFF_BELOW = 0.05f
 
 data class Reduction(val state: CapsuleState, val effects: List<Effect> = emptyList())
 
@@ -44,32 +47,40 @@ object CapsuleReducer {
             val level = intent.level.coerceIn(0f, 1f)
             Reduction(state.copy(sliders = state.sliders.copy(volumeLevel = level)), listOf(Effect.Volume(level)))
         }
-        UserIntent.CycleVolumeStyle -> {
-            val styles = VolumeSliderStyle.entries
-            val next = styles[(styles.indexOf(state.sliders.volumeStyle) + 1) % styles.size]
-            Reduction(state.copy(sliders = state.sliders.copy(volumeStyle = next)))
-        }
-        UserIntent.CycleRinger -> {
-            val modes = RingerMode.entries
-            val next = modes[(modes.indexOf(state.sliders.ringerMode) + 1) % modes.size]
-            Reduction(state.copy(sliders = state.sliders.copy(ringerMode = next)), listOf(Effect.Ringer(next)))
-        }
-        is UserIntent.SetBrightness -> {
-            val level = intent.level.coerceIn(0f, 1f)
-            Reduction(state.copy(sliders = state.sliders.copy(brightnessLevel = level)), listOf(Effect.Brightness(level)))
-        }
-        UserIntent.ToggleTorch -> {
-            val on = !state.sliders.isTorchOn
-            Reduction(state.copy(sliders = state.sliders.copy(isTorchOn = on)), listOf(Effect.Torch(on, null)))
-        }
-        is UserIntent.SetTorchLevel -> {
-            val level = intent.level.coerceIn(0f, 1f)
-            val on = level > 0.05f
-            Reduction(
-                state.copy(sliders = state.sliders.copy(torchStrengthLevel = level, isTorchOn = on)),
-                listOf(Effect.Torch(on, level))
+        UserIntent.CycleRinger -> cycleRinger(state)
+        is UserIntent.SetBrightness ->
+            if (!state.sliders.canWriteBrightness) {
+                askPermission(state, Effect.PermissionScreen.WRITE_SETTINGS)
+            } else {
+                val level = intent.level.coerceIn(0f, 1f)
+                Reduction(state.copy(sliders = state.sliders.copy(brightnessLevel = level)), listOf(Effect.Brightness(level)))
+            }
+        UserIntent.ToggleAdaptiveBrightness ->
+            if (!state.sliders.canWriteBrightness) {
+                askPermission(state, Effect.PermissionScreen.WRITE_SETTINGS)
+            } else {
+                val on = !state.sliders.isAdaptiveBrightness
+                Reduction(state.copy(sliders = state.sliders.copy(isAdaptiveBrightness = on)), listOf(Effect.AdaptiveBrightness(on)))
+            }
+        UserIntent.ToggleTorch -> when (state.sliders.torch) {
+            TorchState.OFF -> Reduction(
+                state.copy(sliders = state.sliders.copy(torch = TorchState.ON)),
+                listOf(Effect.Torch(on = true, level = state.sliders.torchStrengthLevel.takeIf { state.sliders.torchStrengthSupported }))
             )
+            TorchState.ON -> Reduction(state.copy(sliders = state.sliders.copy(torch = TorchState.OFF)), listOf(Effect.Torch(false, null)))
+            TorchState.NONE, TorchState.BUSY -> Reduction(state)
         }
+        is UserIntent.SetTorchLevel ->
+            if (state.sliders.torch == TorchState.NONE || state.sliders.torch == TorchState.BUSY) {
+                Reduction(state)
+            } else {
+                val level = intent.level.coerceIn(0f, 1f)
+                val on = level > TORCH_OFF_BELOW
+                Reduction(
+                    state.copy(sliders = state.sliders.copy(torchStrengthLevel = level, torch = if (on) TorchState.ON else TorchState.OFF)),
+                    listOf(Effect.Torch(on, level.takeIf { on }))
+                )
+            }
 
         is UserIntent.NotificationStartReply -> {
             val target = state.notifications.firstOrNull { it.key == intent.key }
@@ -105,17 +116,44 @@ object CapsuleReducer {
     private fun reduceGesture(state: CapsuleState, action: GestureAction): Reduction = when (action) {
         GestureAction.NONE -> Reduction(state)
         GestureAction.TOGGLE_EXPAND ->
-            if (state.activeCards.isEmpty()) Reduction(state)
+            // With nothing going on, a tap opens the Controls card instead of doing nothing.
+            if (state.activeCards.isEmpty()) openControls(state)
             else if (state.isExpanded) collapse(state)
             else Reduction(state.copy(isExpanded = true, miniEvent = null))
         GestureAction.NEXT_CARD -> Reduction(cycleCard(state, step = 1))
         GestureAction.PREVIOUS_CARD -> Reduction(cycleCard(state, step = -1))
         GestureAction.MEDIA_PLAY_PAUSE -> playPause(state)
+        GestureAction.OPEN_CONTROLS -> if (state.isExpanded && state.activeCard == CapsuleCardType.SLIDERS) collapse(state) else openControls(state)
         GestureAction.OPEN_NOTIFICATIONS ->
             Reduction(state.copy(isExpanded = false), listOf(Effect.Global(Effect.GlobalAction.NOTIFICATIONS)))
         GestureAction.OPEN_QUICK_SETTINGS ->
             Reduction(state.copy(isExpanded = false), listOf(Effect.Global(Effect.GlobalAction.QUICK_SETTINGS)))
     }
+
+    private fun openControls(state: CapsuleState): Reduction = Reduction(
+        state.copy(controlsOpen = true, isExpanded = true, focusedCard = CapsuleCardType.SLIDERS, miniEvent = null),
+        listOf(Effect.RefreshControls)
+    )
+
+    /** Ring → vibrate → silent → ring. Silent needs DND access; without it, skip it and ask. */
+    private fun cycleRinger(state: CapsuleState): Reduction {
+        val next = when (state.sliders.ringerMode) {
+            RingerMode.NORMAL -> RingerMode.VIBRATE
+            RingerMode.VIBRATE -> RingerMode.SILENT
+            RingerMode.SILENT -> RingerMode.NORMAL
+        }
+        if (next == RingerMode.SILENT && !state.sliders.canSilence) {
+            return Reduction(
+                state.copy(sliders = state.sliders.copy(ringerMode = RingerMode.NORMAL), isExpanded = false),
+                listOf(Effect.Ringer(RingerMode.NORMAL), Effect.OpenPermission(Effect.PermissionScreen.DND_ACCESS))
+            )
+        }
+        return Reduction(state.copy(sliders = state.sliders.copy(ringerMode = next)), listOf(Effect.Ringer(next)))
+    }
+
+    /** A control without its permission sends the user to grant it; the card closes meanwhile. */
+    private fun askPermission(state: CapsuleState, screen: Effect.PermissionScreen): Reduction =
+        Reduction(state.copy(isExpanded = false), listOf(Effect.OpenPermission(screen)))
 
     private fun playPause(state: CapsuleState): Reduction {
         val media = state.media ?: return Reduction(state)
@@ -194,7 +232,7 @@ object CapsuleReducer {
      */
     private fun collapse(state: CapsuleState): Reduction {
         val viewed = state.topNotification?.takeIf { state.isExpanded && state.activeCard == CapsuleCardType.NOTIFICATION }
-        val collapsed = state.copy(isExpanded = false, replyingTo = null)
+        val collapsed = state.copy(isExpanded = false, replyingTo = null, controlsOpen = false)
         if (viewed == null) return Reduction(collapsed)
         val effects = if (state.settings.removeNotificationAfterViewing && viewed.clearable) {
             listOf(Effect.NotificationDismiss(viewed.key))
@@ -214,7 +252,8 @@ object CapsuleReducer {
         val expandable = state.activeCards.isNotEmpty() && state.isAllowedOnScreen
         val expanded = state.isExpanded && expandable
         val replying = state.replyingTo.takeIf { expanded && state.activeCard == CapsuleCardType.NOTIFICATION }
-        return if (expanded == state.isExpanded && replying == state.replyingTo) state
-        else state.copy(isExpanded = expanded, replyingTo = replying)
+        val controls = state.controlsOpen && expanded
+        return if (expanded == state.isExpanded && replying == state.replyingTo && controls == state.controlsOpen) state
+        else state.copy(isExpanded = expanded, replyingTo = replying, controlsOpen = controls)
     }
 }

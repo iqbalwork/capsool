@@ -1,7 +1,11 @@
 package com.iqbalwork.capsule.ui.companion
 
 import android.Manifest
+import android.app.NotificationManager
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.Settings as AndroidSettings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
@@ -34,6 +39,8 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.ui.unit.dp
 import com.iqbalwork.capsule.core.settings.ColorSource
+import com.iqbalwork.capsule.core.settings.DEFAULT_BRIGHTNESS_MAX
+import com.iqbalwork.capsule.core.settings.SliderStyle
 import com.iqbalwork.capsule.core.settings.Geometry
 import com.iqbalwork.capsule.core.settings.MediaCollapseDelay
 import com.iqbalwork.capsule.core.settings.MiniEventDuration
@@ -52,6 +59,7 @@ fun CapsuleTab(
     onUpdate: ((Settings) -> Settings) -> Unit,
     onOpenNotificationApps: () -> Unit,
     onBluetoothGranted: () -> Unit,
+    onControlsPermissionsChanged: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var editing by remember(currentOrientation) { mutableStateOf(currentOrientation) }
@@ -196,6 +204,9 @@ fun CapsuleTab(
             }
         }
         item {
+            ControlsSection(settings = settings, onUpdate = onUpdate, onPermissionsChanged = onControlsPermissionsChanged)
+        }
+        item {
             EventsSection(settings = settings, onUpdate = onUpdate, onBluetoothGranted = onBluetoothGranted)
         }
         item {
@@ -233,6 +244,87 @@ private val MediaCollapseDelay.label: String
         MediaCollapseDelay.MINUTES_2 -> "2 min"
         MediaCollapseDelay.NEVER -> "Always"
     }
+
+/** F-51..F-53: slider look, brightness calibration and the permissions the controls need. */
+@Composable
+private fun ControlsSection(
+    settings: Settings,
+    onUpdate: ((Settings) -> Settings) -> Unit,
+    onPermissionsChanged: () -> Unit
+) {
+    val context = LocalContext.current
+    var canWrite by remember { mutableStateOf(false) }
+    var canSilence by remember { mutableStateOf(false) }
+    LifecycleResumeEffect(Unit) {
+        canWrite = AndroidSettings.System.canWrite(context)
+        canSilence = context.getSystemService(NotificationManager::class.java).isNotificationPolicyAccessGranted
+        onPermissionsChanged() // the user may have just granted something in Settings
+        onPauseOrDispose { }
+    }
+    Section("Controls") {
+        Text(
+            "Tap the capsule when nothing is happening, or long-press it, to open volume, brightness and flashlight.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text("Slider style", style = MaterialTheme.typography.bodyMedium)
+        Options(
+            options = SliderStyle.entries,
+            selected = settings.sliderStyle,
+            label = {
+                when (it) {
+                    SliderStyle.PILL -> "Pill"
+                    SliderStyle.SPLIT -> "Split"
+                    SliderStyle.ROUNDED -> "Rounded"
+                }
+            },
+            onSelect = { style -> onUpdate { it.copy(sliderStyle = style) } }
+        )
+        PermissionRow(
+            title = "Brightness control",
+            granted = canWrite,
+            onGrant = {
+                context.startActivity(
+                    Intent(AndroidSettings.ACTION_MANAGE_WRITE_SETTINGS, Uri.fromParts("package", context.packageName, null))
+                )
+            }
+        )
+        PermissionRow(
+            title = "Silent mode",
+            granted = canSilence,
+            onGrant = { context.startActivity(Intent(AndroidSettings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)) }
+        )
+        Text("Brightness calibration", style = MaterialTheme.typography.bodyLarge)
+        Text(
+            "Android 13+ does not tell apps the highest brightness value. Drag the system brightness slider " +
+                "all the way up, then tap Calibrate. Current maximum: ${settings.brightnessMax}.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilledTonalButton(onClick = {
+                val current = AndroidSettings.System.getInt(context.contentResolver, AndroidSettings.System.SCREEN_BRIGHTNESS, 0)
+                if (current > 0) onUpdate { it.copy(brightnessMax = current) }
+            }) { Text("Calibrate") }
+            TextButton(onClick = { onUpdate { it.copy(brightnessMax = DEFAULT_BRIGHTNESS_MAX) } }) { Text("Reset") }
+        }
+    }
+}
+
+@Composable
+private fun PermissionRow(title: String, granted: Boolean, onGrant: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                if (granted) "Allowed" else "Not allowed yet",
+                style = MaterialTheme.typography.bodySmall,
+                color = if (granted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+            )
+        }
+        if (!granted) TextButton(onClick = onGrant) { Text("Allow") }
+    }
+}
 
 @Composable
 private fun EventsSection(

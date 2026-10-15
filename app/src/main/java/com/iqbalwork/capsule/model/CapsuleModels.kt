@@ -41,27 +41,39 @@ data class MediaState(
         other != null && other.packageName == packageName && other.title == title && other.artist == artist
 }
 
-enum class VolumeSliderStyle(val displayName: String) {
-    ANDROID_15("Android 15 (Single Pill)"),
-    ANDROID_16("Android 16 (Split Segmented)"),
-    SAMSUNG_ONE_UI("Samsung One UI (Rounded)")
-}
-
 enum class RingerMode(val displayName: String) {
     NORMAL("Ring"),
     VIBRATE("Vibrate"),
-    SILENT("Silent / DND")
+    SILENT("Silent")
 }
 
+enum class TorchState {
+    /** The device has no usable flash unit. */
+    NONE,
+    OFF,
+    ON,
+    /** Another app (usually the camera) holds the flash. */
+    BUSY
+}
+
+/** System controls shown on the Controls card (F-50..F-53). All levels are 0..1. */
 data class SliderState(
     val volumeLevel: Float = 0f,
-    val volumeStyle: VolumeSliderStyle = VolumeSliderStyle.ANDROID_15,
     val ringerMode: RingerMode = RingerMode.NORMAL,
+    /** Notification policy access, needed to switch to or from silent (spec §2.5.5). */
+    val canSilence: Boolean = false,
+    /** Slider position on the gamma curve, like the system brightness slider. */
     val brightnessLevel: Float = 0f,
     val isAdaptiveBrightness: Boolean = false,
-    val isTorchOn: Boolean = false,
-    val torchStrengthLevel: Float = 1.0f
-)
+    /** WRITE_SETTINGS granted. */
+    val canWriteBrightness: Boolean = false,
+    val torch: TorchState = TorchState.NONE,
+    val torchStrengthLevel: Float = 1f,
+    /** Android 13+ device whose flash supports more than one strength level. */
+    val torchStrengthSupported: Boolean = false
+) {
+    val isTorchOn: Boolean get() = torch == TorchState.ON
+}
 
 enum class ChargingType {
     AC,

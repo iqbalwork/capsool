@@ -6,6 +6,7 @@ import com.iqbalwork.capsule.core.settings.SettingsRepository
 import com.iqbalwork.capsule.core.store.CapsuleStore
 import com.iqbalwork.capsule.core.store.SystemEvent
 import com.iqbalwork.capsule.platform.PlatformEffectHandler
+import com.iqbalwork.capsule.platform.controls.ControlsSource
 import com.iqbalwork.capsule.debugtools.DiagnosticsPanel
 import com.iqbalwork.capsule.platform.media.MediaSource
 import com.iqbalwork.capsule.platform.notification.NotificationSource
@@ -35,9 +36,10 @@ class AppGraph(context: Context) {
         // Debug builds post their own test notifications (DiagnosticsPanel).
         ignoreOwnPackage = !DiagnosticsPanel.isAvailable
     )
-    val effects: PlatformEffectHandler = PlatformEffectHandler(mediaSource, notificationSource)
+    val controls: ControlsSource = ControlsSource(context.applicationContext, { store.state.value.settings.brightnessMax }, store::dispatch)
+    val effects: PlatformEffectHandler = PlatformEffectHandler(mediaSource, notificationSource, controls)
     val batterySource = BatterySource(context.applicationContext, { store.state.value.settings }, store::dispatch)
-    val systemEvents = SystemEventSource(context.applicationContext, store::dispatch)
+    val systemEvents = SystemEventSource(context.applicationContext, controls::isOwnRingerChange, store::dispatch)
 
     private val _serviceRunning = MutableStateFlow(false)
     val serviceRunning: StateFlow<Boolean> = _serviceRunning.asStateFlow()
@@ -47,7 +49,10 @@ class AppGraph(context: Context) {
 
     init {
         appScope.launch {
-            settingsRepository.settings.collect { store.dispatch(SystemEvent.SettingsChanged(it)) }
+            settingsRepository.settings.collect {
+                store.dispatch(SystemEvent.SettingsChanged(it))
+                controls.refresh() // brightness position depends on the calibrated maximum
+            }
         }
     }
 
@@ -61,9 +66,11 @@ class AppGraph(context: Context) {
         if (running) {
             batterySource.start()
             systemEvents.start()
+            controls.start()
         } else {
             batterySource.stop()
             systemEvents.stop()
+            controls.stop()
         }
     }
 

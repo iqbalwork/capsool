@@ -7,6 +7,13 @@
     <!-- Headphone events (F-62): asked at runtime only when the user turns that event on. -->
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 
+    <!-- Brightness slider and auto-brightness toggle (F-52). Special access, granted by the user
+         in Settings when they first use brightness control. -->
+    <uses-permission
+        android:name="android.permission.WRITE_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
+    <!-- Switching to or from silent while Do Not Disturb rules apply (F-50). Special access. -->
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
     <!-- Read-only check so the status screen can warn about Android Advanced Protection (F-97). -->
     <uses-permission android:name="android.permission.QUERY_ADVANCED_PROTECTION_MODE" />
 

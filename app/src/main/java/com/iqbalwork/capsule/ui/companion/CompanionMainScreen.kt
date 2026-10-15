@@ -38,13 +38,17 @@ fun CompanionApp(
     notificationAccess: Boolean,
     dispatch: (Action) -> Unit,
     onUpdateSettings: ((Settings) -> Settings) -> Unit,
-    onBluetoothGranted: () -> Unit
+    onBluetoothGranted: () -> Unit,
+    onControlsPermissionsChanged: () -> Unit
 ) {
     if (!state.settingsLoaded) return
     var declined by rememberSaveable { mutableStateOf(false) }
     when {
         state.settings.disclosureAccepted ->
-            CompanionMainScreen(state, serviceRunning, notificationAccess, dispatch, onUpdateSettings, onBluetoothGranted)
+            CompanionMainScreen(
+                state, serviceRunning, notificationAccess, dispatch, onUpdateSettings, onBluetoothGranted,
+                onControlsPermissionsChanged
+            )
         declined -> DisclosureDeclinedScreen(onReview = { declined = false })
         else -> DisclosureScreen(
             onAccept = { onUpdateSettings { it.copy(disclosureAccepted = true) } },
@@ -60,7 +64,8 @@ private fun CompanionMainScreen(
     notificationAccess: Boolean,
     dispatch: (Action) -> Unit,
     onUpdateSettings: ((Settings) -> Settings) -> Unit,
-    onBluetoothGranted: () -> Unit
+    onBluetoothGranted: () -> Unit,
+    onControlsPermissionsChanged: () -> Unit
 ) {
     val tabs = buildList {
         add("Status")
@@ -113,7 +118,8 @@ private fun CompanionMainScreen(
                         currentOrientation = state.visibility.orientation,
                         onUpdate = onUpdateSettings,
                         onOpenNotificationApps = { showNotificationApps = true },
-                        onBluetoothGranted = onBluetoothGranted
+                        onBluetoothGranted = onBluetoothGranted,
+                        onControlsPermissionsChanged = onControlsPermissionsChanged
                     )
                     "Debug" -> DiagnosticsPanel.Content(dispatch = dispatch)
                 }
