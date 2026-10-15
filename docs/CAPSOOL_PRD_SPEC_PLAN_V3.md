@@ -384,9 +384,9 @@ Prioritas jika beberapa hal terjadi bersamaan: notifikasi baru > mini event > ti
 ### 2.4.2 Ukuran window & sentuhan
 Masalah: window `WRAP_CONTENT` yang ikut membesar saat expand akan menghalangi sentuhan ke app di bawahnya, dan relayout window setiap frame animasi itu mahal.
 
-Solusi — `OverlayWindowController` mengelola **dua ukuran window**:
+Solusi (diperbarui setelah tes animasi): **Android 14+** — window tetap seukuran kartu dan hanya *touchable region*-nya yang berubah (`AttachedSurfaceControl.setTouchableRegion`: pill saat collapsed, kartu saat expanded, kosong saat hidden). Window tidak pernah di-resize, karena resize menampilkan satu frame konten lama di frame baru sehingga pill "loncat" ke samping saat collapse (terlihat di rekaman layar emulator). Konten yang keluar tetap dirender dengan data terakhirnya dan fade-out selama kapsul menyusut; collapse memakai spring lebih lembut (damping 0.8, stiffness 260). **Android 12–13** (fallback) — `OverlayWindowController` mengelola **dua ukuran window**:
 1. **Idle/Compact:** window seukuran bounding box kapsul + margin 8 dp. Sentuhan di luar box langsung tembus ke app.
-2. **Expanded:** sebelum animasi expand dimulai, window dibesarkan sekali ke ukuran maksimal kartu. Setelah animasi collapse selesai, window dikecilkan lagi. Tidak ada `updateViewLayout` per frame.
+2. **Expanded:** sebelum animasi expand dimulai, window dibesarkan sekali ke ukuran maksimal kartu. Setelah animasi collapse selesai (750 ms × skala animasi sistem), window dikecilkan lagi. Window di-anchor ke tengah horizontal. Tidak ada `updateViewLayout` per frame.
 
 Flag: `FLAG_NOT_FOCUSABLE | FLAG_LAYOUT_IN_SCREEN | FLAG_LAYOUT_NO_LIMITS | FLAG_NOT_TOUCH_MODAL | FLAG_WATCH_OUTSIDE_TOUCH`. `MotionEvent.ACTION_OUTSIDE` → `UserIntent.Collapse`.
 

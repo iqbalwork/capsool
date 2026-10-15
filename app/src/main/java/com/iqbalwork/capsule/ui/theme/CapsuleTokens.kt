@@ -25,6 +25,8 @@ object CapsuleTokens {
     // Motion Springs
     val FruitSpring = spring<Float>(dampingRatio = 0.72f, stiffness = 380f)
     val FruitSpringDp = spring<Dp>(dampingRatio = 0.72f, stiffness = 380f)
+    // Closing is gentler than opening so the card visibly folds back into the pill.
+    val CollapseSpringDp = spring<Dp>(dampingRatio = 0.8f, stiffness = 260f)
     val FruitSpringIntOffset = spring<IntOffset>(dampingRatio = 0.72f, stiffness = 380f)
     val M3ElasticMotion = spring<Float>(dampingRatio = 0.62f, stiffness = 520f)
 

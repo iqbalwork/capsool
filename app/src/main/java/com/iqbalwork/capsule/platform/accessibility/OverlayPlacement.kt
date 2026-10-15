@@ -23,6 +23,9 @@ data class WindowPlacement(
     val contentOffsetYPx: Int
 )
 
+/** A rectangle in window pixels (a plain stand-in for android.graphics.Rect, for unit tests). */
+data class PxRect(val left: Int, val top: Int, val right: Int, val bottom: Int)
+
 /**
  * Pure geometry for the overlay window (spec §2.4.2–2.4.3): the window hugs the capsule so
  * touches elsewhere reach the app below, and grows once to card size when expanding.
@@ -36,6 +39,25 @@ object OverlayPlacement {
 
     fun expandedWidthDp(screenWidthDp: Float): Float =
         min(EXPANDED_MAX_WIDTH_DP.toFloat(), screenWidthDp - 2 * SCREEN_GUTTER_DP)
+
+    /**
+     * The part of a card-sized window the capsule covers, for the touchable region (API 34+):
+     * the pill when collapsed, the whole card when expanded. Mirrors the layout in OverlayRoot
+     * (top-center, one margin from the top, shifted by the content offsets).
+     */
+    fun capsuleRect(window: WindowPlacement, density: Float, geometry: Geometry, expanded: Boolean): PxRect {
+        val margin = MARGIN_DP * density
+        val width = if (expanded) window.width - 2 * margin else geometry.widthDp * density
+        val height = if (expanded) EXPANDED_HEIGHT_DP * density else geometry.heightDp * density
+        val centerX = window.width / 2f + window.contentOffsetXPx
+        val top = margin + window.contentOffsetYPx
+        return PxRect(
+            left = (centerX - width / 2f).roundToInt(),
+            top = top.roundToInt(),
+            right = (centerX + width / 2f).roundToInt(),
+            bottom = (top + height).roundToInt()
+        )
+    }
 
     fun compute(
         screenWidthPx: Int,

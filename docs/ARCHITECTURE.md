@@ -40,4 +40,4 @@ Companion app (MainActivity)
 
 ## Overlay window
 
-One `TYPE_ACCESSIBILITY_OVERLAY` window, sized to the capsule while collapsed so touches elsewhere reach the app below, resized once to card size before expanding and once after collapsing. Position comes from the display cutout path. When hidden the root view is set `INVISIBLE` and the window `NOT_TOUCHABLE`.
+One `TYPE_ACCESSIBILITY_OVERLAY` window. On Android 14+ it stays card-sized and only its touchable region changes (pill / card / none), so it is never resized; on Android 12–13 it hugs the capsule while collapsed and is resized once to card size before expanding and once after collapsing. Either way touches outside the capsule reach the app below. Position comes from the display cutout path. When hidden the root view is set `INVISIBLE` and the window `NOT_TOUCHABLE`.

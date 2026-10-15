@@ -4,11 +4,16 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.PixelFormat
 import android.graphics.RectF
+import android.graphics.Region
+import android.os.Build
+import android.provider.Settings
 import android.util.Log
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import androidx.annotation.ChecksSdkIntAtLeast
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.ComposeView
@@ -32,8 +37,11 @@ import kotlinx.coroutines.launch
 
 private const val TAG = "CapsoolOverlay"
 
-/** Keep the window at card size until the collapse spring has settled. */
-private const val SHRINK_DELAY_MS = 450L
+/**
+ * Keep the window at card size until the collapse spring has visibly settled; shrinking
+ * earlier clips the still-moving edge (CollapseSpring: damping 0.8, stiffness 260).
+ */
+private const val SHRINK_DELAY_MS = 750L
 
 /**
  * Owns the single TYPE_ACCESSIBILITY_OVERLAY window (spec §2.4.2). The window hugs the
@@ -84,7 +92,9 @@ class OverlayWindowController(
             BASE_FLAGS or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
             PixelFormat.TRANSLUCENT
         ).apply {
-            gravity = Gravity.TOP or Gravity.START
+            // Anchored on the horizontal center: resizing between pill and card then never
+            // moves the content sideways, even for the frame before it is laid out again.
+            gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
             layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
             title = "Capsool"
         }
@@ -124,11 +134,15 @@ class OverlayWindowController(
     private fun applyLayout(key: LayoutKey) {
         lastLayout = key
         shrinkJob?.cancel()
+        if (FIXED_SIZE_WINDOW) {
+            place(key, expanded = key.mode == CapsuleMode.EXPANDED)
+            return
+        }
         when (key.mode) {
             CapsuleMode.EXPANDED -> place(key, expanded = true)
             else -> if (windowExpanded) {
                 shrinkJob = scope.launch {
-                    delay(SHRINK_DELAY_MS)
+                    delay(scaledShrinkDelay())
                     place(key, expanded = false)
                 }
             } else {
@@ -141,12 +155,14 @@ class OverlayWindowController(
         val composeView = view ?: return
         val layoutParams = params ?: return
         val metrics = windowManager.currentWindowMetrics
+        val density = context.resources.displayMetrics.density
         val newPlacement = OverlayPlacement.compute(
             screenWidthPx = metrics.bounds.width(),
-            density = context.resources.displayMetrics.density,
+            density = density,
             cutout = readCutout(),
             geometry = key.geometry,
-            expanded = expanded
+            // API 34+: the window keeps card size and only its touchable region changes.
+            expanded = expanded || FIXED_SIZE_WINDOW
         )
         windowExpanded = expanded
         placement.value = newPlacement
@@ -155,7 +171,7 @@ class OverlayWindowController(
         // An empty composition does not clear the window's last frame; hiding the root view
         // makes WindowManager hide the surface itself.
         composeView.visibility = if (visible) View.VISIBLE else View.INVISIBLE
-        layoutParams.x = newPlacement.x
+        layoutParams.x = newPlacement.x + newPlacement.width / 2 - metrics.bounds.width() / 2
         layoutParams.y = newPlacement.y
         layoutParams.width = newPlacement.width
         layoutParams.height = newPlacement.height
@@ -166,6 +182,32 @@ class OverlayWindowController(
         layoutParams.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING
         runCatching { windowManager.updateViewLayout(composeView, layoutParams) }
             .onFailure { Log.w(TAG, "Overlay relayout failed", it) }
+        if (FIXED_SIZE_WINDOW) {
+            val rect = OverlayPlacement.capsuleRect(newPlacement, density, key.geometry, expanded)
+            val region = if (visible) Region(rect.left, rect.top, rect.right, rect.bottom) else Region()
+            setTouchableRegion(composeView, region)
+        }
+    }
+
+    /**
+     * Touches outside [region] fall through to the app below even though the window is card
+     * sized, so the window never has to be resized (a resize shows one frame of the old content
+     * in the new frame, which made the collapsing pill jump sideways).
+     */
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    private fun setTouchableRegion(composeView: ComposeView, region: Region) {
+        val surface = composeView.rootSurfaceControl
+        if (surface != null) {
+            surface.setTouchableRegion(region)
+        } else {
+            composeView.post { composeView.rootSurfaceControl?.setTouchableRegion(region) }
+        }
+    }
+
+    /** Compose animations follow the system animator scale, so the shrink delay must too. */
+    private fun scaledShrinkDelay(): Long {
+        val scale = Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f)
+        return (SHRINK_DELAY_MS * scale).toLong()
     }
 
     /**
@@ -198,6 +240,10 @@ class OverlayWindowController(
     }
 
     private companion object {
+        /** Android 14+ can limit touches to a region, so the window keeps one size. */
+        @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+        val FIXED_SIZE_WINDOW = Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+
         const val BASE_FLAGS = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
             WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
             WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or

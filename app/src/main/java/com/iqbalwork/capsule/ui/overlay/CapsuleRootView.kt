@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -72,20 +73,21 @@ fun CapsuleRootView(
     val mode = state.mode
     val expanded = mode == CapsuleMode.EXPANDED
     val haptics = LocalHapticFeedback.current
+    val sizeSpring = if (expanded) CapsuleTokens.FruitSpringDp else CapsuleTokens.CollapseSpringDp
 
     val width by animateDpAsState(
         targetValue = if (expanded) expandedWidth else geometry.widthDp.dp,
-        animationSpec = CapsuleTokens.FruitSpringDp,
+        animationSpec = sizeSpring,
         label = "capsule_width"
     )
     val height by animateDpAsState(
         targetValue = if (expanded) expandedHeight else geometry.heightDp.dp,
-        animationSpec = CapsuleTokens.FruitSpringDp,
+        animationSpec = sizeSpring,
         label = "capsule_height"
     )
     val corner by animateDpAsState(
         targetValue = if (expanded) CapsuleTokens.ExpandedCornerRadius else geometry.cornerDp.dp,
-        animationSpec = CapsuleTokens.FruitSpringDp,
+        animationSpec = sizeSpring,
         label = "capsule_corner"
     )
     val alpha = if (mode == CapsuleMode.IDLE) settings.idleOpacity else 1f
@@ -124,7 +126,31 @@ fun CapsuleRootView(
             color = CapsuleTokens.Shell,
             contentColor = MaterialTheme.colorScheme.onSurface
         ) {
-            if (expanded) ExpandedCarousel(state, dispatch) else MiniCapsuleView(state = state)
+            // Keyed on expanded/collapsed only: the outgoing side keeps rendering the state it
+            // last had (e.g. a dismissed notification) and fades out while the shell shrinks,
+            // instead of the content vanishing and an empty black box shrinking.
+            AnimatedContent(
+                targetState = ShellFrame(expanded, state),
+                contentKey = { it.expanded },
+                transitionSpec = {
+                    fadeIn(tween(durationMillis = 180, delayMillis = 90)) togetherWith fadeOut(tween(durationMillis = 110))
+                },
+                label = "shell_content"
+            ) { frame ->
+                if (frame.expanded) {
+                    // Laid out at full card size and clipped by the shell, so text does not
+                    // reflow while the shell springs open or shut.
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .wrapContentSize(Alignment.TopCenter, unbounded = true)
+                    ) {
+                        ExpandedCarousel(frame.state, dispatch, Modifier.size(expandedWidth, expandedHeight))
+                    }
+                } else {
+                    MiniCapsuleView(state = frame.state)
+                }
+            }
         }
 
         // Drawn on top of the pill: when aligned, the camera hole hides it completely.
@@ -147,28 +173,40 @@ private fun Modifier.notificationGlow(color: Long?, enabled: Boolean, shape: Sha
     return border(2.dp, Color(color).copy(alpha = pulse), shape)
 }
 
+private data class ShellFrame(val expanded: Boolean, val state: CapsuleState)
+
+/** One carousel page; each notification is its own page so the next one slides in on dismiss. */
+private data class CardFrame(val card: CapsuleCardType, val notificationKey: String?, val state: CapsuleState)
+
 @Composable
-private fun ExpandedCarousel(state: CapsuleState, dispatch: (Action) -> Unit) {
+private fun ExpandedCarousel(state: CapsuleState, dispatch: (Action) -> Unit, modifier: Modifier = Modifier) {
     val cards = state.activeCards
     val active = state.activeCard ?: return
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier,
         verticalArrangement = Arrangement.SpaceBetween,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(modifier = Modifier.weight(1f)) {
             AnimatedContent(
-                targetState = active,
+                targetState = CardFrame(
+                    card = active,
+                    notificationKey = state.topNotification?.key.takeIf { active == CapsuleCardType.NOTIFICATION },
+                    state = state
+                ),
+                contentKey = { it.card to it.notificationKey },
                 transitionSpec = {
-                    val direction = if (cards.indexOf(targetState) >= cards.indexOf(initialState)) 1 else -1
+                    val from = cards.indexOf(initialState.card)
+                    val to = cards.indexOf(targetState.card)
+                    val direction = if (from == -1 || to >= from) 1 else -1
                     (slideInHorizontally(CapsuleTokens.FruitSpringIntOffset) { direction * it } +
                         fadeIn(CapsuleTokens.FruitSpring)) togetherWith
                         (slideOutHorizontally(CapsuleTokens.FruitSpringIntOffset) { -direction * it } +
                             fadeOut(CapsuleTokens.FruitSpring))
                 },
                 label = "carousel_card"
-            ) { card ->
-                CardContent(card, state, dispatch)
+            ) { frame ->
+                CardContent(frame.card, frame.state, dispatch)
             }
         }
 

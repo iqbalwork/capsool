@@ -138,12 +138,21 @@ fun CapsuleTab(
                     checked = settings.notificationsEnabled,
                     onChange = { on -> onUpdate { it.copy(notificationsEnabled = on) } }
                 )
-                Text("When one arrives", style = MaterialTheme.typography.bodyMedium)
+                Text("Notification style", style = MaterialTheme.typography.bodyLarge)
                 Options(
                     options = NotificationDisplay.entries,
                     selected = settings.notificationDisplay,
-                    label = { if (it == NotificationDisplay.COMPACT) "Small, tap to open" else "Open the card" },
+                    label = { if (it == NotificationDisplay.COMPACT) "Compact" else "Expanded" },
                     onSelect = { display -> onUpdate { it.copy(notificationDisplay = display) } }
+                )
+                Text(
+                    text = if (settings.notificationDisplay == NotificationDisplay.COMPACT) {
+                        "New notifications appear as a small pill with the sender's photo. Tap it to read and reply."
+                    } else {
+                        "New notifications open the full card right away, with the message and reply buttons."
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text("Keep it in the capsule for", style = MaterialTheme.typography.bodyMedium)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -64,4 +64,19 @@ class OverlayPlacementTest {
         assertEquals(0, p.x)
         assertEquals(true, p.contentOffsetXPx < 0)
     }
+
+    @Test
+    fun touchableRegionCoversPillWhenCollapsedAndCardWhenExpanded() {
+        val window = OverlayPlacement.compute(screenWidth, density, cutout, geometry, expanded = true)
+        val pill = OverlayPlacement.capsuleRect(window, density, geometry, expanded = false)
+        assertEquals((120 * density).toInt(), pill.right - pill.left)
+        assertEquals((36 * density).toInt(), pill.bottom - pill.top)
+        assertEquals(window.width / 2, (pill.left + pill.right) / 2)
+        assertEquals(margin.toInt(), pill.top)
+
+        val card = OverlayPlacement.capsuleRect(window, density, geometry, expanded = true)
+        assertEquals(margin.toInt(), card.left)
+        assertEquals(window.width - margin.toInt(), card.right)
+        assertEquals((margin + OverlayPlacement.EXPANDED_HEIGHT_DP * density).toInt(), card.bottom)
+    }
 }
