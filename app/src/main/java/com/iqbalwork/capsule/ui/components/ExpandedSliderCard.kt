@@ -29,7 +29,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.iqbalwork.capsule.engine.state.UserAction
+import com.iqbalwork.capsule.core.store.UserIntent
 import com.iqbalwork.capsule.model.RingerMode
 import com.iqbalwork.capsule.model.SliderState
 import com.iqbalwork.capsule.model.VolumeSliderStyle
@@ -38,7 +38,7 @@ import com.iqbalwork.capsule.ui.theme.CapsuleTokens
 @Composable
 fun ExpandedSliderCard(
     sliderState: SliderState,
-    onAction: (UserAction) -> Unit,
+    onAction: (UserIntent) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -69,7 +69,7 @@ fun ExpandedSliderCard(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
                             .background(CapsuleTokens.SurfaceContainerHighest)
-                            .clickable { onAction(UserAction.CycleVolumeStyle) }
+                            .clickable { onAction(UserIntent.CycleVolumeStyle) }
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         val styleBadge = when (sliderState.volumeStyle) {
@@ -92,7 +92,7 @@ fun ExpandedSliderCard(
                         modifier = Modifier
                             .clip(CircleShape)
                             .background(CapsuleTokens.PrimaryContainer)
-                            .clickable { onAction(UserAction.CycleRingerMode) }
+                            .clickable { onAction(UserIntent.CycleRinger) }
                             .padding(horizontal = 8.dp, vertical = 2.dp)
                     ) {
                         val ringerIcon = when (sliderState.ringerMode) {
@@ -118,21 +118,21 @@ fun ExpandedSliderCard(
                     // Android 15: Single Continuous Thick Pill
                     Android15VolumePill(
                         volume = sliderState.volumeLevel,
-                        onVolumeChange = { onAction(UserAction.SetVolume(it)) }
+                        onVolumeChange = { onAction(UserIntent.SetVolume(it)) }
                     )
                 }
                 VolumeSliderStyle.ANDROID_16 -> {
                     // Android 16: Split Segmented Pills
                     Android16SegmentedPills(
                         volume = sliderState.volumeLevel,
-                        onVolumeChange = { onAction(UserAction.SetVolume(it)) }
+                        onVolumeChange = { onAction(UserIntent.SetVolume(it)) }
                     )
                 }
                 VolumeSliderStyle.SAMSUNG_ONE_UI -> {
                     // Samsung One UI: Rounded Floating Slider
                     SamsungOneUISlider(
                         volume = sliderState.volumeLevel,
-                        onVolumeChange = { onAction(UserAction.SetVolume(it)) }
+                        onVolumeChange = { onAction(UserIntent.SetVolume(it)) }
                     )
                 }
             }
@@ -159,7 +159,7 @@ fun ExpandedSliderCard(
             }
             Slider(
                 value = sliderState.brightnessLevel,
-                onValueChange = { onAction(UserAction.SetBrightness(it)) },
+                onValueChange = { onAction(UserIntent.SetBrightness(it)) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(20.dp),
@@ -189,7 +189,7 @@ fun ExpandedSliderCard(
                         .background(
                             if (sliderState.isTorchOn) CapsuleTokens.Primary else CapsuleTokens.SurfaceContainerHighest
                         )
-                        .clickable { onAction(UserAction.ToggleTorch) },
+                        .clickable { onAction(UserIntent.ToggleTorch) },
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -213,7 +213,7 @@ fun ExpandedSliderCard(
             Box(modifier = Modifier.width(140.dp)) {
                 Slider(
                     value = sliderState.torchStrengthLevel,
-                    onValueChange = { onAction(UserAction.SetTorchLevel(it)) },
+                    onValueChange = { onAction(UserIntent.SetTorchLevel(it)) },
                     modifier = Modifier.height(20.dp),
                     colors = SliderDefaults.colors(
                         thumbColor = CapsuleTokens.Primary,

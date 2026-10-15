@@ -4,28 +4,28 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.iqbalwork.capsule.engine.preferences.CutoutPreferencesRepository
-import com.iqbalwork.capsule.engine.state.CapsuleStateEngine
-import com.iqbalwork.capsule.engine.state.UserAction
-import com.iqbalwork.capsule.ui.companion.CompanionMainScreen
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.iqbalwork.capsule.ui.companion.CompanionApp
 import com.iqbalwork.capsule.ui.theme.CapsuleTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
-        val prefsRepo = CutoutPreferencesRepository(this)
-        val engine = CapsuleStateEngine.instance
-
-        // Sync initial preferences into engine state
-        engine.dispatch(UserAction.UpdateCutoutPreferences(prefsRepo.preferences.value))
+        val graph = appGraph
 
         setContent {
-            CapsuleTheme {
-                CompanionMainScreen(
-                    engine = engine,
-                    prefsRepo = prefsRepo
+            val state by graph.store.state.collectAsStateWithLifecycle()
+            val serviceRunning by graph.serviceRunning.collectAsStateWithLifecycle()
+            val notificationAccess by graph.notificationAccess.collectAsStateWithLifecycle()
+            CapsuleTheme(colorSource = state.settings.colorSource) {
+                CompanionApp(
+                    state = state,
+                    serviceRunning = serviceRunning,
+                    notificationAccess = notificationAccess,
+                    dispatch = graph.store::dispatch,
+                    onUpdateSettings = graph::updateSettings
                 )
             }
         }

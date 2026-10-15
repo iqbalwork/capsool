@@ -1,115 +1,108 @@
 package com.iqbalwork.capsule.ui.companion
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.iqbalwork.capsule.engine.preferences.CutoutPreferencesRepository
-import com.iqbalwork.capsule.engine.state.CapsuleStateEngine
-import com.iqbalwork.capsule.ui.CapsuleRootView
-import com.iqbalwork.capsule.ui.theme.CapsuleTokens
+import com.iqbalwork.capsule.core.settings.Settings
+import com.iqbalwork.capsule.core.store.Action
+import com.iqbalwork.capsule.core.store.CapsuleMode
+import com.iqbalwork.capsule.core.store.CapsuleState
+import com.iqbalwork.capsule.debugtools.DiagnosticsPanel
+import com.iqbalwork.capsule.platform.accessibility.OverlayPlacement
+import com.iqbalwork.capsule.ui.overlay.CapsuleRootView
 
 @Composable
-fun CompanionMainScreen(
-    engine: CapsuleStateEngine = CapsuleStateEngine.instance,
-    prefsRepo: CutoutPreferencesRepository? = null,
-    modifier: Modifier = Modifier
+fun CompanionApp(
+    state: CapsuleState,
+    serviceRunning: Boolean,
+    notificationAccess: Boolean,
+    dispatch: (Action) -> Unit,
+    onUpdateSettings: ((Settings) -> Settings) -> Unit
 ) {
-    val state by engine.state.collectAsState()
-    var selectedTabIndex by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Cards Stack", "Calibration", "Diagnostics")
+    if (!state.settingsLoaded) return
+    var declined by rememberSaveable { mutableStateOf(false) }
+    when {
+        state.settings.disclosureAccepted ->
+            CompanionMainScreen(state, serviceRunning, notificationAccess, dispatch, onUpdateSettings)
+        declined -> DisclosureDeclinedScreen(onReview = { declined = false })
+        else -> DisclosureScreen(
+            onAccept = { onUpdateSettings { it.copy(disclosureAccepted = true) } },
+            onDecline = { declined = true }
+        )
+    }
+}
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        containerColor = CapsuleTokens.SurfaceContainerLowest,
-        topBar = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(CapsuleTokens.Surface)
-                    .padding(top = 16.dp)
-            ) {
-                // Interactive In-App Capsule Preview Area
+@Composable
+private fun CompanionMainScreen(
+    state: CapsuleState,
+    serviceRunning: Boolean,
+    notificationAccess: Boolean,
+    dispatch: (Action) -> Unit,
+    onUpdateSettings: ((Settings) -> Settings) -> Unit
+) {
+    val tabs = buildList {
+        add("Status")
+        add("Capsule")
+        if (DiagnosticsPanel.isAvailable) add("Debug")
+    }
+    var selected by rememberSaveable { mutableIntStateOf(0) }
+
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+        Column(modifier = Modifier.safeDrawingPadding()) {
+            // Live preview, useful while the service is off (F-93).
+            if (!serviceRunning) {
+                val screenWidthDp = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp().value }
+                val previewHeight = if (state.mode == CapsuleMode.EXPANDED) OverlayPlacement.EXPANDED_HEIGHT_DP + 24 else 72
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(if (state.isExpanded) 200.dp else 60.dp),
+                        .height(previewHeight.dp),
                     contentAlignment = Alignment.TopCenter
                 ) {
-                    CapsuleRootView(engine = engine)
-                }
-
-                // Tab Navigation
-                TabRow(
-                    selectedTabIndex = selectedTabIndex,
-                    containerColor = CapsuleTokens.Surface,
-                    contentColor = CapsuleTokens.Primary,
-                    indicator = { tabPositions ->
-                        if (selectedTabIndex < tabPositions.size) {
-                            TabRowDefaults.SecondaryIndicator(
-                                Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                                color = CapsuleTokens.Primary
-                            )
-                        }
-                    }
-                ) {
-                    tabs.forEachIndexed { index, title ->
-                        Tab(
-                            selected = selectedTabIndex == index,
-                            onClick = { selectedTabIndex = index },
-                            text = {
-                                Text(
-                                    text = title,
-                                    fontSize = 12.sp,
-                                    fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (selectedTabIndex == index) CapsuleTokens.Primary else CapsuleTokens.OnSurfaceVariant
-                                )
-                            }
-                        )
-                    }
+                    CapsuleRootView(
+                        state = state,
+                        dispatch = dispatch,
+                        expandedWidth = OverlayPlacement.expandedWidthDp(screenWidthDp).dp,
+                        expandedHeight = OverlayPlacement.EXPANDED_HEIGHT_DP.dp,
+                        modifier = Modifier.padding(top = 12.dp)
+                    )
                 }
             }
-        }
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            when (selectedTabIndex) {
-                0 -> FeaturesTab(
-                    state = state,
-                    onAction = { engine.dispatch(it) }
-                )
-                1 -> CapsuleSettingsTab(
-                    state = state,
-                    onAction = { engine.dispatch(it) },
-                    prefsRepo = prefsRepo
-                )
-                2 -> AppSettingsTab(
-                    state = state,
-                    onAction = { engine.dispatch(it) }
-                )
+            PrimaryTabRow(selectedTabIndex = selected) {
+                tabs.forEachIndexed { index, title ->
+                    Tab(selected = selected == index, onClick = { selected = index }, text = { Text(title) })
+                }
+            }
+            Box(modifier = Modifier.fillMaxSize().padding(top = 12.dp)) {
+                when (tabs.getOrNull(selected)) {
+                    "Status" -> StatusTab(serviceRunning = serviceRunning, notificationAccess = notificationAccess)
+                    "Capsule" -> CapsuleTab(
+                        settings = state.settings,
+                        currentOrientation = state.visibility.orientation,
+                        onUpdate = onUpdateSettings
+                    )
+                    "Debug" -> DiagnosticsPanel.Content(dispatch = dispatch)
+                }
             }
         }
     }

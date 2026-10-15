@@ -30,7 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.iqbalwork.capsule.engine.state.UserAction
+import com.iqbalwork.capsule.core.store.UserIntent
 import com.iqbalwork.capsule.model.ShortcutItem
 import com.iqbalwork.capsule.model.ShortcutType
 import com.iqbalwork.capsule.model.ShortcutsState
@@ -39,7 +39,7 @@ import com.iqbalwork.capsule.ui.theme.CapsuleTokens
 @Composable
 fun ExpandedShortcutsCard(
     shortcutsState: ShortcutsState,
-    onAction: (UserAction) -> Unit,
+    onAction: (UserIntent) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -81,7 +81,7 @@ fun ExpandedShortcutsCard(
             items(shortcutsState.shortcuts) { item ->
                 ShortcutGridTile(
                     item = item,
-                    onClick = { onAction(UserAction.ExecuteShortcut(item.id)) }
+                    onClick = { onAction(UserIntent.LaunchShortcut(item.id)) }
                 )
             }
         }

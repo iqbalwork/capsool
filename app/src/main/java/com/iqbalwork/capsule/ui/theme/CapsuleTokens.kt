@@ -20,9 +20,7 @@ object CapsuleTokens {
     val OnSurfaceVariant = Color(0xFFD0C4BE)
     val Outline = Color(0xFF998E89)
     val OutlineVariant = Color(0xFF4E4440)
-    val CalibratorRed = Color(0xFFFF3B30)       // Apple Target Red
-    val WhatsAppBadge = Color(0xFF25D366)
-    val TelegramBadge = Color(0xFF24A1DE)
+    val CalibratorRed = Color(0xFFFF3B30)
 
     // Motion Springs
     val FruitSpring = spring<Float>(dampingRatio = 0.72f, stiffness = 380f)
@@ -30,12 +28,7 @@ object CapsuleTokens {
     val FruitSpringIntOffset = spring<IntOffset>(dampingRatio = 0.72f, stiffness = 380f)
     val M3ElasticMotion = spring<Float>(dampingRatio = 0.62f, stiffness = 520f)
 
-    // Default Dimensions
-    val CollapsedWidth = 120.dp
-    val CollapsedHeight = 36.dp
-    val CollapsedCornerRadius = 18.dp
-
-    val ExpandedWidth = 360.dp
-    val ExpandedHeight = 180.dp
+    // Capsule shell: pure black so the pill blends with the camera hole.
+    val Shell = Color(0xFF000000)
     val ExpandedCornerRadius = 32.dp
 }

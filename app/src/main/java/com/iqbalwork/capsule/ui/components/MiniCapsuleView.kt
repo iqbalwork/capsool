@@ -6,7 +6,9 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import android.graphics.Bitmap
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,6 +25,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,7 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.iqbalwork.capsule.engine.state.CapsuleState
+import com.iqbalwork.capsule.core.store.CapsuleState
 import com.iqbalwork.capsule.model.MiniEventType
 import com.iqbalwork.capsule.ui.theme.CapsuleTokens
 
@@ -47,7 +52,7 @@ fun MiniCapsuleView(
     state: CapsuleState,
     modifier: Modifier = Modifier
 ) {
-    val miniEvent = state.activeMiniEvent
+    val miniEvent = state.miniEvent
 
     if (miniEvent != null) {
         // Mini Event Pop-up (TWS, Battery, Charging, etc.)
@@ -93,47 +98,42 @@ fun MiniCapsuleView(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             // Left Indicator
-            if (state.mediaState.isPlaying) {
-                RotatingDiscIcon(dominantColor = Color(state.mediaState.dominantColor))
-            } else if (state.chargingState.isCharging) {
-                ChargingIndicatorMini(percentage = state.chargingState.chargePercentage)
-            } else if (state.notificationState != null) {
-                NotificationDotMini(color = Color(state.notificationState.glowColor))
+            // Same rules as the media card: parked or hidden players leave the pill alone.
+            val media = state.media?.takeIf { state.mediaVisible }
+            val notification = state.notification
+            if (media != null && media.isPlaying) {
+                RotatingDiscIcon(artwork = media.artwork, dominantColor = Color(media.dominantColor))
+            } else if (state.charging.isCharging) {
+                ChargingIndicatorMini(percentage = state.charging.chargePercentage)
+            } else if (notification != null) {
+                NotificationDotMini(color = Color(notification.glowColor))
             } else {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(CapsuleTokens.OutlineVariant)
-                )
+                // Idle pill stays plain so it blends with the camera cutout.
+                Spacer(modifier = Modifier.size(8.dp))
             }
 
             // Right Indicator
-            if (state.mediaState.isPlaying) {
-                EqualizerWaveMini()
-            } else if (state.timerState.isRunning) {
-                val mins = state.timerState.remainingSeconds / 60
-                val secs = state.timerState.remainingSeconds % 60
+            val timer = state.timer
+            if (media != null && media.isPlaying) {
+                EqualizerWaveMini(color = mediaPalette(Color(media.dominantColor)).accent)
+            } else if (timer != null && timer.isRunning) {
+                val mins = timer.remainingSeconds / 60
+                val secs = timer.remainingSeconds % 60
                 Text(
                     text = "%02d:%02d".format(mins, secs),
                     color = CapsuleTokens.Primary,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold
                 )
-            } else if (state.chargingState.isCharging) {
+            } else if (state.charging.isCharging) {
                 Text(
-                    text = "${state.chargingState.chargePercentage}%",
+                    text = "${state.charging.chargePercentage}%",
                     color = Color(0xFF81C784),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold
                 )
             } else {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(CapsuleTokens.OutlineVariant)
-                )
+                Spacer(modifier = Modifier.size(8.dp))
             }
         }
     }
@@ -141,6 +141,7 @@ fun MiniCapsuleView(
 
 @Composable
 fun RotatingDiscIcon(
+    artwork: Bitmap?,
     dominantColor: Color,
     modifier: Modifier = Modifier
 ) {
@@ -155,25 +156,32 @@ fun RotatingDiscIcon(
         label = "rotation"
     )
 
-    Box(
-        modifier = modifier
-            .size(18.dp)
-            .rotate(rotation)
-            .clip(CircleShape)
-            .background(dominantColor),
-        contentAlignment = Alignment.Center
-    ) {
-        Box(
-            modifier = Modifier
-                .size(6.dp)
-                .clip(CircleShape)
-                .background(CapsuleTokens.Surface)
+    val discModifier = modifier
+        .size(22.dp)
+        .rotate(rotation)
+        .clip(CircleShape)
+    if (artwork != null) {
+        Image(
+            bitmap = remember(artwork) { artwork.asImageBitmap() },
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = discModifier
         )
+    } else {
+        Box(modifier = discModifier.background(dominantColor), contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black)
+            )
+        }
     }
 }
 
 @Composable
 fun EqualizerWaveMini(
+    color: Color,
     modifier: Modifier = Modifier
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "eq_wave")
@@ -216,7 +224,7 @@ fun EqualizerWaveMini(
             val left = index * (barWidth + spacing)
             val top = maxHeight - h
             drawRoundRect(
-                color = CapsuleTokens.Primary,
+                color = color,
                 topLeft = Offset(left, top),
                 size = Size(barWidth, h),
                 cornerRadius = CornerRadius(barWidth / 2f, barWidth / 2f)

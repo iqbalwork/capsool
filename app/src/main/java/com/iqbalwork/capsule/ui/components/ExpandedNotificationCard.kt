@@ -32,14 +32,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.iqbalwork.capsule.engine.state.UserAction
+import com.iqbalwork.capsule.core.store.UserIntent
 import com.iqbalwork.capsule.model.NotificationState
 import com.iqbalwork.capsule.ui.theme.CapsuleTokens
 
 @Composable
 fun ExpandedNotificationCard(
     notificationState: NotificationState?,
-    onAction: (UserAction) -> Unit,
+    onAction: (UserIntent) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (notificationState == null) {
@@ -59,13 +59,8 @@ fun ExpandedNotificationCard(
     var isReplying by remember { mutableStateOf(false) }
     var replyText by remember { mutableStateOf("") }
 
-    val appBadgeColor = if (notificationState.packageName.contains("whatsapp", ignoreCase = true)) {
-        CapsuleTokens.WhatsAppBadge
-    } else if (notificationState.packageName.contains("telegram", ignoreCase = true)) {
-        CapsuleTokens.TelegramBadge
-    } else {
-        Color(notificationState.glowColor)
-    }
+    // Badge color comes from the posting app's notification/icon color, never a per-brand table.
+    val appBadgeColor = Color(notificationState.glowColor)
 
     Column(
         modifier = modifier
@@ -173,7 +168,7 @@ fun ExpandedNotificationCard(
                         .background(CapsuleTokens.Primary)
                         .clickable {
                             if (replyText.isNotBlank()) {
-                                onAction(UserAction.ReplyNotification(notificationState.id, replyText))
+                                onAction(UserIntent.NotificationReply(notificationState.id, replyText))
                                 isReplying = false
                                 replyText = ""
                             }
@@ -221,7 +216,7 @@ fun ExpandedNotificationCard(
                         .clip(RoundedCornerShape(10.dp))
                         .background(CapsuleTokens.SurfaceContainerHigh)
                         .clickable {
-                            onAction(UserAction.DismissNotification(notificationState.id))
+                            onAction(UserIntent.NotificationDismiss(notificationState.id))
                         },
                     contentAlignment = Alignment.Center
                 ) {
@@ -241,7 +236,7 @@ fun ExpandedNotificationCard(
                         .clip(RoundedCornerShape(10.dp))
                         .background(CapsuleTokens.SurfaceContainerHighest)
                         .clickable {
-                            onAction(UserAction.DismissNotification(notificationState.id))
+                            onAction(UserIntent.NotificationDismiss(notificationState.id))
                         },
                     contentAlignment = Alignment.Center
                 ) {

@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Minimal on purpose (spec §2.4.1). canRetrieveWindowContent is required for
+     flagRetrieveInteractiveWindows: without it getWindows() is empty and the keyboard is never detected. -->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
-    android:accessibilityEventTypes="typeAllMask"
+    android:accessibilityEventTypes="typeWindowStateChanged|typeWindowsChanged"
     android:accessibilityFeedbackType="feedbackGeneric"
-    android:accessibilityFlags="flagRetrieveInteractiveWindows|flagDefault"
-    android:canPerformGestures="true"
+    android:accessibilityFlags="flagRetrieveInteractiveWindows"
+    android:canPerformGestures="false"
     android:canRetrieveWindowContent="true"
     android:description="@string/accessibility_service_description"
     android:notificationTimeout="100" />

@@ -22,14 +22,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.iqbalwork.capsule.engine.state.UserAction
+import com.iqbalwork.capsule.core.store.UserIntent
 import com.iqbalwork.capsule.model.TimerState
 import com.iqbalwork.capsule.ui.theme.CapsuleTokens
 
 @Composable
 fun ExpandedTimerCard(
     timerState: TimerState,
-    onAction: (UserAction) -> Unit,
+    onAction: (UserIntent) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val mins = timerState.remainingSeconds / 60
@@ -115,7 +115,7 @@ fun ExpandedTimerCard(
                     .height(36.dp)
                     .clip(RoundedCornerShape(10.dp))
                     .background(CapsuleTokens.SurfaceContainerHigh)
-                    .clickable { onAction(UserAction.TimerAddMinute) },
+                    .clickable { onAction(UserIntent.TimerAddMinute) },
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -133,7 +133,7 @@ fun ExpandedTimerCard(
                     .height(36.dp)
                     .clip(RoundedCornerShape(10.dp))
                     .background(CapsuleTokens.Primary)
-                    .clickable { onAction(UserAction.TimerTogglePause) },
+                    .clickable { onAction(UserIntent.TimerTogglePause) },
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -151,7 +151,7 @@ fun ExpandedTimerCard(
                     .height(36.dp)
                     .clip(RoundedCornerShape(10.dp))
                     .background(CapsuleTokens.SurfaceContainerHighest)
-                    .clickable { onAction(UserAction.TimerReset) },
+                    .clickable { onAction(UserIntent.TimerReset) },
                 contentAlignment = Alignment.Center
             ) {
                 Text(
