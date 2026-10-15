@@ -14,6 +14,7 @@ import com.iqbalwork.capsule.core.settings.StaticCardType
 import com.iqbalwork.capsule.core.settings.StaticCardViewMode
 import com.iqbalwork.capsule.core.settings.moveDown
 import com.iqbalwork.capsule.core.settings.moveUp
+import com.iqbalwork.capsule.core.settings.seedStaticCards
 import com.iqbalwork.capsule.core.settings.without
 import com.iqbalwork.capsule.model.BarcodeContent
 import com.iqbalwork.capsule.model.BarcodeFormat
@@ -306,5 +307,42 @@ class StaticCardTest {
         assertEquals(StaticCardViewMode.CAROUSEL, restored.staticCardViewMode)
         assertNull(restored.startCardId)
         assertTrue(restored.staticCards.isEmpty())
+    }
+
+    // --- Seeding Static Cards ---
+
+    @Test
+    fun seedStaticCardsWhenEmptyCopiesEffectiveStaticCards() {
+        val legacy = Settings(
+            shortcuts = listOf(Shortcut("s1", ShortcutKind.APP, "App", "com.example")),
+            barcodeCardEnabled = true,
+            barcode = BarcodeContent(content = "https://example.com", format = BarcodeFormat.QR_CODE),
+            customIntents = listOf(CustomIntent("i1", "Trigger", CustomIntentType.BROADCAST, "com.action")),
+            startCardId = "default-shortcuts"
+        )
+        val seeded = legacy.seedStaticCards()
+        assertEquals(legacy.effectiveStaticCards, seeded.staticCards)
+        assertEquals(3, seeded.staticCards.size)
+        assertEquals("default-shortcuts", seeded.startCardId)
+    }
+
+    @Test
+    fun seedStaticCardsWhenAlreadyExplicitIsNoOp() {
+        val existing = listOf(
+            StaticCard("custom-1", StaticCardType.SLIDERS, "My Controls")
+        )
+        val settings = Settings(
+            staticCards = existing,
+            shortcuts = listOf(Shortcut("s1", ShortcutKind.APP, "App", "com.example"))
+        )
+        val seeded = settings.seedStaticCards()
+        assertEquals(existing, seeded.staticCards)
+    }
+
+    @Test
+    fun seedStaticCardsWhenEmptyAndNoLegacyReturnsEmpty() {
+        val emptySettings = Settings()
+        val seeded = emptySettings.seedStaticCards()
+        assertTrue(seeded.staticCards.isEmpty())
     }
 }
