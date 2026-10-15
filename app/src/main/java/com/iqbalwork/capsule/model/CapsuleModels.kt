@@ -159,26 +159,6 @@ fun formatClock(seconds: Long): String {
     return if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%d:%02d".format(m, s)
 }
 
-enum class ShortcutType {
-    APP,
-    SYSTEM,
-    CONTACT,
-    BARCODE,
-    CHATGPT
-}
-
-data class ShortcutItem(
-    val id: String,
-    val title: String,
-    val subtitle: String = "",
-    val type: ShortcutType,
-    val iconKey: String
-)
-
-data class ShortcutsState(
-    val shortcuts: List<ShortcutItem> = emptyList()
-)
-
 /** Groups of mini events the user can switch on or off (F-60..F-69). */
 enum class EventCategory { CHARGING, LOW_BATTERY, RINGER, HEADPHONES, WIFI, AIRPLANE, UNLOCK, BRIGHTNESS_MODE, DOWNLOADS }
 

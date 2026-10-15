@@ -1,13 +1,14 @@
 <resources>
     <string name="app_name">Capsool</string>
-    <string name="accessibility_service_description">Capsool draws an interactive capsule around your camera cutout. It uses the accessibility service to show the capsule above other apps, to notice when the keyboard or a fullscreen app is open so it can hide, to read the name of the app in front so you can hide the capsule in chosen apps, and to open the notification shade or quick settings when you assign those actions to a gesture. Nothing is collected or sent anywhere.</string>
+    <string name="accessibility_service_description">Capsool draws an interactive capsule around your camera cutout. It uses the accessibility service to show the capsule above other apps, to notice when the keyboard or a fullscreen app is open so it can hide, to read the name of the app in front so you can hide the capsule in chosen apps, to open the notification shade, quick settings, take a screenshot or lock the screen when you assign those actions to a gesture, and to scroll the app in front back to the top when you ask for it (it looks only at which parts of the screen can scroll, not at their content). Nothing is collected or sent anywhere.</string>
 
     <string name="disclosure_title">Before you turn on Capsool</string>
     <string name="disclosure_intro">Capsool needs the Accessibility permission to work. Here is exactly what it does with it.</string>
     <string name="disclosure_item_overlay">Shows the capsule above other apps and the status bar.</string>
     <string name="disclosure_item_windows">Checks which windows are on screen, so the capsule hides when the keyboard or a fullscreen app (video, games) is open.</string>
     <string name="disclosure_item_app">Reads the package name of the app in front, so you can hide the capsule or media card in chosen apps. Screen content and what you type are not read.</string>
-    <string name="disclosure_item_actions">Opens the notification shade or quick settings when you assign that action to a gesture.</string>
+    <string name="disclosure_item_actions">Opens the notification shade or quick settings, takes a screenshot or locks the screen when you assign that action to a gesture.</string>
+    <string name="disclosure_item_scroll">Scrolls the app in front back to the top when you assign that to a gesture. It only looks for the part of the screen that can scroll, not at what it shows.</string>
     <string name="disclosure_privacy">Capsool has no internet permission. Nothing it sees leaves your phone, and notification text is never stored.</string>
     <string name="disclosure_accept">Agree and continue</string>
     <string name="disclosure_decline">Not now</string>

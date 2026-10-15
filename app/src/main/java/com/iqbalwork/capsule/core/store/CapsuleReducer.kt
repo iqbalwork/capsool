@@ -1,6 +1,8 @@
 package com.iqbalwork.capsule.core.store
 
 import com.iqbalwork.capsule.core.settings.GestureAction
+import com.iqbalwork.capsule.core.settings.GestureBinding
+import com.iqbalwork.capsule.core.settings.GestureType
 import com.iqbalwork.capsule.core.settings.NotificationDisplay
 import com.iqbalwork.capsule.model.CapsuleCardType
 import com.iqbalwork.capsule.model.MediaState
@@ -29,7 +31,7 @@ object CapsuleReducer {
     }
 
     private fun reduceIntent(state: CapsuleState, intent: UserIntent): Reduction = when (intent) {
-        is UserIntent.Gesture -> reduceGesture(state, state.settings.gestureAction(intent.type))
+        is UserIntent.Gesture -> withAutomationBroadcast(state, intent.type, reduceGesture(state, state.gesture(intent.type)))
         UserIntent.SwipeUp, UserIntent.Collapse -> collapse(state)
         is UserIntent.SelectCard -> Reduction(state.copy(focusedCard = intent.card))
 
@@ -107,7 +109,18 @@ object CapsuleReducer {
         is UserIntent.LaunchShortcut -> Reduction(state.copy(isExpanded = false), listOf(Effect.LaunchShortcut(intent.id)))
     }
 
-    private fun reduceGesture(state: CapsuleState, action: GestureAction): Reduction = when (action) {
+    /** F-73: every gesture can also be reported to automation apps. */
+    private fun withAutomationBroadcast(state: CapsuleState, type: GestureType, reduction: Reduction): Reduction {
+        if (!state.settings.automationBroadcast) return reduction
+        val broadcast = Effect.AutomationBroadcast(
+            gesture = type.name.lowercase(),
+            action = state.gesture(type).action.name.lowercase(),
+            card = state.activeCard?.name?.lowercase()
+        )
+        return reduction.copy(effects = reduction.effects + broadcast)
+    }
+
+    private fun reduceGesture(state: CapsuleState, binding: GestureBinding): Reduction = when (binding.action) {
         GestureAction.NONE -> Reduction(state)
         GestureAction.TOGGLE_EXPAND ->
             // With nothing going on, a tap opens the Controls card instead of doing nothing.
@@ -117,16 +130,36 @@ object CapsuleReducer {
         GestureAction.NEXT_CARD -> Reduction(cycleCard(state, step = 1))
         GestureAction.PREVIOUS_CARD -> Reduction(cycleCard(state, step = -1))
         GestureAction.MEDIA_PLAY_PAUSE -> playPause(state)
-        GestureAction.OPEN_CONTROLS -> if (state.isExpanded && state.activeCard == CapsuleCardType.SLIDERS) collapse(state) else openControls(state)
+        GestureAction.MEDIA_NEXT -> state.media?.let { Reduction(state, listOf(Effect.Media(Effect.MediaCommand.NEXT))) } ?: Reduction(state)
+        GestureAction.MEDIA_PREVIOUS ->
+            state.media?.let { Reduction(state, listOf(Effect.Media(Effect.MediaCommand.PREVIOUS))) } ?: Reduction(state)
+        GestureAction.OPEN_CONTROLS -> toggleOpenedCard(state, CapsuleCardType.SLIDERS)
+        GestureAction.OPEN_SHORTCUTS -> toggleOpenedCard(state, CapsuleCardType.SHORTCUTS)
+        GestureAction.TOGGLE_FLASHLIGHT -> reduceIntent(state, UserIntent.ToggleTorch)
+        GestureAction.SCREENSHOT -> Reduction(
+            state.copy(isExpanded = false, screenshotPending = true),
+            listOf(Effect.Global(Effect.GlobalAction.SCREENSHOT))
+        )
+        GestureAction.LOCK_SCREEN ->
+            Reduction(state.copy(isExpanded = false), listOf(Effect.Global(Effect.GlobalAction.LOCK_SCREEN)))
+        GestureAction.SCROLL_TO_TOP -> Reduction(state, listOf(Effect.ScrollToTop))
+        GestureAction.OPEN_APP ->
+            binding.target?.let { Reduction(state.copy(isExpanded = false), listOf(Effect.OpenApp(it))) } ?: Reduction(state)
         GestureAction.OPEN_NOTIFICATIONS ->
             Reduction(state.copy(isExpanded = false), listOf(Effect.Global(Effect.GlobalAction.NOTIFICATIONS)))
         GestureAction.OPEN_QUICK_SETTINGS ->
             Reduction(state.copy(isExpanded = false), listOf(Effect.Global(Effect.GlobalAction.QUICK_SETTINGS)))
     }
 
-    private fun openControls(state: CapsuleState): Reduction = Reduction(
-        state.copy(controlsOpen = true, isExpanded = true, focusedCard = CapsuleCardType.SLIDERS, miniEvent = null),
-        listOf(Effect.RefreshControls)
+    private fun openControls(state: CapsuleState): Reduction = openCard(state, CapsuleCardType.SLIDERS)
+
+    /** Opens Controls or Shortcuts on request; the same gesture on that open card closes it. */
+    private fun toggleOpenedCard(state: CapsuleState, card: CapsuleCardType): Reduction =
+        if (state.isExpanded && state.activeCard == card) collapse(state) else openCard(state, card)
+
+    private fun openCard(state: CapsuleState, card: CapsuleCardType): Reduction = Reduction(
+        state.copy(openedCard = card, isExpanded = true, focusedCard = card, miniEvent = null),
+        if (card == CapsuleCardType.SLIDERS) listOf(Effect.RefreshControls) else emptyList()
     )
 
     /** Ring → vibrate → silent → ring. Silent needs DND access; without it, skip it and ask. */
@@ -195,6 +228,7 @@ object CapsuleReducer {
         is SystemEvent.MiniEventFinished ->
             if (state.miniEvent?.id == event.id) state.copy(miniEvent = null) else state
         SystemEvent.ExpandedTimedOut -> state // handled in reduce(), it may emit effects
+        SystemEvent.ScreenshotDone -> state.copy(screenshotPending = false)
     }
 
     /**
@@ -234,7 +268,7 @@ object CapsuleReducer {
      */
     private fun collapse(state: CapsuleState): Reduction {
         val viewed = state.topNotification?.takeIf { state.isExpanded && state.activeCard == CapsuleCardType.NOTIFICATION }
-        val collapsed = state.copy(isExpanded = false, replyingTo = null, controlsOpen = false)
+        val collapsed = state.copy(isExpanded = false, replyingTo = null, openedCard = null)
         if (viewed == null) return Reduction(collapsed)
         val effects = if (state.settings.removeNotificationAfterViewing && viewed.clearable) {
             listOf(Effect.NotificationDismiss(viewed.key))
@@ -254,8 +288,8 @@ object CapsuleReducer {
         val expandable = state.activeCards.isNotEmpty() && state.isAllowedOnScreen
         val expanded = state.isExpanded && expandable
         val replying = state.replyingTo.takeIf { expanded && state.activeCard == CapsuleCardType.NOTIFICATION }
-        val controls = state.controlsOpen && expanded
-        return if (expanded == state.isExpanded && replying == state.replyingTo && controls == state.controlsOpen) state
-        else state.copy(isExpanded = expanded, replyingTo = replying, controlsOpen = controls)
+        val opened = state.openedCard.takeIf { expanded }
+        return if (expanded == state.isExpanded && replying == state.replyingTo && opened == state.openedCard) state
+        else state.copy(isExpanded = expanded, replyingTo = replying, openedCard = opened)
     }
 }

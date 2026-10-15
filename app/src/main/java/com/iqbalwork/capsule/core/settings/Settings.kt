@@ -62,23 +62,58 @@ const val DEFAULT_BRIGHTNESS_MAX = 255
 
 enum class GestureType { TAP, DOUBLE_TAP, LONG_PRESS, SWIPE_LEFT, SWIPE_RIGHT }
 
+/** Everything a gesture can do (F-71, F-77). OPEN_APP needs a package as its target. */
 enum class GestureAction {
     NONE,
     TOGGLE_EXPAND,
     NEXT_CARD,
     PREVIOUS_CARD,
     MEDIA_PLAY_PAUSE,
+    MEDIA_NEXT,
+    MEDIA_PREVIOUS,
     OPEN_CONTROLS,
+    OPEN_SHORTCUTS,
+    TOGGLE_FLASHLIGHT,
     OPEN_NOTIFICATIONS,
-    OPEN_QUICK_SETTINGS
+    OPEN_QUICK_SETTINGS,
+    SCREENSHOT,
+    LOCK_SCREEN,
+    SCROLL_TO_TOP,
+    OPEN_APP
 }
 
-val DefaultGestures: Map<GestureType, GestureAction> = mapOf(
-    GestureType.TAP to GestureAction.TOGGLE_EXPAND,
-    GestureType.DOUBLE_TAP to GestureAction.MEDIA_PLAY_PAUSE,
-    GestureType.LONG_PRESS to GestureAction.OPEN_CONTROLS,
-    GestureType.SWIPE_LEFT to GestureAction.NEXT_CARD,
-    GestureType.SWIPE_RIGHT to GestureAction.PREVIOUS_CARD
+/** A gesture's action plus its target, e.g. OPEN_APP and the package to open. */
+data class GestureBinding(val action: GestureAction, val target: String? = null) {
+    /** "ACTION" or "ACTION:target", as stored in preferences. */
+    fun encode(): String = if (target == null) action.name else "${action.name}:$target"
+
+    companion object {
+        val None = GestureBinding(GestureAction.NONE)
+
+        fun decode(value: String?): GestureBinding? {
+            if (value == null) return null
+            val action = runCatching { GestureAction.valueOf(value.substringBefore(':')) }.getOrNull() ?: return null
+            return GestureBinding(action, value.substringAfter(':', "").ifEmpty { null })
+        }
+    }
+}
+
+/** F-75: what gestures do while something is showing in the capsule. */
+val DefaultActiveGestures: Map<GestureType, GestureBinding> = mapOf(
+    GestureType.TAP to GestureBinding(GestureAction.TOGGLE_EXPAND),
+    GestureType.DOUBLE_TAP to GestureBinding(GestureAction.MEDIA_PLAY_PAUSE),
+    GestureType.LONG_PRESS to GestureBinding(GestureAction.OPEN_CONTROLS),
+    GestureType.SWIPE_LEFT to GestureBinding(GestureAction.NEXT_CARD),
+    GestureType.SWIPE_RIGHT to GestureBinding(GestureAction.PREVIOUS_CARD)
+)
+
+/** F-75: what gestures do on the idle pill. Double tap is off so a tap reacts at once. */
+val DefaultIdleGestures: Map<GestureType, GestureBinding> = mapOf(
+    GestureType.TAP to GestureBinding(GestureAction.OPEN_CONTROLS),
+    GestureType.DOUBLE_TAP to GestureBinding.None,
+    GestureType.LONG_PRESS to GestureBinding(GestureAction.OPEN_SHORTCUTS),
+    GestureType.SWIPE_LEFT to GestureBinding.None,
+    GestureType.SWIPE_RIGHT to GestureBinding.None
 )
 
 data class Settings(
@@ -92,7 +127,12 @@ data class Settings(
     val hideInFullscreen: Boolean = true,
     val hideWithKeyboard: Boolean = true,
     val hideInLandscape: Boolean = true,
-    val gestures: Map<GestureType, GestureAction> = DefaultGestures,
+    val gesturesActive: Map<GestureType, GestureBinding> = DefaultActiveGestures,
+    val gesturesIdle: Map<GestureType, GestureBinding> = DefaultIdleGestures,
+    /** F-73: send a broadcast for every gesture so Tasker/MacroDroid can react. */
+    val automationBroadcast: Boolean = false,
+    val shortcuts: List<Shortcut> = emptyList(),
+    val themedShortcutIcons: Boolean = true,
     val mediaEnabled: Boolean = true,
     val mediaCollapseDelay: MediaCollapseDelay = MediaCollapseDelay.SECONDS_30,
     val hideMediaWhenAppInFront: Boolean = true,
@@ -120,6 +160,7 @@ data class Settings(
     fun withGeometry(orientation: Orientation, geometry: Geometry): Settings =
         if (orientation == Orientation.LANDSCAPE) copy(landscape = geometry) else copy(portrait = geometry)
 
-    fun gestureAction(type: GestureType): GestureAction =
-        gestures[type] ?: DefaultGestures.getValue(type)
+    fun gesture(type: GestureType, active: Boolean): GestureBinding =
+        if (active) gesturesActive[type] ?: DefaultActiveGestures.getValue(type)
+        else gesturesIdle[type] ?: DefaultIdleGestures.getValue(type)
 }

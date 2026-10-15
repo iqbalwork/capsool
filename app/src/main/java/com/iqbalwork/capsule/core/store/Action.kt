@@ -64,4 +64,6 @@ sealed interface SystemEvent : Action {
     data class MiniEventStarted(val event: MiniEvent) : SystemEvent
     data class MiniEventFinished(val id: Long) : SystemEvent
     data object ExpandedTimedOut : SystemEvent
+    /** The screenshot was taken with the capsule hidden; show it again. */
+    data object ScreenshotDone : SystemEvent
 }

@@ -1,5 +1,7 @@
 package com.iqbalwork.capsule.core.store
 
+import com.iqbalwork.capsule.core.settings.GestureBinding
+import com.iqbalwork.capsule.core.settings.GestureType
 import com.iqbalwork.capsule.core.settings.Orientation
 import com.iqbalwork.capsule.core.settings.Settings
 import com.iqbalwork.capsule.model.CapsuleCardType
@@ -33,7 +35,8 @@ private val CardPriority = listOf(
     CapsuleCardType.MEDIA,
     CapsuleCardType.PROGRESS,
     CapsuleCardType.CHARGING,
-    CapsuleCardType.SLIDERS
+    CapsuleCardType.SLIDERS,
+    CapsuleCardType.SHORTCUTS
 )
 
 data class CapsuleState(
@@ -48,8 +51,10 @@ data class CapsuleState(
     val charging: ChargingState = ChargingState(),
     /** Newest first. The card shows the first one. */
     val notifications: List<CapsuleNotification> = emptyList(),
-    /** The Controls card was opened on purpose (idle tap / gesture); it closes with the card. */
-    val controlsOpen: Boolean = false,
+    /** A card opened on request (Controls, Shortcuts) rather than by activity; closes with the card. */
+    val openedCard: CapsuleCardType? = null,
+    /** Hidden for a moment so a screenshot does not include the capsule. */
+    val screenshotPending: Boolean = false,
     /** Key of the notification being replied to; the overlay takes keyboard focus meanwhile. */
     val replyingTo: String? = null,
     val timer: TimerState? = null,
@@ -66,7 +71,8 @@ data class CapsuleState(
                 CapsuleCardType.MEDIA -> mediaVisible
                 CapsuleCardType.CHARGING -> settings.chargingCardEnabled && charging.isCharging
                 // Controls on request, and on their own while the flashlight is on (F-53).
-                CapsuleCardType.SLIDERS -> controlsOpen || sliders.isTorchOn
+                CapsuleCardType.SLIDERS -> openedCard == CapsuleCardType.SLIDERS || sliders.isTorchOn
+                CapsuleCardType.SHORTCUTS -> openedCard == CapsuleCardType.SHORTCUTS
                 else -> false
             }
         }
@@ -82,6 +88,11 @@ data class CapsuleState(
 
     val topNotification: CapsuleNotification? get() = notifications.firstOrNull()
 
+    /** F-75: gestures use the "active" set while something besides an opened card is showing. */
+    val hasActivity: Boolean get() = activeCards.any { it != openedCard }
+
+    fun gesture(type: GestureType): GestureBinding = settings.gesture(type, active = hasActivity)
+
     /** F-22: on the lock screen only public notifications show their text, if the user asks for that. */
     fun showsText(notification: CapsuleNotification): Boolean =
         !(visibility.locked && settings.hideNotificationTextWhenLocked && !notification.isPublic)
@@ -92,6 +103,7 @@ data class CapsuleState(
 
     val isAllowedOnScreen: Boolean
         get() = settingsLoaded &&
+            !screenshotPending &&
             visibility.screenOn &&
             !(settings.hideInFullscreen && visibility.fullscreen) &&
             // Our own reply field opens the keyboard; that must not hide the capsule.

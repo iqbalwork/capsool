@@ -2,7 +2,11 @@ package com.iqbalwork.capsule
 
 import androidx.datastore.preferences.core.mutablePreferencesOf
 import com.iqbalwork.capsule.core.settings.ColorSource
+import com.iqbalwork.capsule.core.settings.ContactAction
 import com.iqbalwork.capsule.core.settings.GestureAction
+import com.iqbalwork.capsule.core.settings.GestureBinding
+import com.iqbalwork.capsule.core.settings.Shortcut
+import com.iqbalwork.capsule.core.settings.ShortcutKind
 import com.iqbalwork.capsule.core.settings.GestureType
 import com.iqbalwork.capsule.core.settings.Geometry
 import com.iqbalwork.capsule.core.settings.MediaCollapseDelay
@@ -36,7 +40,15 @@ class SettingsMapperTest {
             hideInFullscreen = false,
             hideWithKeyboard = false,
             hideInLandscape = false,
-            gestures = GestureType.entries.associateWith { GestureAction.OPEN_QUICK_SETTINGS },
+            gesturesActive = GestureType.entries.associateWith { GestureBinding(GestureAction.OPEN_QUICK_SETTINGS) },
+            gesturesIdle = GestureType.entries.associateWith { GestureBinding(GestureAction.OPEN_APP, "com.example.app") },
+            automationBroadcast = true,
+            shortcuts = listOf(
+                Shortcut("1", ShortcutKind.APP, "Maps", "com.google.android.apps.maps"),
+                Shortcut("2", ShortcutKind.CONTACT, "Mom", "+62 812-3456", ContactAction.WHATSAPP),
+                Shortcut("3", ShortcutKind.SYSTEM, "Wi-Fi", "WIFI_PANEL")
+            ),
+            themedShortcutIcons = false,
             mediaEnabled = false,
             mediaCollapseDelay = MediaCollapseDelay.NEVER,
             hideMediaWhenAppInFront = false,
@@ -61,5 +73,15 @@ class SettingsMapperTest {
         val prefs = mutablePreferencesOf()
         SettingsMapper.write(prefs, settings)
         assertEquals(settings, SettingsMapper.read(prefs))
+    }
+
+    @Test
+    fun legacySingleGestureMapBecomesTheActiveSet() {
+        val prefs = mutablePreferencesOf(
+            androidx.datastore.preferences.core.stringPreferencesKey("gestures.long_press") to "OPEN_QUICK_SETTINGS"
+        )
+        val settings = SettingsMapper.read(prefs)
+        assertEquals(GestureAction.OPEN_QUICK_SETTINGS, settings.gesture(GestureType.LONG_PRESS, active = true).action)
+        assertEquals(GestureAction.OPEN_SHORTCUTS, settings.gesture(GestureType.LONG_PRESS, active = false).action)
     }
 }

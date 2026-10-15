@@ -96,7 +96,13 @@ object SettingsMapper {
     private val ProgressEnabled = booleanPreferencesKey("cards.progress.enabled")
     private val TimerEnabled = booleanPreferencesKey("cards.timer.enabled")
     private val DisclosureAccepted = booleanPreferencesKey("onboarding.disclosureAccepted")
-    private fun gestureKey(type: GestureType) = stringPreferencesKey("gestures.${type.name.lowercase()}")
+    /** Pre-M6 single mapping; read once as the "active" set so old choices survive. */
+    private fun legacyGestureKey(type: GestureType) = stringPreferencesKey("gestures.${type.name.lowercase()}")
+    private fun gestureKey(type: GestureType, active: Boolean) =
+        stringPreferencesKey("gestures.${if (active) "active" else "idle"}.${type.name.lowercase()}")
+    private val AutomationBroadcast = booleanPreferencesKey("automation.broadcastOut")
+    private val Shortcuts = stringPreferencesKey("shortcuts.items")
+    private val ThemedShortcutIcons = booleanPreferencesKey("shortcuts.themedIcons")
 
     fun read(prefs: Preferences): Settings {
         val defaults = Settings()
@@ -121,9 +127,17 @@ object SettingsMapper {
             hideInFullscreen = prefs[HideFullscreen] ?: defaults.hideInFullscreen,
             hideWithKeyboard = prefs[HideKeyboard] ?: defaults.hideWithKeyboard,
             hideInLandscape = prefs[HideLandscape] ?: defaults.hideInLandscape,
-            gestures = GestureType.entries.associateWith { type ->
-                enumOrDefault(prefs[gestureKey(type)], DefaultGestures.getValue(type))
+            gesturesActive = GestureType.entries.associateWith { type ->
+                GestureBinding.decode(prefs[gestureKey(type, active = true)])
+                    ?: GestureBinding.decode(prefs[legacyGestureKey(type)])
+                    ?: DefaultActiveGestures.getValue(type)
             },
+            gesturesIdle = GestureType.entries.associateWith { type ->
+                GestureBinding.decode(prefs[gestureKey(type, active = false)]) ?: DefaultIdleGestures.getValue(type)
+            },
+            automationBroadcast = prefs[AutomationBroadcast] ?: defaults.automationBroadcast,
+            shortcuts = Shortcut.decodeAll(prefs[Shortcuts]),
+            themedShortcutIcons = prefs[ThemedShortcutIcons] ?: defaults.themedShortcutIcons,
             mediaEnabled = prefs[MediaEnabled] ?: defaults.mediaEnabled,
             mediaCollapseDelay = enumOrDefault(prefs[MediaCollapseDelayKey], defaults.mediaCollapseDelay),
             hideMediaWhenAppInFront = prefs[MediaHideWhenAppInFront] ?: defaults.hideMediaWhenAppInFront,
@@ -168,7 +182,14 @@ object SettingsMapper {
         prefs[HideFullscreen] = settings.hideInFullscreen
         prefs[HideKeyboard] = settings.hideWithKeyboard
         prefs[HideLandscape] = settings.hideInLandscape
-        GestureType.entries.forEach { type -> prefs[gestureKey(type)] = settings.gestureAction(type).name }
+        GestureType.entries.forEach { type ->
+            prefs[gestureKey(type, active = true)] = settings.gesture(type, active = true).encode()
+            prefs[gestureKey(type, active = false)] = settings.gesture(type, active = false).encode()
+            prefs.remove(legacyGestureKey(type))
+        }
+        prefs[AutomationBroadcast] = settings.automationBroadcast
+        prefs[Shortcuts] = Shortcut.encodeAll(settings.shortcuts)
+        prefs[ThemedShortcutIcons] = settings.themedShortcutIcons
         prefs[MediaEnabled] = settings.mediaEnabled
         prefs[MediaCollapseDelayKey] = settings.mediaCollapseDelay.name
         prefs[MediaHideWhenAppInFront] = settings.hideMediaWhenAppInFront

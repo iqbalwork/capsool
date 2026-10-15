@@ -44,6 +44,7 @@ fun DisclosureScreen(onAccept: () -> Unit, onDecline: () -> Unit) {
             DisclosureItem(R.string.disclosure_item_windows)
             DisclosureItem(R.string.disclosure_item_app)
             DisclosureItem(R.string.disclosure_item_actions)
+            DisclosureItem(R.string.disclosure_item_scroll)
             Text(
                 stringResource(R.string.disclosure_privacy),
                 style = MaterialTheme.typography.bodyMedium,

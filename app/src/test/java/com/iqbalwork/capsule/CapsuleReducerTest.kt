@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule
 
 import com.iqbalwork.capsule.core.settings.GestureAction
+import com.iqbalwork.capsule.core.settings.GestureBinding
 import com.iqbalwork.capsule.core.settings.GestureType
 import com.iqbalwork.capsule.core.settings.Orientation
 import com.iqbalwork.capsule.core.settings.Settings
@@ -119,12 +120,13 @@ class CapsuleReducerTest {
 
     @Test
     fun gestureMappingComesFromSettings() {
-        val settings = Settings(gestures = mapOf(GestureType.LONG_PRESS to GestureAction.OPEN_QUICK_SETTINGS))
-        val reduction = CapsuleReducer.reduce(loaded.copy(settings = settings), UserIntent.Gesture(GestureType.LONG_PRESS))
+        val withMedia = reduce(loaded, SystemEvent.MediaUpdated(media))
+        val settings = Settings(gesturesActive = mapOf(GestureType.LONG_PRESS to GestureBinding(GestureAction.OPEN_QUICK_SETTINGS)))
+        val reduction = CapsuleReducer.reduce(withMedia.copy(settings = settings), UserIntent.Gesture(GestureType.LONG_PRESS))
         assertEquals(listOf(Effect.Global(Effect.GlobalAction.QUICK_SETTINGS)), reduction.effects)
 
-        val none = Settings(gestures = mapOf(GestureType.LONG_PRESS to GestureAction.NONE))
-        assertTrue(CapsuleReducer.reduce(loaded.copy(settings = none), UserIntent.Gesture(GestureType.LONG_PRESS)).effects.isEmpty())
+        val none = Settings(gesturesActive = mapOf(GestureType.LONG_PRESS to GestureBinding.None))
+        assertTrue(CapsuleReducer.reduce(withMedia.copy(settings = none), UserIntent.Gesture(GestureType.LONG_PRESS)).effects.isEmpty())
     }
 
     @Test

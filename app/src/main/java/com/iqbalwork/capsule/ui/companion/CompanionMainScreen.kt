@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -70,6 +70,8 @@ private fun CompanionMainScreen(
     val tabs = buildList {
         add("Status")
         add("Capsule")
+        add("Shortcuts")
+        add("Gestures")
         if (DiagnosticsPanel.isAvailable) add("Debug")
     }
     var selected by rememberSaveable { mutableIntStateOf(0) }
@@ -105,7 +107,7 @@ private fun CompanionMainScreen(
                     )
                 }
             }
-            PrimaryTabRow(selectedTabIndex = selected) {
+            PrimaryScrollableTabRow(selectedTabIndex = selected, edgePadding = 8.dp) {
                 tabs.forEachIndexed { index, title ->
                     Tab(selected = selected == index, onClick = { selected = index }, text = { Text(title) })
                 }
@@ -121,6 +123,8 @@ private fun CompanionMainScreen(
                         onBluetoothGranted = onBluetoothGranted,
                         onControlsPermissionsChanged = onControlsPermissionsChanged
                     )
+                    "Shortcuts" -> ShortcutsTab(settings = state.settings, onUpdate = onUpdateSettings)
+                    "Gestures" -> GesturesTab(settings = state.settings, onUpdate = onUpdateSettings)
                     "Debug" -> DiagnosticsPanel.Content(dispatch = dispatch)
                 }
             }

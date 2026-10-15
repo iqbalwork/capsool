@@ -37,7 +37,11 @@ class AppGraph(context: Context) {
         ignoreOwnPackage = !DiagnosticsPanel.isAvailable
     )
     val controls: ControlsSource = ControlsSource(context.applicationContext, { store.state.value.settings.brightnessMax }, store::dispatch)
-    val effects: PlatformEffectHandler = PlatformEffectHandler(mediaSource, notificationSource, controls)
+    val effects: PlatformEffectHandler = PlatformEffectHandler(
+        context.applicationContext, mediaSource, notificationSource, controls,
+        settings = { store.state.value.settings },
+        dispatch = store::dispatch
+    )
     val batterySource = BatterySource(context.applicationContext, { store.state.value.settings }, store::dispatch)
     val systemEvents = SystemEventSource(context.applicationContext, controls::isOwnRingerChange, store::dispatch)
 

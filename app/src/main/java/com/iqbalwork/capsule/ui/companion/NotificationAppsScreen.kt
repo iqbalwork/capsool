@@ -1,10 +1,6 @@
 package com.iqbalwork.capsule.ui.companion
 
-import android.content.Context
 import android.content.Intent
-import android.content.pm.LauncherApps
-import android.graphics.Bitmap
-import android.os.Process
 import android.provider.Settings as AndroidSettings
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
@@ -34,12 +30,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.drawable.toBitmap
 import com.iqbalwork.capsule.core.settings.Settings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-
-private data class LaunchableApp(val packageName: String, val label: String, val icon: Bitmap)
 
 /**
  * F-22 and F-26: choose which apps may show notifications in the capsule, and jump to each
@@ -55,7 +48,7 @@ fun NotificationAppsScreen(
     BackHandler(onBack = onBack)
     val context = LocalContext.current
     val apps by produceState<List<LaunchableApp>?>(null) {
-        value = withContext(Dispatchers.Default) { loadApps(context) }
+        value = withContext(Dispatchers.Default) { LaunchableApps.load(context) }
     }
     var query by remember { mutableStateOf("") }
 
@@ -111,20 +104,3 @@ private fun popUpSettings(packageName: String): Intent =
     Intent(AndroidSettings.ACTION_APP_NOTIFICATION_SETTINGS)
         .putExtra(AndroidSettings.EXTRA_APP_PACKAGE, packageName)
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-
-/** Launchable apps via LauncherApps, which needs no package-visibility permission. */
-private fun loadApps(context: Context): List<LaunchableApp> {
-    val launcherApps = context.getSystemService(LauncherApps::class.java)
-    val iconPx = (36 * context.resources.displayMetrics.density).toInt()
-    return launcherApps.getActivityList(null, Process.myUserHandle())
-        .distinctBy { it.applicationInfo.packageName }
-        .filter { it.applicationInfo.packageName != context.packageName }
-        .map {
-            LaunchableApp(
-                packageName = it.applicationInfo.packageName,
-                label = it.label.toString(),
-                icon = it.getIcon(0).toBitmap(iconPx, iconPx)
-            )
-        }
-        .sortedBy { it.label.lowercase() }
-}

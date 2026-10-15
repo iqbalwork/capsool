@@ -16,6 +16,7 @@ import com.iqbalwork.capsule.model.TorchState
 import com.iqbalwork.capsule.platform.controls.BrightnessCurve
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -63,10 +64,10 @@ class ControlsTest {
 
     @Test
     fun controlsCloseWithTheCard() {
-        val open = reduce(withControls, UserIntent.Gesture(GestureType.LONG_PRESS))
+        val open = reduce(withControls, UserIntent.Gesture(GestureType.TAP)) // idle tap opens Controls
         assertEquals(CapsuleCardType.SLIDERS, open.activeCard)
         val closed = reduce(open, UserIntent.Collapse)
-        assertFalse(closed.controlsOpen)
+        assertNull(closed.openedCard)
         assertTrue(closed.activeCards.isEmpty())
     }
 

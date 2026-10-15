@@ -45,7 +45,6 @@ import com.iqbalwork.capsule.core.store.CapsuleMode
 import com.iqbalwork.capsule.core.store.CapsuleState
 import com.iqbalwork.capsule.core.store.UserIntent
 import com.iqbalwork.capsule.model.CapsuleCardType
-import com.iqbalwork.capsule.model.ShortcutsState
 import com.iqbalwork.capsule.platform.accessibility.OverlayPlacement
 import com.iqbalwork.capsule.ui.components.ExpandedChargingCard
 import com.iqbalwork.capsule.ui.components.ExpandedMediaCard
@@ -97,7 +96,7 @@ fun CapsuleRootView(
     val shape = RoundedCornerShape(corner)
 
     fun gesture(type: GestureType, haptic: HapticFeedbackType = HapticFeedbackType.TextHandleMove) {
-        if (settings.hapticsEnabled && settings.gestureAction(type) != GestureAction.NONE) {
+        if (settings.hapticsEnabled && state.gesture(type).action != GestureAction.NONE) {
             haptics.performHapticFeedback(haptic)
         }
         dispatch(UserIntent.Gesture(type))
@@ -117,7 +116,7 @@ fun CapsuleRootView(
                 .clip(shape)
                 .capsuleGestures(
                     tapsEnabled = !expanded,
-                    doubleTapEnabled = settings.gestureAction(GestureType.DOUBLE_TAP) != GestureAction.NONE,
+                    doubleTapEnabled = state.gesture(GestureType.DOUBLE_TAP).action != GestureAction.NONE,
                     onTap = { gesture(GestureType.TAP) },
                     onDoubleTap = { gesture(GestureType.DOUBLE_TAP) },
                     onLongPress = { gesture(GestureType.LONG_PRESS, HapticFeedbackType.LongPress) },
@@ -261,7 +260,10 @@ private fun CardContent(card: CapsuleCardType, state: CapsuleState, dispatch: (A
         }
         CapsuleCardType.TIMER -> state.timer?.let { ExpandedTimerCard(timer = it, onAction = dispatch) }
         CapsuleCardType.PROGRESS -> ExpandedProgressCard(items = state.progress)
-        // Static shortcut cards arrive in M6.
-        CapsuleCardType.SHORTCUTS -> ExpandedShortcutsCard(shortcutsState = ShortcutsState(), onAction = dispatch)
+        CapsuleCardType.SHORTCUTS -> ExpandedShortcutsCard(
+            shortcuts = state.settings.shortcuts,
+            themedIcons = state.settings.themedShortcutIcons,
+            onAction = dispatch
+        )
     }
 }

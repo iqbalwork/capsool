@@ -5,7 +5,7 @@ import com.iqbalwork.capsule.model.RingerMode
 /** Side effects the reducer asks the platform layer to perform. */
 sealed interface Effect {
     enum class MediaCommand { PLAY_PAUSE, NEXT, PREVIOUS }
-    enum class GlobalAction { NOTIFICATIONS, QUICK_SETTINGS }
+    enum class GlobalAction { NOTIFICATIONS, QUICK_SETTINGS, SCREENSHOT, LOCK_SCREEN }
 
     /** System screens where the user grants what a control needs. */
     enum class PermissionScreen { WRITE_SETTINGS, DND_ACCESS }
@@ -28,4 +28,8 @@ sealed interface Effect {
     data class NotificationAction(val key: String, val index: Int) : Effect
     data class Global(val action: GlobalAction) : Effect
     data class LaunchShortcut(val id: String) : Effect
+    data class OpenApp(val packageName: String) : Effect
+    data object ScrollToTop : Effect
+    /** F-73: tell automation apps a gesture happened. */
+    data class AutomationBroadcast(val gesture: String, val action: String, val card: String?) : Effect
 }
