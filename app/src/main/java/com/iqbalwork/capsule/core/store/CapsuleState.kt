@@ -44,7 +44,11 @@ data class CapsuleState(
     val settings: Settings = Settings(),
     val visibility: VisibilityContext = VisibilityContext(),
     val isExpanded: Boolean = false,
-    val focusedCard: CapsuleCardType? = null,
+    /**
+     * Key of the focused page ([CardPage.key]).  Stored as a string so it can address both
+     * dynamic pages ("dyn:MEDIA") and static pages ("static:<id>").
+     */
+    val focusedPageKey: String? = null,
     val miniEvent: MiniEvent? = null,
     val media: MediaState? = null,
     val sliders: SliderState = SliderState(),
@@ -61,20 +65,44 @@ data class CapsuleState(
     /** In the order they started; the card shows the first few. */
     val progress: List<ProgressItem> = emptyList()
 ) {
-    /** Cards that currently have something real to show, in priority order. */
-    val activeCards: List<CapsuleCardType>
-        get() = CardPriority.filter { card ->
-            when (card) {
-                CapsuleCardType.NOTIFICATION -> settings.notificationsEnabled && notifications.isNotEmpty()
-                CapsuleCardType.TIMER -> settings.timerEnabled && timer != null
-                CapsuleCardType.PROGRESS -> settings.progressEnabled && progress.isNotEmpty()
-                CapsuleCardType.MEDIA -> mediaVisible
-                CapsuleCardType.CHARGING -> settings.chargingCardEnabled && charging.isCharging
-                // Controls on request, and on their own while the flashlight is on (F-53).
-                CapsuleCardType.SLIDERS -> openedCard == CapsuleCardType.SLIDERS || sliders.isTorchOn
-                CapsuleCardType.SHORTCUTS -> openedCard == CapsuleCardType.SHORTCUTS
-            }
+    /**
+     * Unified page list for the carousel.
+     *
+     * - If there are active dynamic cards → one [CardPage.Dynamic] per card, priority-ordered.
+     * - Otherwise → one [CardPage.Static] per entry in [Settings.effectiveStaticCards].
+     */
+    val pages: List<CardPage>
+        get() {
+            val dynamic = CardPriority.filter { card ->
+                when (card) {
+                    CapsuleCardType.NOTIFICATION -> settings.notificationsEnabled && notifications.isNotEmpty()
+                    CapsuleCardType.TIMER -> settings.timerEnabled && timer != null
+                    CapsuleCardType.PROGRESS -> settings.progressEnabled && progress.isNotEmpty()
+                    CapsuleCardType.MEDIA -> mediaVisible
+                    CapsuleCardType.CHARGING -> settings.chargingCardEnabled && charging.isCharging
+                    CapsuleCardType.SLIDERS -> openedCard == CapsuleCardType.SLIDERS || sliders.isTorchOn
+                    CapsuleCardType.SHORTCUTS -> openedCard == CapsuleCardType.SHORTCUTS
+                }
+            }.map { CardPage.Dynamic(it) }
+
+            if (dynamic.isNotEmpty()) return dynamic
+
+            return settings.effectiveStaticCards.map { CardPage.Static(it) }
         }
+
+    /** The page the carousel shows: the focused one (by key) if still in [pages]; otherwise the
+     *  first page.  For static-only mode the focus defaults to [Settings.effectiveStartCardId]. */
+    val activePage: CardPage?
+        get() {
+            val pageList = pages
+            if (pageList.isEmpty()) return null
+            val key = focusedPageKey ?: effectiveStaticStartKey
+            return pageList.firstOrNull { it.key == key } ?: pageList.first()
+        }
+
+    /** Cards that currently have something real to show, in priority order (dynamic only). */
+    val activeCards: List<CapsuleCardType>
+        get() = pages.filterIsInstance<CardPage.Dynamic>().map { it.type }
 
     /** Media card rules (F-10, F-12): enabled, not parked after a pause, its app not in front. */
     val mediaVisible: Boolean
@@ -87,7 +115,10 @@ data class CapsuleState(
 
     val topNotification: CapsuleNotification? get() = notifications.firstOrNull()
 
-    /** F-75: gestures use the "active" set while something besides an opened card is showing. */
+    /**
+     * F-75: gestures use the "active" set while something besides an opened card is showing.
+     * Static pages are idle context — they do not count as activity.
+     */
     val hasActivity: Boolean get() = activeCards.any { it != openedCard }
 
     fun gesture(type: GestureType): GestureBinding = settings.gesture(type, active = hasActivity)
@@ -96,9 +127,16 @@ data class CapsuleState(
     fun showsText(notification: CapsuleNotification): Boolean =
         !(visibility.locked && settings.hideNotificationTextWhenLocked && !notification.isPublic)
 
-    /** The card the carousel shows: the focused one if still active, otherwise the top one. */
+    /**
+     * The dynamic card the carousel shows (derived from [activePage] for backward compatibility).
+     * Returns null when the active page is a static card.
+     */
     val activeCard: CapsuleCardType?
-        get() = activeCards.let { cards -> focusedCard?.takeIf { it in cards } ?: cards.firstOrNull() }
+        get() = (activePage as? CardPage.Dynamic)?.type
+
+    /** The effectiveStartCardId expressed as a page key, used for initial focus in static mode. */
+    private val effectiveStaticStartKey: String?
+        get() = settings.effectiveStartCardId?.let { "static:$it" }
 
     val isAllowedOnScreen: Boolean
         get() = settingsLoaded &&
@@ -112,7 +150,7 @@ data class CapsuleState(
     val mode: CapsuleMode
         get() = when {
             !isAllowedOnScreen -> CapsuleMode.HIDDEN
-            isExpanded && activeCards.isNotEmpty() -> CapsuleMode.EXPANDED
+            isExpanded && pages.isNotEmpty() -> CapsuleMode.EXPANDED
             miniEvent != null -> CapsuleMode.MINI_EVENT
             activeCards.isNotEmpty() -> CapsuleMode.COMPACT
             settings.alwaysShowPill || settings.showCalibrationTarget -> CapsuleMode.IDLE
