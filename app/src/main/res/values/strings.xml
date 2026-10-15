@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Capsool</string>
+    <string name="accessibility_service_description">Capsool uses accessibility overlay to display dynamic capsule status and touch interactions around the camera cutout.</string>
+</resources>
