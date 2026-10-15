@@ -1,5 +1,9 @@
 package com.iqbalwork.capsule.ui.companion
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -25,10 +29,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.ui.unit.dp
 import com.iqbalwork.capsule.core.settings.ColorSource
 import com.iqbalwork.capsule.core.settings.Geometry
 import com.iqbalwork.capsule.core.settings.MediaCollapseDelay
+import com.iqbalwork.capsule.core.settings.MiniEventDuration
+import com.iqbalwork.capsule.model.EventCategory
 import com.iqbalwork.capsule.core.settings.NotificationDelay
 import com.iqbalwork.capsule.core.settings.NotificationDisplay
 import com.iqbalwork.capsule.core.settings.Orientation
@@ -42,6 +51,7 @@ fun CapsuleTab(
     currentOrientation: Orientation,
     onUpdate: ((Settings) -> Settings) -> Unit,
     onOpenNotificationApps: () -> Unit,
+    onBluetoothGranted: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var editing by remember(currentOrientation) { mutableStateOf(currentOrientation) }
@@ -186,6 +196,9 @@ fun CapsuleTab(
             }
         }
         item {
+            EventsSection(settings = settings, onUpdate = onUpdate, onBluetoothGranted = onBluetoothGranted)
+        }
+        item {
             Section("Hide the capsule") {
                 SwitchRow(
                     title = "In fullscreen apps",
@@ -219,6 +232,89 @@ private val MediaCollapseDelay.label: String
         MediaCollapseDelay.SECONDS_60 -> "1 min"
         MediaCollapseDelay.MINUTES_2 -> "2 min"
         MediaCollapseDelay.NEVER -> "Always"
+    }
+
+@Composable
+private fun EventsSection(
+    settings: Settings,
+    onUpdate: ((Settings) -> Settings) -> Unit,
+    onBluetoothGranted: () -> Unit
+) {
+    val context = LocalContext.current
+    var bluetoothAllowed by remember { mutableStateOf(false) }
+    LifecycleResumeEffect(Unit) {
+        bluetoothAllowed = ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) ==
+            PackageManager.PERMISSION_GRANTED
+        onPauseOrDispose { }
+    }
+    val requestBluetooth = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        bluetoothAllowed = granted
+        if (granted) onBluetoothGranted()
+    }
+    fun toggle(category: EventCategory, on: Boolean) = onUpdate {
+        it.copy(enabledEvents = if (on) it.enabledEvents + category else it.enabledEvents - category)
+    }
+
+    Section("Events") {
+        SwitchRow(
+            title = "Charging card",
+            description = "Show the battery level in the capsule while charging.",
+            checked = settings.chargingCardEnabled,
+            onChange = { on -> onUpdate { it.copy(chargingCardEnabled = on) } }
+        )
+        Text("Pop-ups for", style = MaterialTheme.typography.bodyLarge)
+        EventCategory.entries.forEach { category ->
+            SwitchRow(
+                title = category.label,
+                description = category.description,
+                checked = category in settings.enabledEvents,
+                onChange = { on -> toggle(category, on) }
+            )
+            if (category == EventCategory.HEADPHONES && category in settings.enabledEvents && !bluetoothAllowed) {
+                TextButton(onClick = { requestBluetooth.launch(Manifest.permission.BLUETOOTH_CONNECT) }) {
+                    Text("Allow Bluetooth access to see headphones")
+                }
+            }
+        }
+        Text("Show each pop-up for", style = MaterialTheme.typography.bodyMedium)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            MiniEventDuration.entries.forEach { duration ->
+                FilterChip(
+                    selected = settings.miniEventDuration == duration,
+                    onClick = { onUpdate { it.copy(miniEventDuration = duration) } },
+                    label = { Text("${duration.millis / 1000} s") }
+                )
+            }
+        }
+        IntSlider("Low battery warning at", settings.lowBatteryThreshold, 5..30, unit = "%") { v ->
+            onUpdate { it.copy(lowBatteryThreshold = v) }
+        }
+        SwitchRow(
+            title = "Temperature in °F",
+            description = null,
+            checked = settings.temperatureFahrenheit,
+            onChange = { on -> onUpdate { it.copy(temperatureFahrenheit = on) } }
+        )
+    }
+}
+
+private val EventCategory.label: String
+    get() = when (this) {
+        EventCategory.CHARGING -> "Charger plugged in or out"
+        EventCategory.LOW_BATTERY -> "Low battery"
+        EventCategory.RINGER -> "Ring, vibrate, silent"
+        EventCategory.HEADPHONES -> "Bluetooth headphones"
+        EventCategory.WIFI -> "Wi-Fi connected or lost"
+        EventCategory.AIRPLANE -> "Airplane mode"
+        EventCategory.UNLOCK -> "Unlocking the phone"
+        EventCategory.BRIGHTNESS_MODE -> "Auto-brightness"
+    }
+
+private val EventCategory.description: String?
+    get() = when (this) {
+        EventCategory.HEADPHONES -> "Shows the battery too, if the headphones report it."
+        EventCategory.LOW_BATTERY -> "At your threshold and again at 5%."
+        else -> null
     }
 
 private val NotificationDelay.label: String
@@ -259,8 +355,8 @@ private fun SwitchRow(title: String, description: String?, checked: Boolean, onC
 }
 
 @Composable
-private fun IntSlider(label: String, value: Int, range: IntRange, onChange: (Int) -> Unit) {
-    Text("$label: $value dp", style = MaterialTheme.typography.bodyMedium)
+private fun IntSlider(label: String, value: Int, range: IntRange, unit: String = "dp", onChange: (Int) -> Unit) {
+    Text("$label: $value $unit".replace(" %", "%"), style = MaterialTheme.typography.bodyMedium)
     Slider(
         value = value.toFloat(),
         onValueChange = { onChange(it.roundToInt()) },

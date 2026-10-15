@@ -32,6 +32,9 @@ class NotificationFilter(private val ownPackage: String, private val ignoreOwnPa
 
     fun decide(facts: NotificationFacts, blockedApps: Set<String>, alreadyKnown: Boolean): NotificationDecision {
         val ignored = (ignoreOwnPackage && facts.packageName == ownPackage) ||
+            // System UI's own notices (battery, USB debugging, screenshots) are not messages;
+            // battery has its own mini events.
+            facts.packageName in SystemPackages ||
             facts.packageName in blockedApps ||
             facts.isGroupSummary ||
             // Ongoing notifications (downloads, timers, calls) are M5 cards, media has its own card.
@@ -48,6 +51,7 @@ class NotificationFilter(private val ownPackage: String, private val ignoreOwnPa
     }
 
     private companion object {
+        val SystemPackages = setOf("android", "com.android.systemui")
         val IgnoredCategories = setOf(
             Notification.CATEGORY_TRANSPORT,
             Notification.CATEGORY_SERVICE,

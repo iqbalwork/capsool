@@ -6,6 +6,8 @@ import com.iqbalwork.capsule.core.settings.GestureAction
 import com.iqbalwork.capsule.core.settings.GestureType
 import com.iqbalwork.capsule.core.settings.Geometry
 import com.iqbalwork.capsule.core.settings.MediaCollapseDelay
+import com.iqbalwork.capsule.core.settings.MiniEventDuration
+import com.iqbalwork.capsule.model.EventCategory
 import com.iqbalwork.capsule.core.settings.NotificationDelay
 import com.iqbalwork.capsule.core.settings.NotificationDisplay
 import com.iqbalwork.capsule.core.settings.Settings
@@ -44,6 +46,11 @@ class SettingsMapperTest {
             hideNotificationTextWhenLocked = false,
             removeNotificationAfterViewing = true,
             notificationGlow = false,
+            chargingCardEnabled = false,
+            enabledEvents = setOf(EventCategory.WIFI, EventCategory.UNLOCK),
+            miniEventDuration = MiniEventDuration.SECONDS_6,
+            lowBatteryThreshold = 22,
+            temperatureFahrenheit = true,
             disclosureAccepted = true
         )
         val prefs = mutablePreferencesOf()

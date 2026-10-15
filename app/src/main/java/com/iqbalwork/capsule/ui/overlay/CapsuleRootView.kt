@@ -46,6 +46,7 @@ import com.iqbalwork.capsule.core.store.CapsuleState
 import com.iqbalwork.capsule.core.store.UserIntent
 import com.iqbalwork.capsule.model.CapsuleCardType
 import com.iqbalwork.capsule.model.ShortcutsState
+import com.iqbalwork.capsule.platform.accessibility.OverlayPlacement
 import com.iqbalwork.capsule.ui.components.ExpandedChargingCard
 import com.iqbalwork.capsule.ui.components.ExpandedMediaCard
 import com.iqbalwork.capsule.ui.components.ExpandedNotificationCard
@@ -76,7 +77,8 @@ fun CapsuleRootView(
     val sizeSpring = if (expanded) CapsuleTokens.FruitSpringDp else CapsuleTokens.CollapseSpringDp
 
     val width by animateDpAsState(
-        targetValue = if (expanded) expandedWidth else geometry.widthDp.dp,
+        targetValue = if (expanded) expandedWidth
+        else OverlayPlacement.pillWidthDp(geometry, miniEvent = mode == CapsuleMode.MINI_EVENT).dp,
         animationSpec = sizeSpring,
         label = "capsule_width"
     )
@@ -131,7 +133,8 @@ fun CapsuleRootView(
             // instead of the content vanishing and an empty black box shrinking.
             AnimatedContent(
                 targetState = ShellFrame(expanded, state),
-                contentKey = { it.expanded },
+                // A mini event appearing or ending also crossfades inside the pill.
+                contentKey = { if (it.expanded) "card" else "pill:${it.state.miniEvent?.id}" },
                 transitionSpec = {
                     fadeIn(tween(durationMillis = 180, delayMillis = 90)) togetherWith fadeOut(tween(durationMillis = 110))
                 },
@@ -238,7 +241,10 @@ private fun CardContent(card: CapsuleCardType, state: CapsuleState, dispatch: (A
     when (card) {
         CapsuleCardType.MEDIA -> state.media?.let { ExpandedMediaCard(mediaState = it, onAction = dispatch) }
         CapsuleCardType.SLIDERS -> ExpandedSliderCard(sliderState = state.sliders, onAction = dispatch)
-        CapsuleCardType.CHARGING -> ExpandedChargingCard(chargingState = state.charging)
+        CapsuleCardType.CHARGING -> ExpandedChargingCard(
+            chargingState = state.charging,
+            fahrenheit = state.settings.temperatureFahrenheit
+        )
         CapsuleCardType.NOTIFICATION -> state.topNotification?.let { notification ->
             ExpandedNotificationCard(
                 notification = notification,

@@ -150,7 +150,8 @@ object CapsuleReducer {
             if (beingRead || state.replyingTo == event.key) state else state.withoutNotification(event.key)
         }
         is SystemEvent.TimerUpdated -> state.copy(timer = event.timer)
-        is SystemEvent.MiniEventStarted -> state.copy(miniEvent = event.event)
+        is SystemEvent.MiniEventStarted ->
+            if (event.event.type.category in state.settings.enabledEvents) state.copy(miniEvent = event.event) else state
         is SystemEvent.MiniEventFinished ->
             if (state.miniEvent?.id == event.id) state.copy(miniEvent = null) else state
         SystemEvent.ExpandedTimedOut -> state // handled in reduce(), it may emit effects

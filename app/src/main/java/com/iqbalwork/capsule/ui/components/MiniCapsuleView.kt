@@ -22,6 +22,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -58,39 +61,7 @@ fun MiniCapsuleView(
     val miniEvent = state.miniEvent
 
     if (miniEvent != null) {
-        // Mini Event Pop-up (TWS, Battery, Charging, etc.)
-        Row(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(horizontal = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            val eventColor = when (miniEvent.type) {
-                MiniEventType.LOW_BATTERY -> CapsuleTokens.CalibratorRed
-                MiniEventType.TWS_CONNECTED -> CapsuleTokens.Primary
-                MiniEventType.CHARGER_CONNECTED -> Color(0xFF4CAF50)
-                else -> CapsuleTokens.Primary
-            }
-
-            Box(
-                modifier = Modifier
-                    .size(10.dp)
-                    .clip(CircleShape)
-                    .background(eventColor)
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Text(
-                text = "${miniEvent.title} ${miniEvent.subtitle}".trim(),
-                color = CapsuleTokens.OnSurface,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
+        MiniEventView(event = miniEvent, modifier = modifier)
     } else {
         // Compact pill: the left and right slots follow the card the carousel would open.
         Row(
@@ -139,10 +110,10 @@ fun MiniCapsuleView(
                     }
                 }
                 state.activeCard == CapsuleCardType.CHARGING -> {
-                    ChargingIndicatorMini(percentage = state.charging.chargePercentage)
+                    Icon(Icons.Rounded.Bolt, contentDescription = null, tint = ChargingGreen, modifier = Modifier.size(18.dp))
                     Text(
                         text = "${state.charging.chargePercentage}%",
-                        color = Color(0xFF81C784),
+                        color = ChargingGreen,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -248,24 +219,3 @@ fun EqualizerWaveMini(
     }
 }
 
-@Composable
-fun ChargingIndicatorMini(percentage: Int) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier
-                .size(9.dp)
-                .clip(CircleShape)
-                .background(Color(0xFF4CAF50))
-        )
-    }
-}
-
-@Composable
-fun NotificationDotMini(color: Color) {
-    Box(
-        modifier = Modifier
-            .size(9.dp)
-            .clip(CircleShape)
-            .background(color)
-    )
-}

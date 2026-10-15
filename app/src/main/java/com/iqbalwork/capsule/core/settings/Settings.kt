@@ -1,5 +1,7 @@
 package com.iqbalwork.capsule.core.settings
 
+import com.iqbalwork.capsule.model.EventCategory
+
 /**
  * Capsule geometry for one orientation. Offsets are relative to the default position,
  * which is centered on the camera cutout (or top-center of the screen when there is none).
@@ -40,6 +42,17 @@ enum class NotificationDelay(val millis: Long?) {
     SECONDS_30(30_000L),
     UNTIL_OPENED(null)
 }
+
+/** F-68: how long a mini event stays in the capsule. */
+enum class MiniEventDuration(val millis: Long) {
+    SECONDS_2(2_000L),
+    SECONDS_3(3_000L),
+    SECONDS_4(4_000L),
+    SECONDS_6(6_000L)
+}
+
+/** Unlock greetings are opt-in; every other event starts enabled. */
+val DefaultEventCategories: Set<EventCategory> = EventCategory.entries.toSet() - EventCategory.UNLOCK
 
 enum class GestureType { TAP, DOUBLE_TAP, LONG_PRESS, SWIPE_LEFT, SWIPE_RIGHT }
 
@@ -83,6 +96,11 @@ data class Settings(
     val hideNotificationTextWhenLocked: Boolean = true,
     val removeNotificationAfterViewing: Boolean = false,
     val notificationGlow: Boolean = true,
+    val chargingCardEnabled: Boolean = true,
+    val enabledEvents: Set<EventCategory> = DefaultEventCategories,
+    val miniEventDuration: MiniEventDuration = MiniEventDuration.SECONDS_3,
+    val lowBatteryThreshold: Int = 15,
+    val temperatureFahrenheit: Boolean = false,
     val disclosureAccepted: Boolean = false
 ) {
     fun geometry(orientation: Orientation): Geometry =

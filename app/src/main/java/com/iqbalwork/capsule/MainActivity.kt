@@ -25,7 +25,8 @@ class MainActivity : ComponentActivity() {
                     serviceRunning = serviceRunning,
                     notificationAccess = notificationAccess,
                     dispatch = graph.store::dispatch,
-                    onUpdateSettings = graph::updateSettings
+                    onUpdateSettings = graph::updateSettings,
+                    onBluetoothGranted = graph.systemEvents::refreshBluetooth
                 )
             }
         }

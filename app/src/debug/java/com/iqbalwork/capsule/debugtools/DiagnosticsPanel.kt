@@ -31,21 +31,30 @@ object DiagnosticsPanel {
 
     private val simulations = listOf(
         Simulation("Headphones connected (mini event)") {
-            listOf(SystemEvent.MiniEventStarted(miniEvent(MiniEventType.TWS_CONNECTED, "Headphones", "92%")))
+            listOf(SystemEvent.MiniEventStarted(miniEvent(MiniEventType.HEADPHONES_CONNECTED, "Pixel Buds Pro", "92%", 92)))
         },
         Simulation("Charger plugged in") {
             listOf(
                 SystemEvent.ChargingUpdated(
-                    ChargingState(isCharging = true, chargePercentage = 85, chargeType = ChargingType.AC, batteryTemperatureC = 32.1f)
+                    ChargingState(isCharging = true, chargePercentage = 85, chargeType = ChargingType.AC, batteryTemperatureC = 32.1f, chargeTimeRemainingMs = 1_800_000L)
                 ),
-                SystemEvent.MiniEventStarted(miniEvent(MiniEventType.CHARGER_CONNECTED, "Charging", "85%"))
+                SystemEvent.MiniEventStarted(miniEvent(MiniEventType.CHARGER_CONNECTED, "Charging", "85%", 85))
             )
         },
         Simulation("Charger unplugged") {
-            listOf(SystemEvent.ChargingUpdated(ChargingState(isCharging = false, chargePercentage = 85)))
+            listOf(
+                SystemEvent.ChargingUpdated(ChargingState(isCharging = false, chargePercentage = 85)),
+                SystemEvent.MiniEventStarted(miniEvent(MiniEventType.CHARGER_DISCONNECTED, "Charger removed", "85%", 85))
+            )
         },
         Simulation("Low battery") {
-            listOf(SystemEvent.MiniEventStarted(miniEvent(MiniEventType.LOW_BATTERY, "Low battery", "4%")))
+            listOf(SystemEvent.MiniEventStarted(miniEvent(MiniEventType.LOW_BATTERY, "Low battery", "14%", 14)))
+        },
+        Simulation("Ringer: vibrate") {
+            listOf(SystemEvent.MiniEventStarted(miniEvent(MiniEventType.RINGER_VIBRATE, "Vibrate")))
+        },
+        Simulation("Wi-Fi connected") {
+            listOf(SystemEvent.MiniEventStarted(miniEvent(MiniEventType.WIFI_CONNECTED, "Wi-Fi connected")))
         },
         Simulation("Media playing") {
             listOf(
@@ -68,8 +77,8 @@ object DiagnosticsPanel {
         Simulation("Clear timer") { listOf(SystemEvent.TimerUpdated(null)) }
     )
 
-    private fun miniEvent(type: MiniEventType, title: String, subtitle: String) =
-        MiniEvent(id = System.nanoTime(), type = type, title = title, subtitle = subtitle)
+    private fun miniEvent(type: MiniEventType, title: String, subtitle: String = "", level: Int? = null) =
+        MiniEvent(id = System.nanoTime(), type = type, title = title, subtitle = subtitle, level = level)
 
     @Composable
     fun Content(dispatch: (Action) -> Unit) {

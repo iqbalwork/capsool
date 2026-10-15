@@ -67,6 +67,7 @@ enum class ChargingType {
     AC,
     USB,
     WIRELESS,
+    DOCK,
     NONE
 }
 
@@ -76,7 +77,9 @@ data class ChargingState(
     val chargeType: ChargingType = ChargingType.NONE,
     val isFullCharged: Boolean = false,
     val batteryTemperatureC: Float = 0f,
-    val isLowBattery: Boolean = false
+    val isLowBattery: Boolean = false,
+    /** From BatteryManager.computeChargeTimeRemaining(); null when unknown. */
+    val chargeTimeRemainingMs: Long? = null
 )
 
 /** A notification as the capsule shows it. Bitmaps are already downscaled by the source. */
@@ -126,20 +129,33 @@ data class ShortcutsState(
     val shortcuts: List<ShortcutItem> = emptyList()
 )
 
-enum class MiniEventType {
-    TWS_CONNECTED,
-    CHARGER_CONNECTED,
-    RINGER_CHANGED,
-    WIFI_CHANGED,
-    AIRPLANE_MODE,
-    DEVICE_UNLOCKED,
-    LOW_BATTERY
+/** Groups of mini events the user can switch on or off (F-60..F-69). */
+enum class EventCategory { CHARGING, LOW_BATTERY, RINGER, HEADPHONES, WIFI, AIRPLANE, UNLOCK, BRIGHTNESS_MODE }
+
+enum class MiniEventType(val category: EventCategory) {
+    CHARGER_CONNECTED(EventCategory.CHARGING),
+    CHARGER_DISCONNECTED(EventCategory.CHARGING),
+    FULLY_CHARGED(EventCategory.CHARGING),
+    LOW_BATTERY(EventCategory.LOW_BATTERY),
+    RINGER_NORMAL(EventCategory.RINGER),
+    RINGER_VIBRATE(EventCategory.RINGER),
+    RINGER_SILENT(EventCategory.RINGER),
+    HEADPHONES_CONNECTED(EventCategory.HEADPHONES),
+    HEADPHONES_DISCONNECTED(EventCategory.HEADPHONES),
+    WIFI_CONNECTED(EventCategory.WIFI),
+    WIFI_DISCONNECTED(EventCategory.WIFI),
+    AIRPLANE_ON(EventCategory.AIRPLANE),
+    AIRPLANE_OFF(EventCategory.AIRPLANE),
+    DEVICE_UNLOCKED(EventCategory.UNLOCK),
+    AUTO_BRIGHTNESS_ON(EventCategory.BRIGHTNESS_MODE),
+    AUTO_BRIGHTNESS_OFF(EventCategory.BRIGHTNESS_MODE)
 }
 
+/** A 2-4 second event in the capsule. [level] is a 0-100 value shown as a ring (battery). */
 data class MiniEvent(
     val id: Long,
     val type: MiniEventType,
     val title: String,
     val subtitle: String = "",
-    val durationMs: Long = 3500L
+    val level: Int? = null
 )

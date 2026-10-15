@@ -13,6 +13,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.iqbalwork.capsule.model.EventCategory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -85,6 +86,11 @@ object SettingsMapper {
     private val NotificationHideTextLocked = booleanPreferencesKey("notification.hideContentWhenLocked")
     private val NotificationRemoveAfterViewing = booleanPreferencesKey("notification.removeAfterViewing")
     private val NotificationGlow = booleanPreferencesKey("notification.glow")
+    private val ChargingCardEnabled = booleanPreferencesKey("cards.charging.enabled")
+    private val EnabledEvents = stringSetPreferencesKey("events.enabled")
+    private val MiniEventDurationKey = stringPreferencesKey("events.duration")
+    private val LowBatteryThreshold = intPreferencesKey("battery.lowThreshold")
+    private val TemperatureFahrenheit = booleanPreferencesKey("battery.fahrenheit")
     private val DisclosureAccepted = booleanPreferencesKey("onboarding.disclosureAccepted")
     private fun gestureKey(type: GestureType) = stringPreferencesKey("gestures.${type.name.lowercase()}")
 
@@ -124,6 +130,13 @@ object SettingsMapper {
             hideNotificationTextWhenLocked = prefs[NotificationHideTextLocked] ?: defaults.hideNotificationTextWhenLocked,
             removeNotificationAfterViewing = prefs[NotificationRemoveAfterViewing] ?: defaults.removeNotificationAfterViewing,
             notificationGlow = prefs[NotificationGlow] ?: defaults.notificationGlow,
+            chargingCardEnabled = prefs[ChargingCardEnabled] ?: defaults.chargingCardEnabled,
+            enabledEvents = prefs[EnabledEvents]
+                ?.mapNotNullTo(mutableSetOf()) { name -> EventCategory.entries.firstOrNull { it.name == name } }
+                ?: defaults.enabledEvents,
+            miniEventDuration = enumOrDefault(prefs[MiniEventDurationKey], defaults.miniEventDuration),
+            lowBatteryThreshold = prefs[LowBatteryThreshold] ?: defaults.lowBatteryThreshold,
+            temperatureFahrenheit = prefs[TemperatureFahrenheit] ?: defaults.temperatureFahrenheit,
             disclosureAccepted = prefs[DisclosureAccepted] ?: defaults.disclosureAccepted
         )
     }
@@ -158,6 +171,11 @@ object SettingsMapper {
         prefs[NotificationHideTextLocked] = settings.hideNotificationTextWhenLocked
         prefs[NotificationRemoveAfterViewing] = settings.removeNotificationAfterViewing
         prefs[NotificationGlow] = settings.notificationGlow
+        prefs[ChargingCardEnabled] = settings.chargingCardEnabled
+        prefs[EnabledEvents] = settings.enabledEvents.mapTo(mutableSetOf()) { it.name }
+        prefs[MiniEventDurationKey] = settings.miniEventDuration.name
+        prefs[LowBatteryThreshold] = settings.lowBatteryThreshold
+        prefs[TemperatureFahrenheit] = settings.temperatureFahrenheit
         prefs[DisclosureAccepted] = settings.disclosureAccepted
     }
 

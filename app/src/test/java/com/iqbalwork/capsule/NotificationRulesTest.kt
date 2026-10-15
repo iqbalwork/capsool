@@ -47,6 +47,8 @@ class NotificationRulesTest {
     fun filterIgnoresNoise() {
         val ignored = listOf(
             chat.copy(packageName = "com.iqbalwork.capsule"),
+            chat.copy(packageName = "com.android.systemui"),
+            chat.copy(packageName = "android"),
             chat.copy(isOngoing = true),
             chat.copy(isGroupSummary = true),
             chat.copy(isMediaStyle = true),

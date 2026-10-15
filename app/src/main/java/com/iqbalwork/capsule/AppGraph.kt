@@ -9,6 +9,8 @@ import com.iqbalwork.capsule.platform.PlatformEffectHandler
 import com.iqbalwork.capsule.debugtools.DiagnosticsPanel
 import com.iqbalwork.capsule.platform.media.MediaSource
 import com.iqbalwork.capsule.platform.notification.NotificationSource
+import com.iqbalwork.capsule.platform.system.BatterySource
+import com.iqbalwork.capsule.platform.system.SystemEventSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -34,6 +36,8 @@ class AppGraph(context: Context) {
         ignoreOwnPackage = !DiagnosticsPanel.isAvailable
     )
     val effects: PlatformEffectHandler = PlatformEffectHandler(mediaSource, notificationSource)
+    val batterySource = BatterySource(context.applicationContext, { store.state.value.settings }, store::dispatch)
+    val systemEvents = SystemEventSource(context.applicationContext, store::dispatch)
 
     private val _serviceRunning = MutableStateFlow(false)
     val serviceRunning: StateFlow<Boolean> = _serviceRunning.asStateFlow()
@@ -51,8 +55,16 @@ class AppGraph(context: Context) {
         appScope.launch { settingsRepository.update(transform) }
     }
 
+    /** Battery and system events only matter while the capsule can be shown. */
     fun setServiceRunning(running: Boolean) {
         _serviceRunning.value = running
+        if (running) {
+            batterySource.start()
+            systemEvents.start()
+        } else {
+            batterySource.stop()
+            systemEvents.stop()
+        }
     }
 
     /** Called by the notification listener; media sessions are only readable while it is bound. */

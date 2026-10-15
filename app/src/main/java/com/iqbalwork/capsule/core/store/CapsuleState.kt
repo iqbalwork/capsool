@@ -56,7 +56,7 @@ data class CapsuleState(
                 CapsuleCardType.NOTIFICATION -> settings.notificationsEnabled && notifications.isNotEmpty()
                 CapsuleCardType.TIMER -> timer != null
                 CapsuleCardType.MEDIA -> mediaVisible
-                CapsuleCardType.CHARGING -> charging.isCharging
+                CapsuleCardType.CHARGING -> settings.chargingCardEnabled && charging.isCharging
                 else -> false
             }
         }

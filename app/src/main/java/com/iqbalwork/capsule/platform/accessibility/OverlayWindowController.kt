@@ -162,7 +162,8 @@ class OverlayWindowController(
             cutout = readCutout(),
             geometry = key.geometry,
             // API 34+: the window keeps card size and only its touchable region changes.
-            expanded = expanded || FIXED_SIZE_WINDOW
+            expanded = expanded || FIXED_SIZE_WINDOW,
+            miniEvent = key.mode == CapsuleMode.MINI_EVENT
         )
         windowExpanded = expanded
         placement.value = newPlacement
@@ -183,7 +184,9 @@ class OverlayWindowController(
         runCatching { windowManager.updateViewLayout(composeView, layoutParams) }
             .onFailure { Log.w(TAG, "Overlay relayout failed", it) }
         if (FIXED_SIZE_WINDOW) {
-            val rect = OverlayPlacement.capsuleRect(newPlacement, density, key.geometry, expanded)
+            val rect = OverlayPlacement.capsuleRect(
+                newPlacement, density, key.geometry, expanded, miniEvent = key.mode == CapsuleMode.MINI_EVENT
+            )
             val region = if (visible) Region(rect.left, rect.top, rect.right, rect.bottom) else Region()
             setTouchableRegion(composeView, region)
         }

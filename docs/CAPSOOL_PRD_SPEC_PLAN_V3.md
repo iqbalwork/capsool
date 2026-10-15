@@ -656,13 +656,25 @@ Acceptance di device (✅ = emulator Pixel 10 Pro / API 37 dengan notifikasi deb
 - [ ] Halaman "Apps in the capsule" → Pop-up membuka pengaturan notifikasi app: belum dicek.
 - [ ] 10 notifikasi beruntun dalam 5 s → tidak crash, antrian maks 5: ✅ unit test antrian, belum stress test di device.
 
-### M3 — Baterai & event sistem (F-30, F-31, F-60..F-65, F-68)
-Acceptance di device:
-- [ ] Colok charger kabel → mini event dengan ikon & persen yang sesuai; wireless charger (jika ada) → ikon wireless.
-- [ ] Cabut → mini event; turunkan baterai melewati 15% (atau ubah ambang ke level saat ini + 1) → peringatan sekali saja.
-- [ ] Ganti mode dering via tombol fisik → mini event; via kapsul → tidak muncul dobel.
-- [ ] Sambungkan earbuds Bluetooth → nama + baterai (atau tanpa baterai jika tidak tersedia, tanpa error).
-- [ ] Wi-Fi on/off, mode pesawat, unlock → masing-masing mini event; semua bisa dimatikan per event.
+### M3 — Baterai & event sistem (F-30..F-32, F-60..F-65, F-68, F-69)
+Pekerjaan:
+- [x] `BatterySource`: sticky `ACTION_BATTERY_CHANGED` → persen, tipe charger (AC/USB/wireless/dock), status penuh, suhu, estimasi penuh (`computeChargeTimeRemaining`); hanya perubahan yang terlihat yang di-dispatch (jitter suhu < 1 °C diabaikan).
+- [x] `BatteryEventDetector` pure: colok/cabut, penuh sekali selama tercolok, baterai lemah saat melewati ambang user dan lagi di 5 %; bacaan pertama hanya baseline.
+- [x] `SystemEventSource`: ringer (abaikan sticky awal), mode pesawat, unlock, Wi-Fi (`NetworkCallback`, `WifiTracker` pure dengan jendela baseline 1,5 s), headphone Bluetooth (ACL + broadcast baterai tersembunyi, best effort; receiver mewajibkan pengirim punya `BLUETOOTH_CONNECT`), auto-brightness (`ContentObserver`).
+- [x] Sumber hidup hanya selama layanan aksesibilitas berjalan.
+- [x] Mini event lebar (pill + 110 dp) dengan ikon Material, judul, nilai dan cincin level; crossfade saat muncul/hilang; lebar ikut dihitung di window/touchable region.
+- [x] Kartu charging expanded di-restyle (cincin level, tipe charger, estimasi penuh, suhu °C/°F); pill compact saat charging (petir + persen), bisa dimatikan.
+- [x] Pengaturan "Events": on/off per kategori (unlock default mati), durasi 2/3/4/6 s, ambang baterai lemah 5–30 %, °F; tombol izin Bluetooth saat event headphone aktif.
+- [x] Notifikasi dari `android`/`com.android.systemui` (baterai, USB debugging, screenshot) tidak lagi masuk kapsul.
+- [x] Fix crash API: `getParcelableExtra(…, Class)` (API 33) diganti `IntentCompat`.
+- [ ] Tampilan per event (ikon/warna/bentuk kustom, bagian F-68) — belum.
+
+Acceptance di device (✅ = emulator Pixel 10 Pro / API 37, event dipicu via `dumpsys battery`, `cmd audio`, `svc wifi`, `cmd connectivity`, `settings`; 2026-10-15):
+- [~] Colok charger → mini event dengan ikon & persen ✅ ("Charging 70 %" + cincin). Di emulator event baru tergambar ~1–2 s setelah colok karena GPU emulasi tersendat oleh animasi charging SystemUI (`gfxinfo`: frame lambat di "issue draw commands"); store sudah benar dalam < 10 ms. Perlu dicek di HP fisik. Wireless charger: belum.
+- [x] Cabut → mini event ✅. Baterai melewati 15 % → peringatan sekali ✅ (unit test: tidak dobel, ulang di 5 %).
+- [x] Ganti mode dering → mini event ✅ (Vibrate, Ring). Via kapsul tidak dobel: belum relevan sampai kontrol ringer M4.
+- [ ] Earbuds Bluetooth → nama + baterai: belum (emulator tanpa Bluetooth); alur izin belum dicek.
+- [x] Wi-Fi on/off ✅, mode pesawat ✅, auto-brightness ✅, unlock: belum dicek (default mati); event bisa dimatikan per kategori ✅ unit test.
 
 ### M4 — Slider & senter (F-50..F-53)
 Acceptance di device:

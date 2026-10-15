@@ -36,9 +36,9 @@ class CapsuleStore(
         if (action is SystemEvent.NotificationPosted && action.alert) scheduleNotificationTimeout(action.notification.key)
         if (action is SystemEvent.NotificationRemoved) notificationTimeouts.remove(action.key)?.cancel()
 
-        if (action is SystemEvent.MiniEventStarted) {
+        if (action is SystemEvent.MiniEventStarted && reduction.state.miniEvent == action.event) {
             scope.launch {
-                delay(action.event.durationMs)
+                delay(reduction.state.settings.miniEventDuration.millis)
                 dispatch(SystemEvent.MiniEventFinished(action.event.id))
             }
         }

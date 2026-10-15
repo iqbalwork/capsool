@@ -34,6 +34,11 @@ object OverlayPlacement {
     const val MARGIN_DP = 8
     const val EXPANDED_MAX_WIDTH_DP = 360
     const val EXPANDED_HEIGHT_DP = 196
+    /** Mini events widen the pill so an icon, a title and a value fit (F-60..F-69). */
+    const val MINI_EVENT_EXTRA_WIDTH_DP = 110
+
+    fun pillWidthDp(geometry: Geometry, miniEvent: Boolean): Int =
+        geometry.widthDp + if (miniEvent) MINI_EVENT_EXTRA_WIDTH_DP else 0
     private const val SCREEN_GUTTER_DP = 8
     private const val NO_CUTOUT_TOP_DP = 6
 
@@ -45,9 +50,15 @@ object OverlayPlacement {
      * the pill when collapsed, the whole card when expanded. Mirrors the layout in OverlayRoot
      * (top-center, one margin from the top, shifted by the content offsets).
      */
-    fun capsuleRect(window: WindowPlacement, density: Float, geometry: Geometry, expanded: Boolean): PxRect {
+    fun capsuleRect(
+        window: WindowPlacement,
+        density: Float,
+        geometry: Geometry,
+        expanded: Boolean,
+        miniEvent: Boolean = false
+    ): PxRect {
         val margin = MARGIN_DP * density
-        val width = if (expanded) window.width - 2 * margin else geometry.widthDp * density
+        val width = if (expanded) window.width - 2 * margin else pillWidthDp(geometry, miniEvent) * density
         val height = if (expanded) EXPANDED_HEIGHT_DP * density else geometry.heightDp * density
         val centerX = window.width / 2f + window.contentOffsetXPx
         val top = margin + window.contentOffsetYPx
@@ -64,7 +75,8 @@ object OverlayPlacement {
         density: Float,
         cutout: CutoutBounds?,
         geometry: Geometry,
-        expanded: Boolean
+        expanded: Boolean,
+        miniEvent: Boolean = false
     ): WindowPlacement {
         fun px(dp: Float) = dp * density
         val capsuleHeight = px(geometry.heightDp.toFloat())
@@ -72,11 +84,8 @@ object OverlayPlacement {
         val defaultCenterY = cutout?.centerY ?: (px(NO_CUTOUT_TOP_DP.toFloat()) + capsuleHeight / 2f)
         val capsuleTop = defaultCenterY - capsuleHeight / 2f + px(geometry.offsetYDp.toFloat())
 
-        val contentWidth = if (expanded) {
-            maxOf(px(expandedWidthDp(screenWidthPx / density)), px(geometry.widthDp.toFloat()))
-        } else {
-            px(geometry.widthDp.toFloat())
-        }
+        val pillWidth = px(pillWidthDp(geometry, miniEvent).toFloat())
+        val contentWidth = if (expanded) maxOf(px(expandedWidthDp(screenWidthPx / density)), pillWidth) else pillWidth
         val contentHeight = if (expanded) px(EXPANDED_HEIGHT_DP.toFloat()) else capsuleHeight
         val margin = px(MARGIN_DP.toFloat())
 
