@@ -113,6 +113,7 @@ object SettingsMapper {
     private val BarcodeColorKey = longPreferencesKey("barcode.color")
     private val BarcodeFlippedKey = booleanPreferencesKey("barcode.flipped")
     private val BarcodeEnabledKey = booleanPreferencesKey("barcode.enabled")
+    private val CustomIntents = stringPreferencesKey("automation.intents")
 
     fun read(prefs: Preferences): Settings {
         val defaults = Settings()
@@ -178,6 +179,7 @@ object SettingsMapper {
                 enabled = prefs[BarcodeEnabledKey] ?: defaults.barcode.enabled
             ),
             barcodeCardEnabled = prefs[BarcodeCardEnabled] ?: defaults.barcodeCardEnabled,
+            customIntents = CustomIntent.decodeAll(prefs[CustomIntents]),
             disclosureAccepted = prefs[DisclosureAccepted] ?: defaults.disclosureAccepted
         )
     }
@@ -235,6 +237,7 @@ object SettingsMapper {
         prefs[BarcodeColorKey] = settings.barcode.color
         prefs[BarcodeFlippedKey] = settings.barcode.flipped
         prefs[BarcodeEnabledKey] = settings.barcode.enabled
+        prefs[CustomIntents] = CustomIntent.encodeAll(settings.customIntents)
         prefs[DisclosureAccepted] = settings.disclosureAccepted
     }
 

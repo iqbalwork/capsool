@@ -149,6 +149,14 @@ object CapsuleReducer {
             Reduction(state.copy(isExpanded = false), listOf(Effect.Global(Effect.GlobalAction.NOTIFICATIONS)))
         GestureAction.OPEN_QUICK_SETTINGS ->
             Reduction(state.copy(isExpanded = false), listOf(Effect.Global(Effect.GlobalAction.QUICK_SETTINGS)))
+        GestureAction.CUSTOM_INTENT -> {
+            val target = binding.target
+            if (target != null && state.settings.customIntents.any { it.id == target }) {
+                Reduction(state.copy(isExpanded = false), listOf(Effect.SendCustomIntent(target)))
+            } else {
+                Reduction(state)
+            }
+        }
     }
 
     private fun openControls(state: CapsuleState): Reduction = openCard(state, CapsuleCardType.SLIDERS)

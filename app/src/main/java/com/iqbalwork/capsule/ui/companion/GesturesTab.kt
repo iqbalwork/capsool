@@ -1,11 +1,15 @@
 package com.iqbalwork.capsule.ui.companion
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -23,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.iqbalwork.capsule.core.settings.CustomIntent
 import com.iqbalwork.capsule.core.settings.GestureAction
 import com.iqbalwork.capsule.core.settings.GestureBinding
 import com.iqbalwork.capsule.core.settings.GestureType
@@ -94,18 +99,35 @@ private fun GestureSection(
             Text(title, style = MaterialTheme.typography.titleMedium)
             Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             GestureType.entries.forEach { type ->
-                GestureRow(type, settings.gesture(type, active), active) { set(type, it) }
+                GestureRow(type, settings.gesture(type, active), active, settings.customIntents) { set(type, it) }
             }
         }
     }
 }
 
 @Composable
-private fun GestureRow(type: GestureType, binding: GestureBinding, active: Boolean, onChange: (GestureBinding) -> Unit) {
+private fun GestureRow(
+    type: GestureType,
+    binding: GestureBinding,
+    active: Boolean,
+    customIntents: List<CustomIntent>,
+    onChange: (GestureBinding) -> Unit
+) {
     var menuOpen by remember { mutableStateOf(false) }
     var pickingApp by remember { mutableStateOf(false) }
+    var pickingIntent by remember { mutableStateOf(false) }
     // Swipes switch cards only when there are cards; on the idle pill they are free for other actions.
     val actions = GestureAction.entries.filter { active || (it != GestureAction.NEXT_CARD && it != GestureAction.PREVIOUS_CARD) }
+    val intentName = if (binding.action == GestureAction.CUSTOM_INTENT) {
+        customIntents.firstOrNull { it.id == binding.target }?.label?.ifEmpty { null }
+            ?: binding.target
+            ?: "Custom action"
+    } else null
+    val buttonLabel = when (binding.action) {
+        GestureAction.OPEN_APP -> "Open ${binding.target ?: "app"}"
+        GestureAction.CUSTOM_INTENT -> intentName ?: "Custom action…"
+        else -> binding.action.label
+    }
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.weight(1f)) {
             Text(type.label, style = MaterialTheme.typography.bodyLarge)
@@ -116,13 +138,17 @@ private fun GestureRow(type: GestureType, binding: GestureBinding, active: Boole
         }
         Column {
             TextButton(onClick = { menuOpen = true }) {
-                Text(if (binding.action == GestureAction.OPEN_APP) "Open ${binding.target ?: "app"}" else binding.action.label)
+                Text(buttonLabel)
             }
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                 actions.forEach { action ->
                     DropdownMenuItem(text = { Text(action.label) }, onClick = {
                         menuOpen = false
-                        if (action == GestureAction.OPEN_APP) pickingApp = true else onChange(GestureBinding(action))
+                        when (action) {
+                            GestureAction.OPEN_APP -> pickingApp = true
+                            GestureAction.CUSTOM_INTENT -> pickingIntent = true
+                            else -> onChange(GestureBinding(action))
+                        }
                     })
                 }
             }
@@ -138,6 +164,63 @@ private fun GestureRow(type: GestureType, binding: GestureBinding, active: Boole
             onDismiss = { pickingApp = false }
         )
     }
+    if (pickingIntent) {
+        CustomIntentPickerDialog(
+            intents = customIntents,
+            onPick = { intent ->
+                onChange(GestureBinding(GestureAction.CUSTOM_INTENT, intent.id))
+                pickingIntent = false
+            },
+            onDismiss = { pickingIntent = false }
+        )
+    }
+}
+
+@Composable
+private fun CustomIntentPickerDialog(
+    intents: List<CustomIntent>,
+    onPick: (CustomIntent) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Choose custom action") },
+        text = {
+            if (intents.isEmpty()) {
+                Text(
+                    "No custom actions created yet. Create one in the Custom Actions tab.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            } else {
+                LazyColumn(modifier = Modifier.heightIn(max = 360.dp)) {
+                    items(intents, key = { it.id }) { intent ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onPick(intent) }
+                                .padding(vertical = 12.dp, horizontal = 8.dp)
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    intent.label.ifEmpty { intent.action },
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                Text(
+                                    "${intent.type.name} • ${intent.action}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Close") }
+        }
+    )
 }
 
 private val GestureType.label: String
@@ -167,4 +250,5 @@ val GestureAction.label: String
         GestureAction.LOCK_SCREEN -> "Lock screen"
         GestureAction.SCROLL_TO_TOP -> "Scroll to top"
         GestureAction.OPEN_APP -> "Open app…"
+        GestureAction.CUSTOM_INTENT -> "Custom action…"
     }

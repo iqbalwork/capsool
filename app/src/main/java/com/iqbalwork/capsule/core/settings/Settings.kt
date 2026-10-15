@@ -80,7 +80,8 @@ enum class GestureAction {
     SCREENSHOT,
     LOCK_SCREEN,
     SCROLL_TO_TOP,
-    OPEN_APP
+    OPEN_APP,
+    CUSTOM_INTENT
 }
 
 /** A gesture's action plus its target, e.g. OPEN_APP and the package to open. */
@@ -155,6 +156,7 @@ data class Settings(
     val brightnessMax: Int = DEFAULT_BRIGHTNESS_MAX,
     val barcode: BarcodeContent = BarcodeContent(),
     val barcodeCardEnabled: Boolean = true,
+    val customIntents: List<CustomIntent> = emptyList(),
     val disclosureAccepted: Boolean = false
 ) {
     fun geometry(orientation: Orientation): Geometry =

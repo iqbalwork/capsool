@@ -719,6 +719,13 @@ Pekerjaan:
 - [x] Pengaturan & DataStore (`SettingsRepository`): `barcode` dan `barcodeCardEnabled` dengan backward compatibility.
 - [x] UI app pendamping (`ShortcutsTab`): kartu pengaturan barcode (pemilih format, input isi & label, palet warna, switch flip, switch aktif, pesan error validator real-time, live preview, serta penanganan error encoder jika pembuatan kode gagal).
 - [ ] Scan barcode via kamera (ML Kit Code Scanner) & impor gambar galeri (ML Kit Barcode Scanning) — belum (lingkup M6a difokuskan pada input ketik, validasi, dan render ZXing; ML Kit tidak ditambahkan di run ini agar bebas izin kamera).
+- [x] Model CustomIntent (F-76): `CustomIntentType` (ACTIVITY, SERVICE, BROADCAST) + `CustomIntent` (id, label, type, action, component?, extras, icon) dengan encoding deterministik bebas `org.json` yang aman untuk extras multi-baris dan karakter khusus.
+- [x] Validator pure (`CustomIntentValidator`): validasi action tidak boleh kosong dan format component `package/class` jika diisi.
+- [x] Pengaturan & DataStore (`SettingsRepository`): kunci `automation.intents` untuk persistensi `customIntents` dengan backward compatibility.
+- [x] Aksi gesture (`GestureAction.CUSTOM_INTENT`): pemetaan gesture ke custom intent berdasar id, exhaustive `when` di reducer dan UI label, reducer pure mengeluarkan `Effect.SendCustomIntent` hanya jika intent terdaftar di settings.
+- [x] Eksekutor (`CustomIntentRunner`): bangun Intent (action, component class, extras), eksekusi sesuai tipe (`startActivity` + `FLAG_ACTIVITY_NEW_TASK`, `startForegroundService`, `sendBroadcast`); penanganan error komprehensif (`ActivityNotFoundException`, `SecurityException` untuk unexported component di Android 12+, `IllegalStateException` untuk pembatasan background di Android 14+, dll.) dengan pesan ramah user.
+- [x] Integrasi effect (`PlatformEffectHandler`): eksekusi `Effect.SendCustomIntent` via runner dan teruskan hasil error/status ke callback & flow.
+- [x] UI editor & tombol tes (`IntentsTab`): tab "Custom Actions" di app pendamping untuk tambah, ubah, hapus intent (label, tipe, action, component, extras key-value, icon picker) dengan tombol "Kirim tes" yang menampilkan pesan sukses atau error asli di UI.
 
 Acceptance di device:
 - [ ] Pilih 4 app → muncul di kartu pintasan dengan ikon themed (13+) → tap membuka app dari layar mana pun.

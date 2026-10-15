@@ -73,7 +73,6 @@ data class CapsuleState(
                 // Controls on request, and on their own while the flashlight is on (F-53).
                 CapsuleCardType.SLIDERS -> openedCard == CapsuleCardType.SLIDERS || sliders.isTorchOn
                 CapsuleCardType.SHORTCUTS -> openedCard == CapsuleCardType.SHORTCUTS
-                else -> false
             }
         }
 
