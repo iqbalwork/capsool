@@ -14,10 +14,6 @@ import com.iqbalwork.capsule.platform.media.MediaSource
 import com.iqbalwork.capsule.platform.notification.NotificationSource
 
 import com.iqbalwork.capsule.platform.intents.CustomIntentRunner
-import com.iqbalwork.capsule.platform.intents.IntentResult
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 
 /** Executes reducer effects against the system. Effect payloads (message text) are never logged. */
 class PlatformEffectHandler(
@@ -31,10 +27,6 @@ class PlatformEffectHandler(
     private val handler = Handler(Looper.getMainLooper())
     private val launcher = ShortcutLauncher(context)
     private val customIntentRunner = CustomIntentRunner(context)
-
-    var onCustomIntentResult: ((id: String, IntentResult) -> Unit)? = null
-    private val _lastIntentResult = MutableStateFlow<Pair<String, IntentResult>?>(null)
-    val lastIntentResult: StateFlow<Pair<String, IntentResult>?> = _lastIntentResult.asStateFlow()
 
     /** Set while the accessibility service is connected; global actions need it. */
     @Volatile
@@ -50,11 +42,10 @@ class PlatformEffectHandler(
             is Effect.Volume, is Effect.Ringer, is Effect.Brightness, is Effect.AdaptiveBrightness,
             is Effect.Torch, is Effect.OpenPermission, Effect.RefreshControls -> controls.execute(effect)
             is Effect.LaunchShortcut -> settings().shortcuts.firstOrNull { it.id == effect.id }?.let(launcher::launch)
-            is Effect.SendCustomIntent -> settings().customIntents.firstOrNull { it.id == effect.id }?.let { customIntent ->
-                val result = customIntentRunner.run(customIntent)
-                _lastIntentResult.value = customIntent.id to result
-                onCustomIntentResult?.invoke(customIntent.id, result)
-            }
+            // Fired from a gesture, so nobody is looking at the screen for a result: the
+            // "Send test" button in the companion app (IntentsTab) is the diagnostic path.
+            is Effect.SendCustomIntent -> settings().customIntents.firstOrNull { it.id == effect.id }
+                ?.let(customIntentRunner::run)
             is Effect.OpenApp -> launcher.openApp(effect.packageName)
             Effect.ScrollToTop -> accessibilityService?.let(ScrollToTop::run)
             is Effect.AutomationBroadcast -> Automation.sendGesture(context, effect.gesture, effect.action, effect.card)
