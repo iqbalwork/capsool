@@ -44,6 +44,9 @@ sealed interface UserIntent : Action {
     data class TimerAction(val key: String, val index: Int) : UserIntent
 
     data class LaunchShortcut(val id: String) : UserIntent
+
+    /** Fires one of the user's custom intents from a "Custom action" static card (F-76). */
+    data class RunCustomIntent(val id: String) : UserIntent
 }
 
 /** Something the system (or a settings change) reported. */

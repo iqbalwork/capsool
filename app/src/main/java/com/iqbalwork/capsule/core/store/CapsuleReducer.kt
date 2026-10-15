@@ -107,6 +107,15 @@ object CapsuleReducer {
         is UserIntent.TimerAction -> Reduction(state, listOf(Effect.NotificationAction(intent.key, intent.index)))
 
         is UserIntent.LaunchShortcut -> Reduction(state.copy(isExpanded = false), listOf(Effect.LaunchShortcut(intent.id)))
+
+        // Mirrors the gesture path: only fire an intent that is still configured, and collapse
+        // so the user lands back where they were.
+        is UserIntent.RunCustomIntent ->
+            if (state.settings.customIntents.any { it.id == intent.id }) {
+                Reduction(state.copy(isExpanded = false), listOf(Effect.SendCustomIntent(intent.id)))
+            } else {
+                Reduction(state)
+            }
     }
 
     /** F-73: every gesture can also be reported to automation apps. */

@@ -24,6 +24,8 @@ import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.iqbalwork.capsule.core.settings.Geometry
+import com.iqbalwork.capsule.core.settings.StaticCardType
+import com.iqbalwork.capsule.core.store.CardPage
 import com.iqbalwork.capsule.core.store.CapsuleMode
 import com.iqbalwork.capsule.core.store.CapsuleStore
 import com.iqbalwork.capsule.core.store.UserIntent
@@ -120,10 +122,16 @@ class OverlayWindowController(
             store.state
                 .map {
                     val barcodeShowing = it.mode == CapsuleMode.EXPANDED &&
-                        it.activeCard == CapsuleCardType.SHORTCUTS &&
-                        it.settings.barcodeCardEnabled &&
                         it.settings.barcode.enabled &&
-                        BarcodeValidator.validate(it.settings.barcode.content, it.settings.barcode.format).isValid
+                        BarcodeValidator.validate(it.settings.barcode.content, it.settings.barcode.format).isValid &&
+                        // Keyed on the page, not on activeCard: a static Barcode card makes
+                        // activeCard null, and without the boost the code is hard to scan.
+                        when (val page = it.activePage) {
+                            is CardPage.Static -> page.card.type == StaticCardType.BARCODE ||
+                                (page.card.type == StaticCardType.SHORTCUTS && it.settings.barcodeCardEnabled)
+                            is CardPage.Dynamic -> page.type == CapsuleCardType.SHORTCUTS && it.settings.barcodeCardEnabled
+                            null -> false
+                        }
                     LayoutKey(
                         mode = it.mode,
                         geometry = it.settings.geometry(it.visibility.orientation),

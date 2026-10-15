@@ -61,30 +61,9 @@ import com.iqbalwork.capsule.core.settings.CustomIntentValidator.isValid
 import com.iqbalwork.capsule.core.settings.Settings
 import com.iqbalwork.capsule.platform.intents.CustomIntentRunner
 import com.iqbalwork.capsule.platform.intents.IntentResult
+import com.iqbalwork.capsule.ui.components.AvailableIntentIcons
+import com.iqbalwork.capsule.ui.components.customIntentIcon
 import java.util.UUID
-
-private val AvailableIcons = listOf(
-    "bolt", "star", "play", "settings", "notifications",
-    "send", "power", "refresh", "music", "camera", "phone", "message", "share", "flash"
-)
-
-fun customIntentIcon(name: String): ImageVector = when (name.lowercase()) {
-    "bolt" -> Icons.Rounded.Bolt
-    "star" -> Icons.Rounded.Star
-    "play", "play_arrow" -> Icons.Rounded.PlayArrow
-    "settings" -> Icons.Rounded.Settings
-    "notifications" -> Icons.Rounded.Notifications
-    "send" -> Icons.AutoMirrored.Rounded.Send
-    "power", "power_settings_new" -> Icons.Rounded.PowerSettingsNew
-    "refresh" -> Icons.Rounded.Refresh
-    "music", "music_note" -> Icons.Rounded.MusicNote
-    "camera" -> Icons.Rounded.Camera
-    "phone" -> Icons.Rounded.Phone
-    "message" -> Icons.AutoMirrored.Rounded.Message
-    "share" -> Icons.Rounded.Share
-    "flash", "flashlight" -> Icons.Rounded.FlashlightOn
-    else -> Icons.Rounded.Bolt
-}
 
 /**
  * F-76: Custom intent builder UI for Activity / Service / Broadcast actions.
@@ -364,7 +343,7 @@ private fun IntentEditDialog(
                                 expanded = iconMenuOpen,
                                 onDismissRequest = { iconMenuOpen = false }
                             ) {
-                                AvailableIcons.forEach { name ->
+                                AvailableIntentIcons.forEach { name ->
                                     DropdownMenuItem(
                                         leadingIcon = {
                                             Icon(

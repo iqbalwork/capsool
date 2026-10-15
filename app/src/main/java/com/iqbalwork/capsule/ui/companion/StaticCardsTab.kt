@@ -95,7 +95,7 @@ fun StaticCardsTab(
                         if (settings.staticCardViewMode == StaticCardViewMode.CAROUSEL) {
                             "Carousel: swipe left and right to move between cards."
                         } else {
-                            "List: the cards are stacked vertically."
+                            "List view is not drawn on the capsule yet — cards still appear as a carousel."
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant

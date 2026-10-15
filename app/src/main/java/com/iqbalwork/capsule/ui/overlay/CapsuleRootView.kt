@@ -56,6 +56,7 @@ import com.iqbalwork.capsule.ui.components.ExpandedShortcutsCard
 import com.iqbalwork.capsule.ui.components.ExpandedSliderCard
 import com.iqbalwork.capsule.ui.components.ExpandedTimerCard
 import com.iqbalwork.capsule.ui.components.ExpandedBarcodeCard
+import com.iqbalwork.capsule.ui.components.ExpandedIntentCard
 import com.iqbalwork.capsule.ui.components.MiniCapsuleView
 import com.iqbalwork.capsule.ui.components.RedTargetCalibratorView
 import com.iqbalwork.capsule.ui.theme.CapsuleTokens
@@ -301,8 +302,9 @@ private fun StaticCardContent(page: CardPage.Static, state: CapsuleState, dispat
             style = state.settings.sliderStyle,
             onAction = dispatch
         )
-        // INTENT: no clear in-UI mechanism to fire a custom intent from a static card without
-        // introducing a new effect path. Deferred — see M6 task report.
-        StaticCardType.INTENT -> Unit
+        StaticCardType.INTENT -> ExpandedIntentCard(
+            intents = state.settings.customIntents,
+            onRun = { dispatch(UserIntent.RunCustomIntent(it)) }
+        )
     }
 }
