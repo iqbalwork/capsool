@@ -114,6 +114,9 @@ object SettingsMapper {
     private val BarcodeFlippedKey = booleanPreferencesKey("barcode.flipped")
     private val BarcodeEnabledKey = booleanPreferencesKey("barcode.enabled")
     private val CustomIntents = stringPreferencesKey("automation.intents")
+    private val StaticCards = stringPreferencesKey("cards.static")
+    private val StaticStart = stringPreferencesKey("cards.staticStart")
+    private val StaticViewMode = stringPreferencesKey("cards.staticViewMode")
 
     fun read(prefs: Preferences): Settings {
         val defaults = Settings()
@@ -180,6 +183,9 @@ object SettingsMapper {
             ),
             barcodeCardEnabled = prefs[BarcodeCardEnabled] ?: defaults.barcodeCardEnabled,
             customIntents = CustomIntent.decodeAll(prefs[CustomIntents]),
+            staticCards = StaticCard.decodeAll(prefs[StaticCards]),
+            startCardId = prefs[StaticStart]?.ifEmpty { null },
+            staticCardViewMode = enumOrDefault(prefs[StaticViewMode], defaults.staticCardViewMode),
             disclosureAccepted = prefs[DisclosureAccepted] ?: defaults.disclosureAccepted
         )
     }
@@ -238,6 +244,9 @@ object SettingsMapper {
         prefs[BarcodeFlippedKey] = settings.barcode.flipped
         prefs[BarcodeEnabledKey] = settings.barcode.enabled
         prefs[CustomIntents] = CustomIntent.encodeAll(settings.customIntents)
+        prefs[StaticCards] = StaticCard.encodeAll(settings.staticCards)
+        prefs[StaticStart] = settings.startCardId.orEmpty()
+        prefs[StaticViewMode] = settings.staticCardViewMode.name
         prefs[DisclosureAccepted] = settings.disclosureAccepted
     }
 

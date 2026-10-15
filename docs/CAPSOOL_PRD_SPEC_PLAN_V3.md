@@ -727,6 +727,7 @@ Pekerjaan:
 - [x] Integrasi effect (`PlatformEffectHandler`): eksekusi `Effect.SendCustomIntent` via runner saat gesture dipicu. Hasil eksekusi **sengaja tidak ditampilkan** di jalur ini (tidak ada callback/flow yang dikonsumsi) — jalur diagnostik error adalah tombol "Kirim tes" di `IntentsTab`.
 - [ ] Feedback ke user saat intent yang dipicu **gesture** gagal (saat ini senyap; baru tombol tes di app pendamping yang melaporkan error). Ditunda, di luar lingkup F-76.
 - [x] UI editor & tombol tes (`IntentsTab`): tab "Custom Actions" di app pendamping untuk tambah, ubah, hapus intent (label, tipe, action, component, extras key-value, icon picker) dengan tombol "Kirim tes" yang menampilkan pesan sukses atau error asli di UI.
+- [x] Model & persistensi kartu statis (M6c-1, PRD baris 81 & §2.6 baris 513): `StaticCardType` (SHORTCUTS, BARCODE, SLIDERS, INTENT), `StaticCardViewMode` (CAROUSEL, LIST), `StaticCard` (id, type, label), `encodeAll`/`decodeAll` berbasis karakter kontrol bebas `org.json` dengan sanitasi label, helper urutan murni (`moveUp`, `moveDown`, `without`), `Settings` (`staticCards`, `startCardId`, `staticCardViewMode`, properti derivasi `effectiveStaticCards` dengan fallback backward-compatible ke Shortcuts/Barcode/CustomIntents, `effectiveStartCardId`), dan persistensi `SettingsRepository` (`cards.static`, `cards.staticStart`, `cards.staticViewMode`).
 
 Acceptance di device:
 - [ ] Pilih 4 app → muncul di kartu pintasan dengan ikon themed (13+) → tap membuka app dari layar mana pun.

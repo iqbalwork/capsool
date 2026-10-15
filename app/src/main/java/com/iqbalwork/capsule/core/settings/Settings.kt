@@ -2,6 +2,7 @@ package com.iqbalwork.capsule.core.settings
 
 import com.iqbalwork.capsule.model.BarcodeContent
 import com.iqbalwork.capsule.model.EventCategory
+import com.iqbalwork.capsule.platform.barcode.BarcodeValidator
 
 /**
  * Capsule geometry for one orientation. Offsets are relative to the default position,
@@ -157,8 +158,32 @@ data class Settings(
     val barcode: BarcodeContent = BarcodeContent(),
     val barcodeCardEnabled: Boolean = true,
     val customIntents: List<CustomIntent> = emptyList(),
+    val staticCards: List<StaticCard> = emptyList(),
+    val startCardId: String? = null,
+    val staticCardViewMode: StaticCardViewMode = StaticCardViewMode.CAROUSEL,
     val disclosureAccepted: Boolean = false
 ) {
+    /** Kartu statis yang benar-benar tampil. Daftar kosong = perilaku lama diturunkan otomatis. */
+    val effectiveStaticCards: List<StaticCard>
+        get() {
+            if (staticCards.isNotEmpty()) return staticCards
+            val derived = mutableListOf<StaticCard>()
+            if (shortcuts.isNotEmpty()) {
+                derived += StaticCard("default-shortcuts", StaticCardType.SHORTCUTS, StaticCardType.SHORTCUTS.label)
+            }
+            if (barcodeCardEnabled && BarcodeValidator.validate(barcode.content, barcode.format).isValid) {
+                derived += StaticCard("default-barcode", StaticCardType.BARCODE, StaticCardType.BARCODE.label)
+            }
+            if (customIntents.isNotEmpty()) {
+                derived += StaticCard("default-intent", StaticCardType.INTENT, StaticCardType.INTENT.label)
+            }
+            return derived
+        }
+
+    /** `startCardId` yang menunjuk kartu tidak ada dianggap tidak diset. */
+    val effectiveStartCardId: String?
+        get() = if (effectiveStaticCards.any { it.id == startCardId }) startCardId else null
+
     fun geometry(orientation: Orientation): Geometry =
         if (orientation == Orientation.LANDSCAPE) landscape else portrait
 
