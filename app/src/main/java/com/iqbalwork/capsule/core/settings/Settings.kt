@@ -2,7 +2,6 @@ package com.iqbalwork.capsule.core.settings
 
 import com.iqbalwork.capsule.model.BarcodeContent
 import com.iqbalwork.capsule.model.EventCategory
-import com.iqbalwork.capsule.platform.barcode.BarcodeValidator
 
 /**
  * Capsule geometry for one orientation. Offsets are relative to the default position,
@@ -171,7 +170,9 @@ data class Settings(
             if (shortcuts.isNotEmpty()) {
                 derived += StaticCard("default-shortcuts", StaticCardType.SHORTCUTS, StaticCardType.SHORTCUTS.label)
             }
-            if (barcodeCardEnabled && BarcodeValidator.validate(barcode.content, barcode.format).isValid) {
+            // Presence only: `core` must not reach into the barcode layer, and invalid content is
+            // still shown so the card itself can explain what is wrong.
+            if (barcodeCardEnabled && barcode.content.isNotBlank()) {
                 derived += StaticCard("default-barcode", StaticCardType.BARCODE, StaticCardType.BARCODE.label)
             }
             if (customIntents.isNotEmpty()) {

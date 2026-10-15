@@ -190,12 +190,23 @@ class StaticCardTest {
             withBarcode.effectiveStaticCards
         )
 
-        // Barcode with invalid content -> not included
-        val withInvalidBarcode = Settings(
+        // Blank barcode content -> no card at all
+        val withBlankBarcode = Settings(
             barcodeCardEnabled = true,
             barcode = BarcodeContent(content = "", format = BarcodeFormat.QR_CODE)
         )
-        assertTrue(withInvalidBarcode.effectiveStaticCards.isEmpty())
+        assertTrue(withBlankBarcode.effectiveStaticCards.isEmpty())
+
+        // Content that is present but not encodable still gets a card: the card itself is what
+        // tells the user why the code cannot be drawn, so hiding it here would hide the error.
+        val withUnencodableBarcode = Settings(
+            barcodeCardEnabled = true,
+            barcode = BarcodeContent(content = "12345", format = BarcodeFormat.EAN_13)
+        )
+        assertEquals(
+            listOf(StaticCard("default-barcode", StaticCardType.BARCODE, "Barcode")),
+            withUnencodableBarcode.effectiveStaticCards
+        )
 
         // Barcode disabled -> not included even if content valid
         val withDisabledBarcode = Settings(
