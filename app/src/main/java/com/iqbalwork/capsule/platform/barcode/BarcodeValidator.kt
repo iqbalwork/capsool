@@ -13,6 +13,7 @@ sealed interface BarcodeValidationResult {
 object BarcodeValidator {
 
     private val CODE_39_CHARS = setOf(' ', '-', '.', '$', '/', '+', '%')
+    private val CODE_93_BASIC_CHARS = setOf('-', '.', ' ', '$', '/', '+', '%')
     private val CODABAR_DELIMITERS = setOf('A', 'B', 'C', 'D', 'T', 'N', '*', 'E')
     private val CODABAR_INTERIOR_CHARS = setOf('-', '$', ':', '/', '.', '+')
 
@@ -120,6 +121,7 @@ object BarcodeValidator {
         if (content.isEmpty()) return BarcodeValidationResult.Error("ITF tidak boleh kosong")
         if (!content.all { it.isDigit() }) return BarcodeValidationResult.Error("ITF hanya menerima angka")
         if (content.length % 2 != 0) return BarcodeValidationResult.Error("ITF butuh panjang digit genap (diberikan ${content.length})")
+        if (content.length > 80) return BarcodeValidationResult.Error("ITF maksimal 80 digit (diberikan ${content.length})")
         return BarcodeValidationResult.Ok
     }
 
@@ -129,6 +131,7 @@ object BarcodeValidator {
         if (invalidChar != null) {
             return BarcodeValidationResult.Error("Code 39 karakter tidak valid: '$invalidChar'. Hanya mendukung 0-9, A-Z, dan - . $ / + % spasi")
         }
+        if (content.length > 80) return BarcodeValidationResult.Error("Code 39 maksimal 80 karakter (diberikan ${content.length})")
         return BarcodeValidationResult.Ok
     }
 
@@ -137,6 +140,12 @@ object BarcodeValidator {
         val invalidChar = content.firstOrNull { it.code > 127 }
         if (invalidChar != null) {
             return BarcodeValidationResult.Error("Code 93 hanya mendukung karakter ASCII")
+        }
+        val encodedLength = content.sumOf { c ->
+            if (c in '0'..'9' || c in 'A'..'Z' || c in CODE_93_BASIC_CHARS) 1 else 2
+        }
+        if (encodedLength > 80) {
+            return BarcodeValidationResult.Error("Code 93 maksimal 80 karakter setelah enkoding (diberikan $encodedLength)")
         }
         return BarcodeValidationResult.Ok
     }

@@ -712,12 +712,12 @@ Acceptance di device (✅ = emulator Pixel 10 Pro / API 37 dengan notifikasi deb
 ### M6 — Pintasan, gesture lengkap & otomasi (F-54..F-57, F-70..F-73)
 Pekerjaan:
 - [x] Model Barcode: `BarcodeFormat` (10 format: QR_CODE, EAN_13, EAN_8, UPC_A, UPC_E, CODE_128, CODE_39, CODE_93, CODABAR, ITF) + `BarcodeContent` dengan default kosong/nonaktif.
-- [x] Validator pure (`BarcodeValidator`): validasi panjang dan checksum (EAN-13, EAN-8, UPC-A, UPC-E), panjang genap ITF, charset Code 39/93/128/Codabar, panjang wajar QR Code; hasil sealed `Ok` / `Error(message)` yang mudah dibaca user; unit-tested di JVM.
+- [x] Validator pure (`BarcodeValidator`): validasi panjang dan checksum (EAN-13, EAN-8, UPC-A, UPC-E), batas <= 80 digit dan panjang genap ITF, batas panjang Code 39 & Code 93, charset Code 39/93/128/Codabar, panjang wajar QR Code; hasil sealed `Ok` / `Error(message)` yang mudah dibaca user; test kontrak validator↔encoder di JVM memastikan seluruh isi valid selalu berhasil di-encode.
 - [x] Encoder pure (`BarcodeEncoder`): render matriks modul piksel `BarcodeMatrix` (`List<BooleanArray>`) via ZXing `MultiFormatWriter` dengan margin 0 (tanpa Android Bitmap); tolak isi tidak valid.
-- [x] UI kartu barcode (`ExpandedBarcodeCard`): Canvas dengan integer scaling (modul tidak pecah), pelat putih rounded + quiet zone, rotasi 180° (`flipped`), warna kustom dari `BarcodeContent.color`, label di bawah kode.
+- [x] UI kartu barcode (`ExpandedBarcodeCard`): Canvas dengan integer scaling (modul tidak pecah), pelat putih rounded + quiet zone, rotasi 180° (`flipped`), warna kustom dari `BarcodeContent.color`, label di bawah kode; fallback teks pesan error yang jelas jika pembuatan kode gagal (tidak diam/kosong).
 - [x] Integrasi kartu Shortcuts (`ExpandedShortcutsCard`): barcode tampil di bagian atas kartu Shortcuts saat aktif dan valid; tampil barcode saja jika tidak ada pintasan; brightness window dinaikkan ke 100% (`screenBrightness = 1f`) saat barcode tampil di overlay (`OverlayWindowController`) dan kembali saat hilang.
 - [x] Pengaturan & DataStore (`SettingsRepository`): `barcode` dan `barcodeCardEnabled` dengan backward compatibility.
-- [x] UI app pendamping (`ShortcutsTab`): kartu pengaturan barcode (pemilih format, input isi & label, palet warna, switch flip, switch aktif, pesan error validator real-time, live preview).
+- [x] UI app pendamping (`ShortcutsTab`): kartu pengaturan barcode (pemilih format, input isi & label, palet warna, switch flip, switch aktif, pesan error validator real-time, live preview, serta penanganan error encoder jika pembuatan kode gagal).
 - [ ] Scan barcode via kamera (ML Kit Code Scanner) & impor gambar galeri (ML Kit Barcode Scanning) — belum (lingkup M6a difokuskan pada input ketik, validasi, dan render ZXing; ML Kit tidak ditambahkan di run ini agar bebas izin kamera).
 
 Acceptance di device:

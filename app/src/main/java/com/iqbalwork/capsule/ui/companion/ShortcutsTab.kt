@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import com.iqbalwork.capsule.model.BarcodeFormat
+import com.iqbalwork.capsule.platform.barcode.BarcodeEncoder
 import com.iqbalwork.capsule.platform.barcode.BarcodeValidationResult
 import com.iqbalwork.capsule.platform.barcode.BarcodeValidator
 import com.iqbalwork.capsule.ui.components.ExpandedBarcodeCard
@@ -175,6 +176,19 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
                     val validation = remember(settings.barcode.content, settings.barcode.format) {
                         BarcodeValidator.validate(settings.barcode.content, settings.barcode.format)
                     }
+                    val encodeResult = remember(settings.barcode.content, settings.barcode.format) {
+                        if (validation is BarcodeValidationResult.Ok && settings.barcode.content.isNotEmpty()) {
+                            runCatching { BarcodeEncoder.encode(settings.barcode.content, settings.barcode.format) }
+                        } else {
+                            null
+                        }
+                    }
+                    val encoderError = encodeResult?.exceptionOrNull()?.message
+                    val barcodeErrorMessage = when {
+                        validation is BarcodeValidationResult.Error -> validation.message
+                        encoderError != null -> "Gagal membuat kode: $encoderError"
+                        else -> null
+                    }
 
                     OutlinedTextField(
                         value = settings.barcode.content,
@@ -196,11 +210,11 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
                                 BarcodeFormat.CODABAR -> "A123456B"
                             })
                         },
-                        isError = validation is BarcodeValidationResult.Error && settings.barcode.content.isNotEmpty(),
+                        isError = barcodeErrorMessage != null && settings.barcode.content.isNotEmpty(),
                         supportingText = {
-                            if (validation is BarcodeValidationResult.Error) {
+                            if (barcodeErrorMessage != null && settings.barcode.content.isNotEmpty()) {
                                 Text(
-                                    text = validation.message,
+                                    text = barcodeErrorMessage,
                                     color = MaterialTheme.colorScheme.error
                                 )
                             }
@@ -280,15 +294,16 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
                                 .padding(16.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            if (validation is BarcodeValidationResult.Ok) {
+                            if (validation is BarcodeValidationResult.Ok && encoderError == null) {
                                 ExpandedBarcodeCard(
                                     barcode = settings.barcode,
                                     plateHeight = 90.dp,
                                     showLabel = true
                                 )
                             } else {
+                                val previewReason = barcodeErrorMessage ?: "Kode tidak valid"
                                 Text(
-                                    text = "Preview unavailable: ${(validation as BarcodeValidationResult.Error).message}",
+                                    text = "Preview unavailable: $previewReason",
                                     color = MaterialTheme.colorScheme.error,
                                     style = MaterialTheme.typography.bodySmall,
                                     textAlign = TextAlign.Center

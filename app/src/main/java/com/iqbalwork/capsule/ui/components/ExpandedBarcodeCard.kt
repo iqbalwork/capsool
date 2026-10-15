@@ -44,9 +44,11 @@ fun ExpandedBarcodeCard(
     plateHeight: Dp = 90.dp,
     showLabel: Boolean = true
 ) {
-    val matrix: BarcodeMatrix? = remember(barcode.content, barcode.format) {
-        runCatching { BarcodeEncoder.encode(barcode.content, barcode.format) }.getOrNull()
+    val encodeResult: Result<BarcodeMatrix> = remember(barcode.content, barcode.format) {
+        runCatching { BarcodeEncoder.encode(barcode.content, barcode.format) }
     }
+    val matrix = encodeResult.getOrNull()
+    val encodeError = encodeResult.exceptionOrNull()?.message
 
     val codeColor = remember(barcode.color) {
         val c = Color(barcode.color)
@@ -75,6 +77,27 @@ fun ExpandedBarcodeCard(
                     color = codeColor,
                     is2D = is2D,
                     height = plateHeight
+                )
+            }
+        } else {
+            val reason = encodeError?.ifBlank { null }
+            val errorText = if (reason != null) {
+                "Kode tidak bisa dibuat: $reason"
+            } else {
+                "Kode tidak bisa dibuat"
+            }
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color.White.copy(alpha = 0.08f))
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = errorText,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center
                 )
             }
         }

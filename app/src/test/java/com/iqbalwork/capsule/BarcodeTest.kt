@@ -304,4 +304,160 @@ class BarcodeTest {
         assertEquals(BarcodeContent(), readBack.barcode)
         assertTrue(readBack.barcodeCardEnabled)
     }
+
+    // --- Contract & Boundary Tests ---
+
+    @Test
+    fun itfLengthBoundaryTests() {
+        val itf80 = "1".repeat(80)
+        val res80 = BarcodeValidator.validate(itf80, BarcodeFormat.ITF)
+        assertTrue("ITF 80 digits must be valid", res80 is BarcodeValidationResult.Ok)
+
+        val itf82 = "1".repeat(82)
+        val res82 = BarcodeValidator.validate(itf82, BarcodeFormat.ITF)
+        assertTrue("ITF 82 digits must be rejected by validator", res82 is BarcodeValidationResult.Error)
+        val errorMsg = (res82 as BarcodeValidationResult.Error).message
+        assertTrue("Error message must mention 80 digit limit: $errorMsg", errorMsg.contains("80"))
+    }
+
+    @Test
+    fun code39LengthBoundaryTests() {
+        val c39_80 = "A".repeat(80)
+        val res80 = BarcodeValidator.validate(c39_80, BarcodeFormat.CODE_39)
+        assertTrue("Code 39 80 chars must be valid", res80 is BarcodeValidationResult.Ok)
+
+        val c39_81 = "A".repeat(81)
+        val res81 = BarcodeValidator.validate(c39_81, BarcodeFormat.CODE_39)
+        assertTrue("Code 39 81 chars must be rejected by validator", res81 is BarcodeValidationResult.Error)
+        val errorMsg = (res81 as BarcodeValidationResult.Error).message
+        assertTrue("Error message must mention 80 char limit: $errorMsg", errorMsg.contains("80"))
+    }
+
+    @Test
+    fun code93LengthBoundaryTests() {
+        val c93_80 = "A".repeat(80)
+        val res80 = BarcodeValidator.validate(c93_80, BarcodeFormat.CODE_93)
+        assertTrue("Code 93 80 basic chars must be valid", res80 is BarcodeValidationResult.Ok)
+
+        val c93_81 = "A".repeat(81)
+        val res81 = BarcodeValidator.validate(c93_81, BarcodeFormat.CODE_93)
+        assertTrue("Code 93 81 basic chars must be rejected", res81 is BarcodeValidationResult.Error)
+        val error81 = (res81 as BarcodeValidationResult.Error).message
+        assertTrue("Error message must mention 80 limit: $error81", error81.contains("80"))
+
+        val c93_40lower = "a".repeat(40)
+        val res40 = BarcodeValidator.validate(c93_40lower, BarcodeFormat.CODE_93)
+        assertTrue("Code 93 40 lowercase chars (80 encoded) must be valid", res40 is BarcodeValidationResult.Ok)
+
+        val c93_41lower = "a".repeat(41)
+        val res41 = BarcodeValidator.validate(c93_41lower, BarcodeFormat.CODE_93)
+        assertTrue("Code 93 41 lowercase chars (82 encoded) must be rejected", res41 is BarcodeValidationResult.Error)
+        val error41 = (res41 as BarcodeValidationResult.Error).message
+        assertTrue("Error message must mention 80 limit: $error41", error41.contains("80"))
+    }
+
+    @Test
+    fun validatorEncoderContractForAllFormats() {
+        val samplesPerFormat = mapOf(
+            BarcodeFormat.QR_CODE to listOf(
+                "https://example.com/capsule",
+                "1234567890",
+                "A",
+                "Capsule Quick Barcode! @#$%",
+                "A".repeat(2953)
+            ),
+            BarcodeFormat.EAN_13 to listOf(
+                "4006381333931",
+                "9780201379624",
+                "0000000000000"
+            ),
+            BarcodeFormat.EAN_8 to listOf(
+                "96385074",
+                "40123455",
+                "00000000"
+            ),
+            BarcodeFormat.UPC_A to listOf(
+                "036000291452",
+                "012345678905",
+                "000000000000"
+            ),
+            BarcodeFormat.UPC_E to listOf(
+                "01234565",
+                "04252614",
+                "00123457"
+            ),
+            BarcodeFormat.ITF to listOf(
+                "12",
+                "1234",
+                "123456",
+                "1".repeat(80)
+            ),
+            BarcodeFormat.CODE_39 to listOf(
+                "CODE39",
+                "A-1. $/+%",
+                "0123456789",
+                "A".repeat(80)
+            ),
+            BarcodeFormat.CODE_93 to listOf(
+                "CODE93",
+                "TEST-93. $/+%",
+                "code93",
+                "A".repeat(80),
+                "a".repeat(40)
+            ),
+            BarcodeFormat.CODE_128 to listOf(
+                "Code 128 Test!",
+                "1234567890",
+                "Capsule-128",
+                "A".repeat(100)
+            ),
+            BarcodeFormat.CODABAR to listOf(
+                "A123456B",
+                "C123456D",
+                "T123456N",
+                "*123456*",
+                "A12-3$:/.+45B",
+                "a12345b",
+                "A" + "1".repeat(98) + "B"
+            )
+        )
+
+        // Ensure every single supported BarcodeFormat is explicitly covered in the contract
+        assertEquals(
+            "Every BarcodeFormat entry must have contract samples",
+            BarcodeFormat.entries.toSet(),
+            samplesPerFormat.keys
+        )
+
+        for ((format, samples) in samplesPerFormat) {
+            for (content in samples) {
+                // 1. Validator Contract: must declare this valid content as Ok
+                val validation = BarcodeValidator.validate(content, format)
+                assertTrue(
+                    "Contract violation: Validator rejected valid sample '$content' for format $format: $validation",
+                    validation is BarcodeValidationResult.Ok
+                )
+
+                // 2. Encoder Contract: anything accepted by validator MUST encode without throwing
+                val matrix = try {
+                    BarcodeEncoder.encode(content, format)
+                } catch (t: Throwable) {
+                    fail("Contract violation: Encoder threw on valid content '$content' for format $format: ${t.message}")
+                    throw t
+                }
+
+                // 3. Matrix Output Contract: matrix must be non-null and dimensions > 0
+                assertNotNull("Contract violation: Matrix is null for format $format with content '$content'", matrix)
+                assertTrue(
+                    "Contract violation: Matrix width must be > 0 for format $format (got ${matrix.width})",
+                    matrix.width > 0
+                )
+                assertTrue(
+                    "Contract violation: Matrix height must be > 0 for format $format (got ${matrix.height})",
+                    matrix.height > 0
+                )
+            }
+        }
+    }
 }
+
