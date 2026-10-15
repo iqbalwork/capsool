@@ -59,8 +59,8 @@ fun List<StaticCard>.moveDown(id: String): List<StaticCard> {
 fun List<StaticCard>.without(id: String): List<StaticCard> = filter { it.id != id }
 
 /**
- * Salin kartu turunan (effectiveStaticCards) ke staticCards eksplisit agar user bisa mulai
- * mengatur dari keadaan sekarang tanpa mengulang dari nol. No-op jika staticCards sudah terisi.
+ * Copies the derived cards into an explicit list so the user can start arranging from the
+ * current state instead of from scratch. No-op once the list is explicit.
  */
 fun Settings.seedStaticCards(): Settings =
     if (staticCards.isNotEmpty()) this

@@ -254,7 +254,7 @@ private fun IntentItemCard(
 
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 OutlinedButton(onClick = onTest) {
-                    Text("Kirim tes")
+                    Text("Send test")
                 }
                 Spacer(Modifier.width(12.dp))
                 if (testResult != null) {

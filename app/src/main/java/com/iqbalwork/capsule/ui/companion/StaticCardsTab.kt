@@ -52,9 +52,8 @@ import com.iqbalwork.capsule.core.settings.without
 import java.util.UUID
 
 /**
- * M6c-2: UI kelola kartu statis di app pendamping.
- * Mengatur mode tampilan (Carousel / List), daftar kartu berurutan, penanda kartu awal,
- * serta penambahan kartu baru berdasarkan StaticCardType.
+ * Manages the static cards: view mode, order, which one is the start card, and which types
+ * exist. Drawing the cards is the overlay's job, not this tab's.
  */
 @Composable
 fun StaticCardsTab(
@@ -80,7 +79,7 @@ fun StaticCardsTab(
         item {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Mode tampilan", style = MaterialTheme.typography.titleMedium)
+                    Text("View mode", style = MaterialTheme.typography.titleMedium)
                     SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                         StaticCardViewMode.entries.forEachIndexed { index, mode ->
                             SegmentedButton(
@@ -94,9 +93,9 @@ fun StaticCardsTab(
                     }
                     Text(
                         if (settings.staticCardViewMode == StaticCardViewMode.CAROUSEL) {
-                            "Carousel: geser kiri/kanan untuk berpindah antar kartu."
+                            "Carousel: swipe left and right to move between cards."
                         } else {
-                            "List: kartu ditampilkan dalam susunan vertikal."
+                            "List: the cards are stacked vertically."
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -105,15 +104,15 @@ fun StaticCardsTab(
             }
         }
 
-        // Mode turunan: info + tombol "Ubah kartu"
+        // Derived mode: explain where the cards come from, offer to make them explicit
         if (isDerived) {
             item {
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Daftar kartu otomatis", style = MaterialTheme.typography.titleMedium)
+                        Text("Cards are automatic", style = MaterialTheme.typography.titleMedium)
                         Text(
-                            "Kartu saat ini diturunkan otomatis dari konfigurasi pintasan, barcode, dan aksi kustom. " +
-                                "Ubah kartu untuk mulai menyusun urutan, memilih kartu awal, atau menambah kartu secara manual.",
+                            "These cards come from the shortcut, barcode and custom-action settings. " +
+                                "Edit them to set the order, pick a start card, or add cards by hand.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -121,14 +120,14 @@ fun StaticCardsTab(
                             onClick = { onUpdate { it.seedStaticCards() } },
                             enabled = displayCards.isNotEmpty()
                         ) {
-                            Text("Ubah kartu")
+                            Text("Edit cards")
                         }
                     }
                 }
             }
         }
 
-        // Header daftar kartu + tombol "Tambah kartu"
+        // Card list header plus the "Add card" menu
         item {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -137,9 +136,9 @@ fun StaticCardsTab(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Daftar kartu", style = MaterialTheme.typography.titleMedium)
+                            Text("Cards", style = MaterialTheme.typography.titleMedium)
                             Text(
-                                "Urutan kartu statis yang tampil pada kapsul.",
+                                "The order these cards appear in on the capsule.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -151,7 +150,7 @@ fun StaticCardsTab(
                             ) {
                                 Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.width(8.dp))
-                                Text("Tambah kartu")
+                                Text("Add card")
                             }
                             DropdownMenu(
                                 expanded = addMenuExpanded,
@@ -186,7 +185,7 @@ fun StaticCardsTab(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            "Belum ada kartu statis yang aktif",
+                            "No static cards yet",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -217,16 +216,19 @@ fun StaticCardsTab(
                                     )
                                 }
                             }
-                            Text(
-                                card.type.label,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            // The type only adds information once the card has been renamed.
+                            if (card.label != card.type.label) {
+                                Text(
+                                    card.type.label,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
 
                         if (isDerived) {
                             Text(
-                                "Otomatis",
+                                "Automatic",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -282,7 +284,7 @@ fun StaticCardsTab(
         if (type != null) {
             AlertDialog(
                 onDismissRequest = { showAddDialog = false },
-                title = { Text("Tambah kartu ${type.label}") },
+                title = { Text("Add ${type.label} card") },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(
@@ -311,12 +313,12 @@ fun StaticCardsTab(
                         },
                         enabled = dialogLabel.isNotBlank()
                     ) {
-                        Text("Tambah")
+                        Text("Add")
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showAddDialog = false }) {
-                        Text("Batal")
+                        Text("Cancel")
                     }
                 }
             )
