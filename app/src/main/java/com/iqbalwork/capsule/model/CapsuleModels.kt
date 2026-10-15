@@ -79,22 +79,24 @@ data class ChargingState(
     val isLowBattery: Boolean = false
 )
 
-data class NotificationActionItem(
-    val id: String,
-    val title: String,
-    val isReply: Boolean = false
-)
-
-data class NotificationState(
-    val id: String,
-    val title: String,
-    val content: String,
+/** A notification as the capsule shows it. Bitmaps are already downscaled by the source. */
+data class CapsuleNotification(
+    val key: String,
     val packageName: String,
     val appName: String,
-    val senderAvatarUri: String? = null,
-    val timestamp: Long,
+    val sender: String,
+    val text: String,
+    val conversationTitle: String? = null,
+    val avatar: Bitmap? = null,
+    /** The app's monochrome status-bar icon; draw it tinted. */
+    val appIcon: Bitmap? = null,
     val glowColor: Long,
-    val actions: List<NotificationActionItem> = emptyList()
+    val postedAt: Long,
+    val canReply: Boolean = false,
+    val canMarkRead: Boolean = false,
+    val clearable: Boolean = true,
+    /** Posted with VISIBILITY_PUBLIC, so its text may show on the lock screen. */
+    val isPublic: Boolean = false
 )
 
 data class TimerState(

@@ -15,6 +15,7 @@ import androidx.palette.graphics.Palette
 import com.iqbalwork.capsule.core.store.Effect
 import com.iqbalwork.capsule.core.store.SystemEvent
 import com.iqbalwork.capsule.model.MediaState
+import com.iqbalwork.capsule.platform.PendingIntents
 import com.iqbalwork.capsule.platform.notification.CapsoolNotificationListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -88,7 +89,7 @@ class MediaSource(
                 Effect.MediaCommand.PREVIOUS -> controls.skipToPrevious()
             }
             is Effect.MediaSeek -> controls.seekTo(effect.positionMs)
-            Effect.MediaOpenApp -> runCatching { current.sessionActivity?.send() }
+            Effect.MediaOpenApp -> runCatching { current.sessionActivity?.let { PendingIntents.sendLaunching(context, it) } }
                 .onFailure { Log.w(TAG, "Could not open player", it) }
             else -> Unit
         }

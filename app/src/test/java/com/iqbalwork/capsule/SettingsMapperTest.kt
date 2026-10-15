@@ -6,6 +6,8 @@ import com.iqbalwork.capsule.core.settings.GestureAction
 import com.iqbalwork.capsule.core.settings.GestureType
 import com.iqbalwork.capsule.core.settings.Geometry
 import com.iqbalwork.capsule.core.settings.MediaCollapseDelay
+import com.iqbalwork.capsule.core.settings.NotificationDelay
+import com.iqbalwork.capsule.core.settings.NotificationDisplay
 import com.iqbalwork.capsule.core.settings.Settings
 import com.iqbalwork.capsule.core.settings.SettingsMapper
 import org.junit.Assert.assertEquals
@@ -35,6 +37,13 @@ class SettingsMapperTest {
             mediaEnabled = false,
             mediaCollapseDelay = MediaCollapseDelay.NEVER,
             hideMediaWhenAppInFront = false,
+            notificationsEnabled = false,
+            notificationDisplay = NotificationDisplay.EXPANDED,
+            notificationDelay = NotificationDelay.UNTIL_OPENED,
+            notificationBlockedApps = setOf("com.a", "com.b"),
+            hideNotificationTextWhenLocked = false,
+            removeNotificationAfterViewing = true,
+            notificationGlow = false,
             disclosureAccepted = true
         )
         val prefs = mutablePreferencesOf()

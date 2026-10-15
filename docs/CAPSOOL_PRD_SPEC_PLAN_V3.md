@@ -623,7 +623,7 @@ Pekerjaan:
 - [x] Debug-only: `MediaSession` asli tanpa audio untuk tes end-to-end di device tanpa app musik.
 - [ ] F-13 whitelist app media — belum (P1, ditunda; toggle on/off media sudah ada).
 
-Acceptance di device (✅ = emulator Pixel 10 Pro / API 37 dengan `MediaSession` debug asli, 2026-10-15):
+Acceptance di device (✅ = emulator Pixel 10 Pro / API 37 dengan `MediaSession` debug asli, 2026-10-15; user melaporkan M0+M1 berjalan di HP-nya — Pixel 8 Pro terhubung, detail per item belum dicatat):
 - [~] Spotify, YouTube Music, player lokal: judul, artis, cover sesuai. ✅ untuk sesi debug (lewat `MediaSessionManager` sungguhan). ❌ belum dites dengan Spotify/YouTube Music/player lokal (butuh login atau app tidak ada di emulator).
 - [x] Play/pause/next/prev dari kapsul mengubah pemutaran asli. ✅ next → "Debug Track Two", pause → `PAUSED` di `dumpsys media_session`. Perubahan dari luar ter-update ≤ 300 ms: ✅ pill berubah dalam satu screenshot (< 1,5 s; latensi persis belum diukur).
 - [x] Seek bar bergerak dan seek mengubah posisi ✅ (drag → posisi sesi 2:01). Player tanpa durasi → seek bar tersembunyi: ✅ unit test, belum dicek visual.
@@ -631,18 +631,30 @@ Acceptance di device (✅ = emulator Pixel 10 Pro / API 37 dengan `MediaSession`
 - [ ] Tap cover → membuka app player. Belum terverifikasi (sesi debug tidak punya `sessionActivity`).
 - [ ] Layar mati 10 menit dengan musik berjalan → tidak ada lonjakan baterai. Belum dicek.
 
-### M2 — Notifikasi (F-20..F-23)
-Acceptance di device:
-- [ ] Pesan WhatsApp & Telegram masuk → kapsul menampilkan avatar pengirim, nama, isi, badge app, glow.
-- [ ] Balas dari kapsul → pesan benar-benar terkirim di chat; keyboard muncul dan tidak menutupi field.
-- [ ] Mark as read hilang dari notifikasi shade (di app yang mendukung); tombol tidak tampil di app yang tidak mendukung.
-- [ ] Dismiss menghapus notifikasi dari shade.
-- [ ] App di blacklist tidak pernah tampil; notifikasi "ongoing" (mis. upload Drive) tidak tampil sebagai notifikasi.
-- [ ] Layar terkunci + "sembunyikan isi" → hanya nama app.
-- [ ] Mode ringkas vs expanded dan delay auto-hide (termasuk "sampai dibuka") bekerja sesuai setting.
-- [ ] Dari halaman "Atur app", tap WhatsApp → terbuka pengaturan notifikasi WhatsApp; setelah pop-up dimatikan, pesan baru hanya muncul di kapsul.
-- [ ] "Hapus setelah dilihat" aktif → notifikasi hilang dari shade setelah dilihat di kapsul.
-- [ ] 10 notifikasi beruntun dalam 5 s → tidak crash, antrian maks 5, tidak ada jank terlihat.
+### M2 — Notifikasi (F-20..F-26)
+Pekerjaan:
+- [x] `NotificationSource`: parsing `StatusBarNotification` (MessagingStyle → pengirim & pesan terakhir, avatar `Person`/large icon, small icon app, nama app, warna glow dari `notification.color` atau Palette ikon launcher).
+- [x] `NotificationFilter` pure: abaikan package sendiri (kecuali build debug), group summary, ongoing, MediaStyle, kategori transport/service/system/progress/navigation/call/status, importance < DEFAULT, tanpa isi, app di blacklist; update `FLAG_ONLY_ALERT_ONCE` → refresh di tempat tanpa pop-up ulang.
+- [x] Antrian maks 5 (terbaru di depan); notifikasi dihapus dari shade → hilang dari kapsul.
+- [x] Mode tampil (F-24): kecil lalu tap untuk buka / langsung buka kartu; delay 1–30 s atau "sampai dibuka"; menutup kartu yang sedang dibaca = sudah dilihat (keluar dari kapsul).
+- [x] Aksi (F-21): balas inline via `RemoteInput`, Read (`SEMANTIC_ACTION_MARK_AS_READ`), Dismiss (`cancelNotification`), tap isi → buka app (`contentIntent`, opt-in background activity start di Android 14+). Tombol hanya muncul bila app mendukung.
+- [x] Window overlay jadi focusable hanya selama mengetik balasan; keyboard tidak menyembunyikan kapsul saat membalas; timeout expanded dijeda selama mengetik.
+- [x] Privasi lock screen (F-22): teks disembunyikan saat terkunci kecuali notifikasi `VISIBILITY_PUBLIC` atau user mematikan opsi; balas dinonaktifkan saat terkunci.
+- [x] Halaman "Apps in the capsule" (F-22 + F-26): blokir per app + tombol "Pop-up" ke pengaturan notifikasi app (`ACTION_APP_NOTIFICATION_SETTINGS`). Daftar app lewat `LauncherApps`; `<queries>` launcher untuk nama/ikon (bukan `QUERY_ALL_PACKAGES`).
+- [x] Hapus dari shade setelah dilihat (F-25, opsional, default mati) dan glow berdenyut di pill (F-20).
+- [x] Debug-only: notifikasi chat asli (MessagingStyle + RemoteInput + mark-as-read) untuk tes end-to-end.
+- [ ] F-23 swipe samping untuk dismiss — belum (swipe kiri/kanan sudah dipakai ganti kartu; perlu desain gesture dulu).
+
+Acceptance di device (✅ = emulator Pixel 10 Pro / API 37 dengan notifikasi debug asli, 2026-10-15):
+- [~] Pesan WhatsApp & Telegram masuk → avatar, nama, isi, badge app, glow. ✅ untuk notifikasi MessagingStyle debug (pill: avatar + ikon app + glow hijau; kartu: pengirim, app, pesan). ❌ belum dites dengan WhatsApp/Telegram asli.
+- [x] Balas dari kapsul → pesan benar-benar terkirim. ✅ `RemoteInput` sampai ke app pengirim ("Reply received: On my way"); keyboard muncul dan kapsul tetap tampil. ❌ belum dengan WhatsApp/Telegram.
+- [x] Mark as read hilang dari shade ✅ (aksi sampai ke app debug, notifikasi dibatalkan); tombol tidak tampil bila app tidak mendukung: ✅ unit test.
+- [x] Dismiss menghapus notifikasi dari shade ✅ (`dumpsys notification` 1 → 0).
+- [ ] App di blacklist tidak pernah tampil: ✅ unit test filter, belum dicek di device. Notifikasi ongoing tidak tampil: ✅ unit test.
+- [ ] Layar terkunci + "sembunyikan isi" → hanya nama app: ✅ unit test, belum dicek di device.
+- [ ] Mode ringkas vs expanded dan delay auto-hide: ✅ unit test, baru mode ringkas yang dicek di emulator.
+- [ ] Halaman "Apps in the capsule" → Pop-up membuka pengaturan notifikasi app: belum dicek.
+- [ ] 10 notifikasi beruntun dalam 5 s → tidak crash, antrian maks 5: ✅ unit test antrian, belum stress test di device.
 
 ### M3 — Baterai & event sistem (F-30, F-31, F-60..F-65, F-68)
 Acceptance di device:

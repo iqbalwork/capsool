@@ -144,14 +144,7 @@ class CapsuleReducerTest {
     @Test
     fun newNotificationTakesFocus() {
         val state = reduce(loaded, SystemEvent.MediaUpdated(media), UserIntent.SelectCard(CapsuleCardType.MEDIA))
-        val notified = reduce(
-            state,
-            SystemEvent.NotificationUpdated(
-                com.iqbalwork.capsule.model.NotificationState(
-                    id = "1", title = "A", content = "B", packageName = "p", appName = "App", timestamp = 0L, glowColor = 0L
-                )
-            )
-        )
+        val notified = reduce(state, SystemEvent.NotificationPosted(NotificationFixtures.notification("1")))
         assertEquals(CapsuleCardType.NOTIFICATION, notified.activeCard)
     }
 }

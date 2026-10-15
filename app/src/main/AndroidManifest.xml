@@ -5,6 +5,15 @@
     <!-- Read-only check so the status screen can warn about Android Advanced Protection (F-97). -->
     <uses-permission android:name="android.permission.QUERY_ADVANCED_PROTECTION_MODE" />
 
+    <!-- Lets Capsool read the names and icons of launchable apps (notification sources, app lists).
+         Narrower than QUERY_ALL_PACKAGES, which is not used. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
     <application
         android:name=".CapsoolApp"
         android:allowBackup="true"

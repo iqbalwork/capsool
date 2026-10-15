@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule.platform.accessibility
 
 import android.accessibilityservice.AccessibilityService
+import android.app.KeyguardManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -30,8 +31,9 @@ class CapsoolAccessibilityService : AccessibilityService() {
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
-                Intent.ACTION_SCREEN_OFF -> updateVisibility { it.copy(screenOn = false) }
-                Intent.ACTION_SCREEN_ON -> updateVisibility { it.copy(screenOn = true) }
+                Intent.ACTION_SCREEN_OFF -> updateVisibility { it.copy(screenOn = false, locked = isLocked()) }
+                Intent.ACTION_SCREEN_ON -> updateVisibility { it.copy(screenOn = true, locked = isLocked()) }
+                Intent.ACTION_USER_PRESENT -> updateVisibility { it.copy(locked = false) }
             }
         }
     }
@@ -48,12 +50,14 @@ class CapsoolAccessibilityService : AccessibilityService() {
             IntentFilter().apply {
                 addAction(Intent.ACTION_SCREEN_OFF)
                 addAction(Intent.ACTION_SCREEN_ON)
+                addAction(Intent.ACTION_USER_PRESENT)
             },
             ContextCompat.RECEIVER_NOT_EXPORTED
         )
         updateVisibility {
             VisibilityContext(
                 screenOn = getSystemService(PowerManager::class.java).isInteractive,
+                locked = isLocked(),
                 orientation = orientationOf(resources.configuration)
             )
         }
@@ -111,6 +115,8 @@ class CapsoolAccessibilityService : AccessibilityService() {
         visibility = updated
         graph.store.dispatch(SystemEvent.VisibilityChanged(updated))
     }
+
+    private fun isLocked(): Boolean = getSystemService(KeyguardManager::class.java).isKeyguardLocked
 
     private fun orientationOf(config: Configuration): Orientation =
         if (config.orientation == Configuration.ORIENTATION_LANDSCAPE) Orientation.LANDSCAPE else Orientation.PORTRAIT

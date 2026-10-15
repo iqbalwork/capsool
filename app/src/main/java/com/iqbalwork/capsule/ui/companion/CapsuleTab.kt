@@ -29,6 +29,8 @@ import androidx.compose.ui.unit.dp
 import com.iqbalwork.capsule.core.settings.ColorSource
 import com.iqbalwork.capsule.core.settings.Geometry
 import com.iqbalwork.capsule.core.settings.MediaCollapseDelay
+import com.iqbalwork.capsule.core.settings.NotificationDelay
+import com.iqbalwork.capsule.core.settings.NotificationDisplay
 import com.iqbalwork.capsule.core.settings.Orientation
 import com.iqbalwork.capsule.core.settings.Settings
 import kotlin.math.roundToInt
@@ -39,6 +41,7 @@ fun CapsuleTab(
     settings: Settings,
     currentOrientation: Orientation,
     onUpdate: ((Settings) -> Settings) -> Unit,
+    onOpenNotificationApps: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var editing by remember(currentOrientation) { mutableStateOf(currentOrientation) }
@@ -128,6 +131,52 @@ fun CapsuleTab(
             }
         }
         item {
+            Section("Notifications") {
+                SwitchRow(
+                    title = "Show notifications",
+                    description = "Messages and alerts from your apps appear in the capsule.",
+                    checked = settings.notificationsEnabled,
+                    onChange = { on -> onUpdate { it.copy(notificationsEnabled = on) } }
+                )
+                Text("When one arrives", style = MaterialTheme.typography.bodyMedium)
+                Options(
+                    options = NotificationDisplay.entries,
+                    selected = settings.notificationDisplay,
+                    label = { if (it == NotificationDisplay.COMPACT) "Small, tap to open" else "Open the card" },
+                    onSelect = { display -> onUpdate { it.copy(notificationDisplay = display) } }
+                )
+                Text("Keep it in the capsule for", style = MaterialTheme.typography.bodyMedium)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    NotificationDelay.entries.forEach { delay ->
+                        FilterChip(
+                            selected = settings.notificationDelay == delay,
+                            onClick = { onUpdate { it.copy(notificationDelay = delay) } },
+                            label = { Text(delay.label) }
+                        )
+                    }
+                }
+                SwitchRow(
+                    title = "Hide message text when locked",
+                    description = "On the lock screen only the app name shows, unless the app marks it public.",
+                    checked = settings.hideNotificationTextWhenLocked,
+                    onChange = { on -> onUpdate { it.copy(hideNotificationTextWhenLocked = on) } }
+                )
+                SwitchRow(
+                    title = "Remove after viewing",
+                    description = "Clear it from the notification shade once you have opened it in the capsule.",
+                    checked = settings.removeNotificationAfterViewing,
+                    onChange = { on -> onUpdate { it.copy(removeNotificationAfterViewing = on) } }
+                )
+                SwitchRow(
+                    title = "Glow",
+                    description = "Outline the capsule in the app's color while a notification waits.",
+                    checked = settings.notificationGlow,
+                    onChange = { on -> onUpdate { it.copy(notificationGlow = on) } }
+                )
+                TextButton(onClick = onOpenNotificationApps) { Text("Choose apps and turn off pop-ups") }
+            }
+        }
+        item {
             Section("Hide the capsule") {
                 SwitchRow(
                     title = "In fullscreen apps",
@@ -161,6 +210,17 @@ private val MediaCollapseDelay.label: String
         MediaCollapseDelay.SECONDS_60 -> "1 min"
         MediaCollapseDelay.MINUTES_2 -> "2 min"
         MediaCollapseDelay.NEVER -> "Always"
+    }
+
+private val NotificationDelay.label: String
+    get() = when (this) {
+        NotificationDelay.SECONDS_1 -> "1 s"
+        NotificationDelay.SECONDS_3 -> "3 s"
+        NotificationDelay.SECONDS_5 -> "5 s"
+        NotificationDelay.SECONDS_10 -> "10 s"
+        NotificationDelay.SECONDS_20 -> "20 s"
+        NotificationDelay.SECONDS_30 -> "30 s"
+        NotificationDelay.UNTIL_OPENED -> "Until opened"
     }
 
 @Composable

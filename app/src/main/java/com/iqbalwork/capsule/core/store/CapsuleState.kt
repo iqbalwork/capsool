@@ -6,7 +6,7 @@ import com.iqbalwork.capsule.model.CapsuleCardType
 import com.iqbalwork.capsule.model.ChargingState
 import com.iqbalwork.capsule.model.MediaState
 import com.iqbalwork.capsule.model.MiniEvent
-import com.iqbalwork.capsule.model.NotificationState
+import com.iqbalwork.capsule.model.CapsuleNotification
 import com.iqbalwork.capsule.model.SliderState
 import com.iqbalwork.capsule.model.TimerState
 
@@ -18,8 +18,12 @@ data class VisibilityContext(
     val fullscreen: Boolean = false,
     val imeVisible: Boolean = false,
     val orientation: Orientation = Orientation.PORTRAIT,
-    val foregroundPackage: String? = null
+    val foregroundPackage: String? = null,
+    val locked: Boolean = false
 )
+
+/** Most notifications the capsule keeps at once (spec §2.5.2). */
+const val MAX_CAPSULE_NOTIFICATIONS = 5
 
 /** Activity cards, highest priority first (spec §2.3). */
 private val CardPriority = listOf(
@@ -39,14 +43,17 @@ data class CapsuleState(
     val media: MediaState? = null,
     val sliders: SliderState = SliderState(),
     val charging: ChargingState = ChargingState(),
-    val notification: NotificationState? = null,
+    /** Newest first. The card shows the first one. */
+    val notifications: List<CapsuleNotification> = emptyList(),
+    /** Key of the notification being replied to; the overlay takes keyboard focus meanwhile. */
+    val replyingTo: String? = null,
     val timer: TimerState? = null
 ) {
     /** Cards that currently have something real to show, in priority order. */
     val activeCards: List<CapsuleCardType>
         get() = CardPriority.filter { card ->
             when (card) {
-                CapsuleCardType.NOTIFICATION -> notification != null
+                CapsuleCardType.NOTIFICATION -> settings.notificationsEnabled && notifications.isNotEmpty()
                 CapsuleCardType.TIMER -> timer != null
                 CapsuleCardType.MEDIA -> mediaVisible
                 CapsuleCardType.CHARGING -> charging.isCharging
@@ -63,6 +70,12 @@ data class CapsuleState(
                 !(settings.hideMediaWhenAppInFront && visibility.foregroundPackage == current.packageName)
         }
 
+    val topNotification: CapsuleNotification? get() = notifications.firstOrNull()
+
+    /** F-22: on the lock screen only public notifications show their text, if the user asks for that. */
+    fun showsText(notification: CapsuleNotification): Boolean =
+        !(visibility.locked && settings.hideNotificationTextWhenLocked && !notification.isPublic)
+
     /** The card the carousel shows: the focused one if still active, otherwise the top one. */
     val activeCard: CapsuleCardType?
         get() = activeCards.let { cards -> focusedCard?.takeIf { it in cards } ?: cards.firstOrNull() }
@@ -71,7 +84,8 @@ data class CapsuleState(
         get() = settingsLoaded &&
             visibility.screenOn &&
             !(settings.hideInFullscreen && visibility.fullscreen) &&
-            !(settings.hideWithKeyboard && visibility.imeVisible) &&
+            // Our own reply field opens the keyboard; that must not hide the capsule.
+            !(settings.hideWithKeyboard && visibility.imeVisible && replyingTo == null) &&
             !(settings.hideInLandscape && visibility.orientation == Orientation.LANDSCAPE)
 
     val mode: CapsuleMode

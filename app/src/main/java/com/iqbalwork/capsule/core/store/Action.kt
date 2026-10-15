@@ -6,7 +6,7 @@ import com.iqbalwork.capsule.model.CapsuleCardType
 import com.iqbalwork.capsule.model.ChargingState
 import com.iqbalwork.capsule.model.MediaState
 import com.iqbalwork.capsule.model.MiniEvent
-import com.iqbalwork.capsule.model.NotificationState
+import com.iqbalwork.capsule.model.CapsuleNotification
 import com.iqbalwork.capsule.model.SliderState
 import com.iqbalwork.capsule.model.TimerState
 
@@ -32,8 +32,12 @@ sealed interface UserIntent : Action {
     data object ToggleTorch : UserIntent
     data class SetTorchLevel(val level: Float) : UserIntent
 
-    data class NotificationReply(val id: String, val text: String) : UserIntent
-    data class NotificationDismiss(val id: String) : UserIntent
+    data class NotificationStartReply(val key: String) : UserIntent
+    data object NotificationCancelReply : UserIntent
+    data class NotificationReply(val key: String, val text: String) : UserIntent
+    data class NotificationMarkRead(val key: String) : UserIntent
+    data class NotificationDismiss(val key: String) : UserIntent
+    data class NotificationOpen(val key: String) : UserIntent
 
     data object TimerAddMinute : UserIntent
     data object TimerTogglePause : UserIntent
@@ -50,7 +54,10 @@ sealed interface SystemEvent : Action {
     data class MediaPauseTimedOut(val packageName: String, val title: String) : SystemEvent
     data class SlidersUpdated(val sliders: SliderState) : SystemEvent
     data class ChargingUpdated(val charging: ChargingState) : SystemEvent
-    data class NotificationUpdated(val notification: NotificationState?) : SystemEvent
+    /** [alert] false = an update that refreshes an existing entry without popping up again. */
+    data class NotificationPosted(val notification: CapsuleNotification, val alert: Boolean = true) : SystemEvent
+    data class NotificationRemoved(val key: String) : SystemEvent
+    data class NotificationTimedOut(val key: String) : SystemEvent
     data class TimerUpdated(val timer: TimerState?) : SystemEvent
     data class MiniEventStarted(val event: MiniEvent) : SystemEvent
     data class MiniEventFinished(val id: Long) : SystemEvent

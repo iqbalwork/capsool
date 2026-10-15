@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule.core.store
 
 import com.iqbalwork.capsule.core.settings.GestureAction
+import com.iqbalwork.capsule.core.settings.NotificationDisplay
 import com.iqbalwork.capsule.model.CapsuleCardType
 import com.iqbalwork.capsule.model.MediaState
 import com.iqbalwork.capsule.model.RingerMode
@@ -18,6 +19,7 @@ object CapsuleReducer {
     fun reduce(state: CapsuleState, action: Action): Reduction {
         val reduction = when (action) {
             is UserIntent -> reduceIntent(state, action)
+            SystemEvent.ExpandedTimedOut -> collapse(state)
             is SystemEvent -> Reduction(reduceEvent(state, action))
         }
         return reduction.copy(state = normalize(reduction.state))
@@ -25,7 +27,7 @@ object CapsuleReducer {
 
     private fun reduceIntent(state: CapsuleState, intent: UserIntent): Reduction = when (intent) {
         is UserIntent.Gesture -> reduceGesture(state, state.settings.gestureAction(intent.type))
-        UserIntent.SwipeUp, UserIntent.Collapse -> Reduction(state.copy(isExpanded = false))
+        UserIntent.SwipeUp, UserIntent.Collapse -> collapse(state)
         is UserIntent.SelectCard -> Reduction(state.copy(focusedCard = intent.card))
 
         UserIntent.MediaPlayPause -> playPause(state)
@@ -69,10 +71,24 @@ object CapsuleReducer {
             )
         }
 
-        is UserIntent.NotificationReply ->
-            Reduction(state.copy(notification = null), listOf(Effect.NotificationReply(intent.id, intent.text)))
+        is UserIntent.NotificationStartReply -> {
+            val target = state.notifications.firstOrNull { it.key == intent.key }
+            if (target == null || !target.canReply || state.visibility.locked) Reduction(state)
+            else Reduction(state.copy(replyingTo = intent.key))
+        }
+        UserIntent.NotificationCancelReply -> Reduction(state.copy(replyingTo = null))
+        is UserIntent.NotificationReply -> Reduction(
+            state.withoutNotification(intent.key).copy(replyingTo = null, isExpanded = false),
+            listOf(Effect.NotificationReply(intent.key, intent.text))
+        )
+        is UserIntent.NotificationMarkRead ->
+            Reduction(state.withoutNotification(intent.key), listOf(Effect.NotificationMarkRead(intent.key)))
         is UserIntent.NotificationDismiss ->
-            Reduction(state.copy(notification = null), listOf(Effect.NotificationDismiss(intent.id)))
+            Reduction(state.withoutNotification(intent.key), listOf(Effect.NotificationDismiss(intent.key)))
+        is UserIntent.NotificationOpen -> Reduction(
+            state.withoutNotification(intent.key).copy(isExpanded = false),
+            listOf(Effect.NotificationOpen(intent.key))
+        )
 
         // Timer controls are wired to the clock app's notification actions in M5.
         UserIntent.TimerAddMinute -> Reduction(state.copy(timer = state.timer?.let {
@@ -90,7 +106,8 @@ object CapsuleReducer {
         GestureAction.NONE -> Reduction(state)
         GestureAction.TOGGLE_EXPAND ->
             if (state.activeCards.isEmpty()) Reduction(state)
-            else Reduction(state.copy(isExpanded = !state.isExpanded, miniEvent = null))
+            else if (state.isExpanded) collapse(state)
+            else Reduction(state.copy(isExpanded = true, miniEvent = null))
         GestureAction.NEXT_CARD -> Reduction(cycleCard(state, step = 1))
         GestureAction.PREVIOUS_CARD -> Reduction(cycleCard(state, step = -1))
         GestureAction.MEDIA_PLAY_PAUSE -> playPause(state)
@@ -125,15 +142,18 @@ object CapsuleReducer {
         })
         is SystemEvent.SlidersUpdated -> state.copy(sliders = event.sliders)
         is SystemEvent.ChargingUpdated -> state.copy(charging = event.charging)
-        is SystemEvent.NotificationUpdated -> state.copy(
-            notification = event.notification,
-            focusedCard = if (event.notification != null) CapsuleCardType.NOTIFICATION else state.focusedCard
-        )
+        is SystemEvent.NotificationPosted -> notificationPosted(state, event)
+        is SystemEvent.NotificationRemoved -> state.withoutNotification(event.key)
+        is SystemEvent.NotificationTimedOut -> {
+            val beingRead = state.isExpanded && state.activeCard == CapsuleCardType.NOTIFICATION &&
+                state.topNotification?.key == event.key
+            if (beingRead || state.replyingTo == event.key) state else state.withoutNotification(event.key)
+        }
         is SystemEvent.TimerUpdated -> state.copy(timer = event.timer)
         is SystemEvent.MiniEventStarted -> state.copy(miniEvent = event.event)
         is SystemEvent.MiniEventFinished ->
             if (state.miniEvent?.id == event.id) state.copy(miniEvent = null) else state
-        SystemEvent.ExpandedTimedOut -> state.copy(isExpanded = false)
+        SystemEvent.ExpandedTimedOut -> state // handled in reduce(), it may emit effects
     }
 
     /**
@@ -149,11 +169,51 @@ object CapsuleReducer {
         return new.copy(hiddenAfterPause = hidden)
     }
 
-    /** Invariants that hold after every action. */
-    private fun normalize(state: CapsuleState): CapsuleState =
-        if (state.isExpanded && (state.activeCards.isEmpty() || !state.isAllowedOnScreen)) {
-            state.copy(isExpanded = false)
-        } else {
-            state
+    private fun notificationPosted(state: CapsuleState, event: SystemEvent.NotificationPosted): CapsuleState {
+        val incoming = event.notification
+        if (!event.alert) {
+            // Quiet update: refresh in place, never resurrect something the user already saw.
+            return state.copy(notifications = state.notifications.map { if (it.key == incoming.key) incoming else it })
         }
+        val queue = (listOf(incoming) + state.notifications.filter { it.key != incoming.key })
+            .take(MAX_CAPSULE_NOTIFICATIONS)
+        val autoExpand = state.settings.notificationDisplay == NotificationDisplay.EXPANDED &&
+            state.settings.notificationsEnabled && state.isAllowedOnScreen
+        return state.copy(
+            notifications = queue,
+            focusedCard = CapsuleCardType.NOTIFICATION,
+            isExpanded = state.isExpanded || autoExpand,
+            miniEvent = if (autoExpand) null else state.miniEvent
+        )
+    }
+
+    /**
+     * Closing an open notification card counts as having seen it (F-24 "until opened"): it
+     * leaves the capsule, and with F-25 also the notification shade.
+     */
+    private fun collapse(state: CapsuleState): Reduction {
+        val viewed = state.topNotification?.takeIf { state.isExpanded && state.activeCard == CapsuleCardType.NOTIFICATION }
+        val collapsed = state.copy(isExpanded = false, replyingTo = null)
+        if (viewed == null) return Reduction(collapsed)
+        val effects = if (state.settings.removeNotificationAfterViewing && viewed.clearable) {
+            listOf(Effect.NotificationDismiss(viewed.key))
+        } else {
+            emptyList()
+        }
+        return Reduction(collapsed.withoutNotification(viewed.key), effects)
+    }
+
+    private fun CapsuleState.withoutNotification(key: String): CapsuleState = copy(
+        notifications = notifications.filter { it.key != key },
+        replyingTo = replyingTo.takeIf { it != key }
+    )
+
+    /** Invariants that hold after every action. */
+    private fun normalize(state: CapsuleState): CapsuleState {
+        val expandable = state.activeCards.isNotEmpty() && state.isAllowedOnScreen
+        val expanded = state.isExpanded && expandable
+        val replying = state.replyingTo.takeIf { expanded && state.activeCard == CapsuleCardType.NOTIFICATION }
+        return if (expanded == state.isExpanded && replying == state.replyingTo) state
+        else state.copy(isExpanded = expanded, replyingTo = replying)
+    }
 }

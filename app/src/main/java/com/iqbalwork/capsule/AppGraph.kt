@@ -6,7 +6,9 @@ import com.iqbalwork.capsule.core.settings.SettingsRepository
 import com.iqbalwork.capsule.core.store.CapsuleStore
 import com.iqbalwork.capsule.core.store.SystemEvent
 import com.iqbalwork.capsule.platform.PlatformEffectHandler
+import com.iqbalwork.capsule.debugtools.DiagnosticsPanel
 import com.iqbalwork.capsule.platform.media.MediaSource
+import com.iqbalwork.capsule.platform.notification.NotificationSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -22,7 +24,16 @@ class AppGraph(context: Context) {
     // The lambda reads `effects` lazily, which breaks the store → effects → media → store cycle.
     val store: CapsuleStore = CapsuleStore(appScope) { effects.handle(it) }
     val mediaSource: MediaSource = MediaSource(context.applicationContext, appScope, store::dispatch)
-    val effects: PlatformEffectHandler = PlatformEffectHandler(mediaSource)
+    val notificationSource: NotificationSource = NotificationSource(
+        context = context.applicationContext,
+        scope = appScope,
+        settings = { store.state.value.settings },
+        knownKeys = { store.state.value.notifications.mapTo(HashSet()) { it.key } },
+        dispatch = store::dispatch,
+        // Debug builds post their own test notifications (DiagnosticsPanel).
+        ignoreOwnPackage = !DiagnosticsPanel.isAvailable
+    )
+    val effects: PlatformEffectHandler = PlatformEffectHandler(mediaSource, notificationSource)
 
     private val _serviceRunning = MutableStateFlow(false)
     val serviceRunning: StateFlow<Boolean> = _serviceRunning.asStateFlow()

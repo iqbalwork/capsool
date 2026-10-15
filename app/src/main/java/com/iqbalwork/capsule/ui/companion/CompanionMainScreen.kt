@@ -66,8 +66,18 @@ private fun CompanionMainScreen(
         if (DiagnosticsPanel.isAvailable) add("Debug")
     }
     var selected by rememberSaveable { mutableIntStateOf(0) }
+    var showNotificationApps by rememberSaveable { mutableStateOf(false) }
 
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+        if (showNotificationApps) {
+            NotificationAppsScreen(
+                settings = state.settings,
+                onUpdate = onUpdateSettings,
+                onBack = { showNotificationApps = false },
+                modifier = Modifier.safeDrawingPadding()
+            )
+            return@Surface
+        }
         Column(modifier = Modifier.safeDrawingPadding()) {
             // Live preview, useful while the service is off (F-93).
             if (!serviceRunning) {
@@ -99,7 +109,8 @@ private fun CompanionMainScreen(
                     "Capsule" -> CapsuleTab(
                         settings = state.settings,
                         currentOrientation = state.visibility.orientation,
-                        onUpdate = onUpdateSettings
+                        onUpdate = onUpdateSettings,
+                        onOpenNotificationApps = { showNotificationApps = true }
                     )
                     "Debug" -> DiagnosticsPanel.Content(dispatch = dispatch)
                 }

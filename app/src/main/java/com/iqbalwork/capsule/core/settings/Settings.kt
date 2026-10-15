@@ -27,6 +27,20 @@ enum class MediaCollapseDelay(val millis: Long?) {
     NEVER(null)
 }
 
+/** F-24: start as a compact pill that expands on tap, or open the card right away. */
+enum class NotificationDisplay { COMPACT, EXPANDED }
+
+/** F-24: how long a notification stays in the capsule; null = until the user opens it. */
+enum class NotificationDelay(val millis: Long?) {
+    SECONDS_1(1_000L),
+    SECONDS_3(3_000L),
+    SECONDS_5(5_000L),
+    SECONDS_10(10_000L),
+    SECONDS_20(20_000L),
+    SECONDS_30(30_000L),
+    UNTIL_OPENED(null)
+}
+
 enum class GestureType { TAP, DOUBLE_TAP, LONG_PRESS, SWIPE_LEFT, SWIPE_RIGHT }
 
 enum class GestureAction {
@@ -62,6 +76,13 @@ data class Settings(
     val mediaEnabled: Boolean = true,
     val mediaCollapseDelay: MediaCollapseDelay = MediaCollapseDelay.SECONDS_30,
     val hideMediaWhenAppInFront: Boolean = true,
+    val notificationsEnabled: Boolean = true,
+    val notificationDisplay: NotificationDisplay = NotificationDisplay.COMPACT,
+    val notificationDelay: NotificationDelay = NotificationDelay.SECONDS_5,
+    val notificationBlockedApps: Set<String> = emptySet(),
+    val hideNotificationTextWhenLocked: Boolean = true,
+    val removeNotificationAfterViewing: Boolean = false,
+    val notificationGlow: Boolean = true,
     val disclosureAccepted: Boolean = false
 ) {
     fun geometry(orientation: Orientation): Geometry =

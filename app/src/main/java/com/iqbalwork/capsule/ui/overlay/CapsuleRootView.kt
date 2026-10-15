@@ -7,7 +7,13 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +30,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -95,6 +103,12 @@ fun CapsuleRootView(
             modifier = Modifier
                 .size(width = width, height = height)
                 .graphicsLayer { this.alpha = alpha }
+                .notificationGlow(
+                    color = state.topNotification?.glowColor,
+                    enabled = settings.notificationGlow && mode == CapsuleMode.COMPACT &&
+                        state.activeCard == CapsuleCardType.NOTIFICATION,
+                    shape = shape
+                )
                 .clip(shape)
                 .capsuleGestures(
                     tapsEnabled = !expanded,
@@ -118,6 +132,19 @@ fun CapsuleRootView(
             RedTargetCalibratorView(targetSizeDp = minOf(geometry.heightDp, 40))
         }
     }
+}
+
+/** F-20: a pulsing outline in the app's color while a notification waits in the pill. */
+@Composable
+private fun Modifier.notificationGlow(color: Long?, enabled: Boolean, shape: Shape): Modifier {
+    if (!enabled || color == null) return this
+    val pulse by rememberInfiniteTransition(label = "glow").animateFloat(
+        initialValue = 0.35f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
+        label = "glow_alpha"
+    )
+    return border(2.dp, Color(color).copy(alpha = pulse), shape)
 }
 
 @Composable
@@ -174,7 +201,15 @@ private fun CardContent(card: CapsuleCardType, state: CapsuleState, dispatch: (A
         CapsuleCardType.MEDIA -> state.media?.let { ExpandedMediaCard(mediaState = it, onAction = dispatch) }
         CapsuleCardType.SLIDERS -> ExpandedSliderCard(sliderState = state.sliders, onAction = dispatch)
         CapsuleCardType.CHARGING -> ExpandedChargingCard(chargingState = state.charging)
-        CapsuleCardType.NOTIFICATION -> ExpandedNotificationCard(notificationState = state.notification, onAction = dispatch)
+        CapsuleCardType.NOTIFICATION -> state.topNotification?.let { notification ->
+            ExpandedNotificationCard(
+                notification = notification,
+                showText = state.showsText(notification),
+                replying = state.replyingTo == notification.key,
+                queuedCount = state.notifications.size,
+                onAction = dispatch
+            )
+        }
         CapsuleCardType.TIMER -> state.timer?.let { ExpandedTimerCard(timerState = it, onAction = dispatch) }
         // Static shortcut cards arrive in M6.
         CapsuleCardType.SHORTCUTS -> ExpandedShortcutsCard(shortcutsState = ShortcutsState(), onAction = dispatch)

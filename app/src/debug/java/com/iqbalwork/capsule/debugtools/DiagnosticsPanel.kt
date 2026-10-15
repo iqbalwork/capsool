@@ -21,8 +21,6 @@ import com.iqbalwork.capsule.model.ChargingType
 import com.iqbalwork.capsule.model.MediaState
 import com.iqbalwork.capsule.model.MiniEvent
 import com.iqbalwork.capsule.model.MiniEventType
-import com.iqbalwork.capsule.model.NotificationActionItem
-import com.iqbalwork.capsule.model.NotificationState
 import com.iqbalwork.capsule.model.TimerState
 
 /** Debug-only simulators. They feed fake SystemEvents so cards can be checked before real sources exist. */
@@ -49,26 +47,6 @@ object DiagnosticsPanel {
         Simulation("Low battery") {
             listOf(SystemEvent.MiniEventStarted(miniEvent(MiniEventType.LOW_BATTERY, "Low battery", "4%")))
         },
-        Simulation("Chat message") {
-            listOf(
-                SystemEvent.NotificationUpdated(
-                    NotificationState(
-                        id = "debug_${System.currentTimeMillis()}",
-                        title = "Alex",
-                        content = "Are we still meeting today?",
-                        packageName = "com.example.chat",
-                        appName = "Chat",
-                        timestamp = System.currentTimeMillis(),
-                        glowColor = 0xFF4CAF50,
-                        actions = listOf(
-                            NotificationActionItem("reply", "Reply", isReply = true),
-                            NotificationActionItem("dismiss", "Dismiss")
-                        )
-                    )
-                )
-            )
-        },
-        Simulation("Clear notification") { listOf(SystemEvent.NotificationUpdated(null)) },
         Simulation("Media playing") {
             listOf(
                 SystemEvent.MediaUpdated(
@@ -116,6 +94,22 @@ object DiagnosticsPanel {
                         Text("Real media session (start / stop)", style = MaterialTheme.typography.bodyLarge)
                         Text(
                             "Goes through notification access and MediaSessionManager like a real player.",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            }
+            item {
+                Card(
+                    onClick = { DebugNotifications.post(context) },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Real chat notification", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            "Posts a MessagingStyle notification with reply and mark-as-read actions. " +
+                                "Needs the notification permission for Capsool.",
                             style = MaterialTheme.typography.bodySmall
                         )
                     }

@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -77,6 +78,13 @@ object SettingsMapper {
     private val MediaEnabled = booleanPreferencesKey("cards.media.enabled")
     private val MediaCollapseDelayKey = stringPreferencesKey("media.collapseDelay")
     private val MediaHideWhenAppInFront = booleanPreferencesKey("media.hideWhenAppForeground")
+    private val NotificationsEnabled = booleanPreferencesKey("cards.notification.enabled")
+    private val NotificationDisplayKey = stringPreferencesKey("notification.display")
+    private val NotificationDelayKey = stringPreferencesKey("notification.displaySeconds")
+    private val NotificationBlockedApps = stringSetPreferencesKey("notification.blockedPackages")
+    private val NotificationHideTextLocked = booleanPreferencesKey("notification.hideContentWhenLocked")
+    private val NotificationRemoveAfterViewing = booleanPreferencesKey("notification.removeAfterViewing")
+    private val NotificationGlow = booleanPreferencesKey("notification.glow")
     private val DisclosureAccepted = booleanPreferencesKey("onboarding.disclosureAccepted")
     private fun gestureKey(type: GestureType) = stringPreferencesKey("gestures.${type.name.lowercase()}")
 
@@ -109,6 +117,13 @@ object SettingsMapper {
             mediaEnabled = prefs[MediaEnabled] ?: defaults.mediaEnabled,
             mediaCollapseDelay = enumOrDefault(prefs[MediaCollapseDelayKey], defaults.mediaCollapseDelay),
             hideMediaWhenAppInFront = prefs[MediaHideWhenAppInFront] ?: defaults.hideMediaWhenAppInFront,
+            notificationsEnabled = prefs[NotificationsEnabled] ?: defaults.notificationsEnabled,
+            notificationDisplay = enumOrDefault(prefs[NotificationDisplayKey], defaults.notificationDisplay),
+            notificationDelay = enumOrDefault(prefs[NotificationDelayKey], defaults.notificationDelay),
+            notificationBlockedApps = prefs[NotificationBlockedApps] ?: defaults.notificationBlockedApps,
+            hideNotificationTextWhenLocked = prefs[NotificationHideTextLocked] ?: defaults.hideNotificationTextWhenLocked,
+            removeNotificationAfterViewing = prefs[NotificationRemoveAfterViewing] ?: defaults.removeNotificationAfterViewing,
+            notificationGlow = prefs[NotificationGlow] ?: defaults.notificationGlow,
             disclosureAccepted = prefs[DisclosureAccepted] ?: defaults.disclosureAccepted
         )
     }
@@ -136,6 +151,13 @@ object SettingsMapper {
         prefs[MediaEnabled] = settings.mediaEnabled
         prefs[MediaCollapseDelayKey] = settings.mediaCollapseDelay.name
         prefs[MediaHideWhenAppInFront] = settings.hideMediaWhenAppInFront
+        prefs[NotificationsEnabled] = settings.notificationsEnabled
+        prefs[NotificationDisplayKey] = settings.notificationDisplay.name
+        prefs[NotificationDelayKey] = settings.notificationDelay.name
+        prefs[NotificationBlockedApps] = settings.notificationBlockedApps
+        prefs[NotificationHideTextLocked] = settings.hideNotificationTextWhenLocked
+        prefs[NotificationRemoveAfterViewing] = settings.removeNotificationAfterViewing
+        prefs[NotificationGlow] = settings.notificationGlow
         prefs[DisclosureAccepted] = settings.disclosureAccepted
     }
 

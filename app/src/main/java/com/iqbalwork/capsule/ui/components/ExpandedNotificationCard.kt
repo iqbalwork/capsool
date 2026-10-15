@@ -1,252 +1,281 @@
 package com.iqbalwork.capsule.ui.components
 
+import android.graphics.Bitmap
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.iqbalwork.capsule.R
 import com.iqbalwork.capsule.core.store.UserIntent
-import com.iqbalwork.capsule.model.NotificationState
-import com.iqbalwork.capsule.ui.theme.CapsuleTokens
+import com.iqbalwork.capsule.model.CapsuleNotification
 
+/**
+ * The open notification card (F-20, F-21). Buttons appear only for what the posting app
+ * supports; on the lock screen with text hidden, only the app name is shown.
+ */
 @Composable
 fun ExpandedNotificationCard(
-    notificationState: NotificationState?,
+    notification: CapsuleNotification,
+    showText: Boolean,
+    replying: Boolean,
+    queuedCount: Int,
     onAction: (UserIntent) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    if (notificationState == null) {
-        Box(
-            modifier = modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "No active notifications",
-                color = CapsuleTokens.OnSurfaceVariant,
-                fontSize = 13.sp
-            )
-        }
-        return
-    }
-
-    var isReplying by remember { mutableStateOf(false) }
-    var replyText by remember { mutableStateOf("") }
-
-    // Badge color comes from the posting app's notification/icon color, never a per-brand table.
-    val appBadgeColor = Color(notificationState.glowColor)
+    val accent = remember(notification.glowColor) { mediaPalette(Color(notification.glowColor)).accent }
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(12.dp),
+            .background(Brush.verticalGradient(listOf(lerp(Color.Black, Color(notification.glowColor), 0.22f), Color.Black)))
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // Top section: Avatar (42dp) + App badge + Sender & Message
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(enabled = !replying) { onAction(UserIntent.NotificationOpen(notification.key)) },
             verticalAlignment = Alignment.Top
         ) {
-            // Avatar (42dp) with badge overlay
-            Box(
-                modifier = Modifier.size(46.dp),
-                contentAlignment = Alignment.BottomEnd
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(CircleShape)
-                        .background(CapsuleTokens.SurfaceContainerHighest),
-                    contentAlignment = Alignment.Center
-                ) {
+            AvatarWithBadge(notification, size = 48.dp, accent = accent)
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = notificationState.title.take(1).uppercase(),
-                        color = CapsuleTokens.OnSurface,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
+                        text = if (showText) notification.sender else notification.appName,
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = buildString {
+                            append(relativeTime(notification.postedAt))
+                            if (queuedCount > 1) append(" · +${queuedCount - 1}")
+                        },
+                        color = Color.White.copy(alpha = 0.6f),
+                        style = MaterialTheme.typography.labelMedium
                     )
                 }
-
-                // App Badge Dot
-                Box(
-                    modifier = Modifier
-                        .size(16.dp)
-                        .clip(CircleShape)
-                        .background(appBadgeColor)
-                        .border(1.5.dp, CapsuleTokens.Surface, CircleShape)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(10.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
+                if (showText) {
                     Text(
-                        text = notificationState.title,
-                        color = CapsuleTokens.OnSurface,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
+                        text = listOfNotNull(notification.appName, notification.conversationTitle).joinToString(" · "),
+                        color = accent,
+                        style = MaterialTheme.typography.labelMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Text(
-                        text = "Now",
-                        color = CapsuleTokens.OnSurfaceVariant,
-                        fontSize = 10.sp
-                    )
                 }
-
-                Spacer(modifier = Modifier.height(2.dp))
-
                 Text(
-                    text = notificationState.content,
-                    color = CapsuleTokens.OnSurfaceVariant,
-                    fontSize = 12.sp,
+                    text = if (showText) notification.text else "New notification",
+                    color = Color.White.copy(alpha = 0.85f),
+                    style = MaterialTheme.typography.bodyMedium,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
             }
         }
 
-        // Inline Reply Field or Quick Actions
-        if (isReplying) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    value = replyText,
-                    onValueChange = { replyText = it },
-                    placeholder = {
-                        Text(text = "Type a reply...", fontSize = 11.sp, color = CapsuleTokens.Outline)
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(44.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = CapsuleTokens.Primary,
-                        unfocusedBorderColor = CapsuleTokens.OutlineVariant
-                    )
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Box(
-                    modifier = Modifier
-                        .height(44.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(CapsuleTokens.Primary)
-                        .clickable {
-                            if (replyText.isNotBlank()) {
-                                onAction(UserIntent.NotificationReply(notificationState.id, replyText))
-                                isReplying = false
-                                replyText = ""
-                            }
-                        }
-                        .padding(horizontal = 14.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Send",
-                        color = CapsuleTokens.OnPrimary,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
+        if (replying) {
+            ReplyField(accent = accent, onSend = { onAction(UserIntent.NotificationReply(notification.key, it)) })
         } else {
-            // Action Buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Reply Button
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(34.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(CapsuleTokens.PrimaryContainer)
-                        .clickable { isReplying = true },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Reply",
-                        color = CapsuleTokens.OnSurface,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
+            // Equal-width buttons so three of them fit the card without wrapping.
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (notification.canReply && showText) {
+                    CardButton("Reply", Modifier.weight(1f), accent, Color.Black) {
+                        onAction(UserIntent.NotificationStartReply(notification.key))
+                    }
                 }
-
-                // Mark as Read
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(34.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(CapsuleTokens.SurfaceContainerHigh)
-                        .clickable {
-                            onAction(UserIntent.NotificationDismiss(notificationState.id))
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Mark as read",
-                        color = CapsuleTokens.OnSurface,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                if (notification.canMarkRead) {
+                    CardButton("Read", Modifier.weight(1f)) { onAction(UserIntent.NotificationMarkRead(notification.key)) }
                 }
-
-                // Dismiss
-                Box(
-                    modifier = Modifier
-                        .weight(0.8f)
-                        .height(34.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(CapsuleTokens.SurfaceContainerHighest)
-                        .clickable {
-                            onAction(UserIntent.NotificationDismiss(notificationState.id))
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Dismiss",
-                        color = CapsuleTokens.OnSurfaceVariant,
-                        fontSize = 11.sp
-                    )
+                if (notification.clearable) {
+                    CardButton("Dismiss", Modifier.weight(1f)) { onAction(UserIntent.NotificationDismiss(notification.key)) }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ReplyField(accent: Color, onSend: (String) -> Unit) {
+    var text by rememberSaveable { mutableStateOf("") }
+    val focus = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+    // The window becomes focusable a frame after reply mode starts; ask for focus once composed.
+    LaunchedEffect(Unit) {
+        focus.requestFocus()
+        keyboard?.show()
+    }
+    fun send() {
+        if (text.isNotBlank()) onSend(text.trim())
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        TextField(
+            value = text,
+            onValueChange = { text = it },
+            placeholder = { Text("Message") },
+            singleLine = true,
+            shape = RoundedCornerShape(24.dp),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+            keyboardActions = KeyboardActions(onSend = { send() }),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.White.copy(alpha = 0.12f),
+                unfocusedContainerColor = Color.White.copy(alpha = 0.12f),
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                cursorColor = accent,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent
+            ),
+            modifier = Modifier
+                .weight(1f)
+                .focusRequester(focus)
+        )
+        Spacer(Modifier.width(8.dp))
+        FilledIconButton(
+            onClick = ::send,
+            enabled = text.isNotBlank(),
+            colors = IconButtonDefaults.filledIconButtonColors(containerColor = accent, contentColor = Color.Black)
+        ) {
+            Icon(painterResource(R.drawable.ic_send), contentDescription = "Send")
+        }
+    }
+}
+
+@Composable
+private fun CardButton(
+    label: String,
+    modifier: Modifier,
+    container: Color = Color.White.copy(alpha = 0.12f),
+    content: Color = Color.White,
+    onClick: () -> Unit
+) {
+    FilledTonalButton(
+        onClick = onClick,
+        modifier = modifier,
+        contentPadding = PaddingValues(horizontal = 8.dp),
+        colors = ButtonDefaults.filledTonalButtonColors(containerColor = container, contentColor = content)
+    ) {
+        Text(label, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+/** Sender avatar (or initial) with the posting app's icon as a small badge. */
+@Composable
+fun AvatarWithBadge(notification: CapsuleNotification, size: Dp, accent: Color) {
+    Box(modifier = Modifier.size(size)) {
+        RoundBitmap(
+            bitmap = notification.avatar,
+            fallbackText = notification.sender,
+            background = accent,
+            modifier = Modifier.size(size)
+        )
+        val badge = size * 0.42f
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .size(badge)
+                .clip(CircleShape)
+                .background(accent)
+                .border(1.5.dp, Color.Black, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            notification.appIcon?.let { icon ->
+                Image(
+                    bitmap = remember(icon) { icon.asImageBitmap() },
+                    contentDescription = notification.appName,
+                    colorFilter = ColorFilter.tint(Color.Black),
+                    modifier = Modifier.size(badge * 0.65f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun RoundBitmap(bitmap: Bitmap?, fallbackText: String, background: Color, modifier: Modifier = Modifier) {
+    if (bitmap != null) {
+        Image(
+            bitmap = remember(bitmap) { bitmap.asImageBitmap() },
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = modifier.clip(CircleShape)
+        )
+    } else {
+        Box(
+            modifier = modifier
+                .clip(CircleShape)
+                .background(background),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = fallbackText.take(1).uppercase(),
+                color = Color.Black,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+private fun relativeTime(postedAt: Long, now: Long = System.currentTimeMillis()): String {
+    val minutes = (now - postedAt) / 60_000
+    return when {
+        minutes < 1 -> "now"
+        minutes < 60 -> "${minutes}m"
+        else -> "${minutes / 60}h"
     }
 }

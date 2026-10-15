@@ -56,7 +56,7 @@ class OverlayWindowController(
     private var lastLayout: LayoutKey? = null
     private val placement = mutableStateOf<WindowPlacement?>(null)
 
-    private data class LayoutKey(val mode: CapsuleMode, val geometry: Geometry)
+    private data class LayoutKey(val mode: CapsuleMode, val geometry: Geometry, val focusable: Boolean)
 
     fun attach() {
         if (view != null) return
@@ -101,7 +101,7 @@ class OverlayWindowController(
 
         layoutJob = scope.launch {
             store.state
-                .map { LayoutKey(it.mode, it.settings.geometry(it.visibility.orientation)) }
+                .map { LayoutKey(it.mode, it.settings.geometry(it.visibility.orientation), focusable = it.replyingTo != null) }
                 .distinctUntilChanged()
                 .collect { applyLayout(it) }
         }
@@ -159,7 +159,11 @@ class OverlayWindowController(
         layoutParams.y = newPlacement.y
         layoutParams.width = newPlacement.width
         layoutParams.height = newPlacement.height
-        layoutParams.flags = if (visible) BASE_FLAGS else BASE_FLAGS or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+        // The reply field (spec §2.4.2) needs keyboard focus; otherwise the overlay never takes it.
+        var flags = if (visible) BASE_FLAGS else BASE_FLAGS or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+        if (key.focusable) flags = flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()
+        layoutParams.flags = flags
+        layoutParams.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING
         runCatching { windowManager.updateViewLayout(composeView, layoutParams) }
             .onFailure { Log.w(TAG, "Overlay relayout failed", it) }
     }

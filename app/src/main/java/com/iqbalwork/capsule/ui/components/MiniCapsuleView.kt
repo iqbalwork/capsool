@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,11 +37,13 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.iqbalwork.capsule.core.store.CapsuleState
+import com.iqbalwork.capsule.model.CapsuleCardType
 import com.iqbalwork.capsule.model.MiniEventType
 import com.iqbalwork.capsule.ui.theme.CapsuleTokens
 
@@ -89,51 +92,63 @@ fun MiniCapsuleView(
             )
         }
     } else {
-        // Standard Idle Mini Capsule
+        // Compact pill: the left and right slots follow the card the carousel would open.
         Row(
             modifier = modifier
                 .fillMaxSize()
-                .padding(horizontal = 8.dp),
+                .padding(horizontal = 7.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Left Indicator
-            // Same rules as the media card: parked or hidden players leave the pill alone.
-            val media = state.media?.takeIf { state.mediaVisible }
-            val notification = state.notification
-            if (media != null && media.isPlaying) {
-                RotatingDiscIcon(artwork = media.artwork, dominantColor = Color(media.dominantColor))
-            } else if (state.charging.isCharging) {
-                ChargingIndicatorMini(percentage = state.charging.chargePercentage)
-            } else if (notification != null) {
-                NotificationDotMini(color = Color(notification.glowColor))
-            } else {
-                // Idle pill stays plain so it blends with the camera cutout.
-                Spacer(modifier = Modifier.size(8.dp))
-            }
-
-            // Right Indicator
+            val media = state.media
+            val notification = state.topNotification
             val timer = state.timer
-            if (media != null && media.isPlaying) {
-                EqualizerWaveMini(color = mediaPalette(Color(media.dominantColor)).accent)
-            } else if (timer != null && timer.isRunning) {
-                val mins = timer.remainingSeconds / 60
-                val secs = timer.remainingSeconds % 60
-                Text(
-                    text = "%02d:%02d".format(mins, secs),
-                    color = CapsuleTokens.Primary,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            } else if (state.charging.isCharging) {
-                Text(
-                    text = "${state.charging.chargePercentage}%",
-                    color = Color(0xFF81C784),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            } else {
-                Spacer(modifier = Modifier.size(8.dp))
+            when {
+                state.activeCard == CapsuleCardType.NOTIFICATION && notification != null -> {
+                    val accent = mediaPalette(Color(notification.glowColor)).accent
+                    RoundBitmap(
+                        bitmap = notification.avatar.takeIf { state.showsText(notification) },
+                        fallbackText = if (state.showsText(notification)) notification.sender else notification.appName,
+                        background = accent,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    notification.appIcon?.let { icon ->
+                        Image(
+                            bitmap = remember(icon) { icon.asImageBitmap() },
+                            contentDescription = null,
+                            colorFilter = ColorFilter.tint(accent),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    } ?: Spacer(Modifier.size(18.dp))
+                }
+                state.activeCard == CapsuleCardType.TIMER && timer != null -> {
+                    Spacer(Modifier.size(8.dp))
+                    Text(
+                        text = "%02d:%02d".format(timer.remainingSeconds / 60, timer.remainingSeconds % 60),
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                state.activeCard == CapsuleCardType.MEDIA && media != null -> {
+                    RotatingDiscIcon(artwork = media.artwork, dominantColor = Color(media.dominantColor))
+                    if (media.isPlaying) {
+                        EqualizerWaveMini(color = mediaPalette(Color(media.dominantColor)).accent)
+                    } else {
+                        Spacer(Modifier.size(8.dp))
+                    }
+                }
+                state.activeCard == CapsuleCardType.CHARGING -> {
+                    ChargingIndicatorMini(percentage = state.charging.chargePercentage)
+                    Text(
+                        text = "${state.charging.chargePercentage}%",
+                        color = Color(0xFF81C784),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                // Idle pill stays plain so it blends with the camera cutout.
+                else -> Spacer(Modifier.size(8.dp))
             }
         }
     }
