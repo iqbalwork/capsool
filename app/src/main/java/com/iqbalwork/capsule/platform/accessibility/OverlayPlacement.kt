@@ -1,6 +1,8 @@
 package com.iqbalwork.capsule.platform.accessibility
 
 import com.iqbalwork.capsule.core.settings.EventDisplay
+import com.iqbalwork.capsule.core.settings.DEFAULT_MINI_ROW_DP
+import com.iqbalwork.capsule.core.settings.DEFAULT_MINI_EXTRA_WIDTH_DP
 import com.iqbalwork.capsule.core.settings.Geometry
 import com.iqbalwork.capsule.core.settings.PlacementMode
 import kotlin.math.ceil
@@ -73,13 +75,13 @@ object OverlayPlacement {
     fun expandedContentHeightDp(listRows: Int): Float =
         if (listRows > 0) listHeightDp(listRows) else EXPANDED_HEIGHT_DP.toFloat()
     /** Mini events widen the pill so an icon, a title and a value fit (F-60..F-69). */
-    const val MINI_EVENT_EXTRA_WIDTH_DP = 110
+    const val MINI_EVENT_EXTRA_WIDTH_DP = DEFAULT_MINI_EXTRA_WIDTH_DP
 
     /** Room kept clear on each side of the camera hole. */
     const val CAMERA_GAP_PADDING_DP = 4
 
     /** Height of the row under the camera hole that a pop-up event's text is drawn in. */
-    const val EVENT_ROW_DP = 30
+    const val EVENT_ROW_DP = DEFAULT_MINI_ROW_DP
 
     /** A pill split around the hole needs more room, or its two halves cannot hold a title and a value. */
     const val SPLIT_EXTRA_WIDTH_DP = 40
@@ -91,7 +93,7 @@ object OverlayPlacement {
     fun pillWidthDp(geometry: Geometry, miniEvent: Boolean, cameraGapDp: Int = 0): Int {
         if (!miniEvent) return geometry.widthDp
         val split = if (cameraGapDp > 0) cameraGapDp + SPLIT_EXTRA_WIDTH_DP else 0
-        return geometry.widthDp + MINI_EVENT_EXTRA_WIDTH_DP + split
+        return geometry.widthDp + geometry.miniExtraWidthDp + split
     }
     private const val SCREEN_GUTTER_DP = 8
     private const val NO_CUTOUT_TOP_DP = 6
@@ -149,7 +151,9 @@ object OverlayPlacement {
         val independent = mode == PlacementMode.INDEPENDENT
         // Independent ignores the camera: centered on the screen, just under the status bar.
         val baseCenterX = if (independent) screenWidthPx / 2f else cutout?.centerX ?: (screenWidthPx / 2f)
-        val centerX = baseCenterX + px(geometry.offsetXDp.toFloat())
+        // The event pill has its own sideways shift on top of the capsule's.
+        val miniShiftDp = if (miniEvent) geometry.miniOffsetXDp else 0
+        val centerX = baseCenterX + px((geometry.offsetXDp + miniShiftDp).toFloat())
         val defaultCenterY = when {
             independent -> statusBarHeightPx + px(INDEPENDENT_GAP_DP.toFloat()) + capsuleHeight / 2f
             else -> cutout?.centerY ?: (px(NO_CUTOUT_TOP_DP.toFloat()) + capsuleHeight / 2f)
@@ -161,7 +165,7 @@ object OverlayPlacement {
         val cameraGap =
             if (overHole && eventDisplay == EventDisplay.SPLIT) cameraGapDp(cutout!!.right - cutout.left, density) else 0
         // Below the camera: the pill gets a row of its own under the hole instead of being split.
-        val eventRow = if (overHole && miniEvent && eventDisplay == EventDisplay.BELOW_CAMERA) EVENT_ROW_DP else 0
+        val eventRow = if (overHole && miniEvent && eventDisplay == EventDisplay.BELOW_CAMERA) geometry.miniRowDp else 0
         val pillWidth = px(pillWidthDp(geometry, miniEvent, cameraGap).toFloat())
         val contentWidth =
             if (expanded) maxOf(px(expandedWidthDp(screenWidthPx / density, fullWidthCard)), pillWidth) else pillWidth

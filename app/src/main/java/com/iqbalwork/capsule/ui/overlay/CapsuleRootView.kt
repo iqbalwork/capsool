@@ -1,6 +1,9 @@
 package com.iqbalwork.capsule.ui.overlay
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.gestures.detectTapGestures
 import com.iqbalwork.capsule.ui.components.progressStyle
 import com.iqbalwork.capsule.ui.theme.resolveAppearance
 import androidx.compose.ui.graphics.Brush
@@ -279,8 +282,23 @@ private fun ExpandedCarousel(
         if (pages.size > 1) {
             // Full width, so a swipe anywhere along this strip switches cards even where the card
             // above consumes sideways drags (swipe to dismiss).
+            val tapSwitch = state.settings.cardTapSwitch
             Row(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (tapSwitch) {
+                            Modifier
+                                .heightIn(min = TAP_STRIP_MIN_HEIGHT_DP.dp)
+                                .pointerInput(Unit) {
+                                    detectTapGestures { offset ->
+                                        dispatch(UserIntent.Perform(tapSwitchAction(offset.x, size.width.toFloat())))
+                                    }
+                                }
+                        } else {
+                            Modifier.padding(bottom = 6.dp)
+                        }
+                    ),
                 horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically
             ) {

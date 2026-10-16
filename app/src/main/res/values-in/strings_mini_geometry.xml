@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mini_title">Pil pop-up event</string>
+    <string name="mini_desc">Atur pil untuk event pengisi daya, Wi-Fi, dan lainnya secara terpisah, untuk layar ini.</string>
+    <string name="mini_extra_width">Tambahan lebar</string>
+    <string name="mini_row">Tinggi baris teks</string>
+    <string name="mini_offset_x">Geser horizontal</string>
+    <string name="tap_title">Ketuk untuk ganti kartu</string>
+    <string name="tap_desc">Ketuk separuh kiri atau kanan titik di bawah kartu terbuka untuk ke kartu sebelumnya atau berikutnya. Berguna saat geser dipakai pengaturan lain.</string>
+</resources>

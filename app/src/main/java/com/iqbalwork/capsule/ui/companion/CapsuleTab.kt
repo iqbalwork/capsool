@@ -1,6 +1,9 @@
 package com.iqbalwork.capsule.ui.companion
 
 import android.Manifest
+import com.iqbalwork.capsule.core.settings.MiniOffsetXRange
+import com.iqbalwork.capsule.core.settings.MiniRowRange
+import com.iqbalwork.capsule.core.settings.MiniExtraWidthRange
 import com.iqbalwork.capsule.core.settings.EventDisplay
 import androidx.compose.material3.Icon
 import com.iqbalwork.capsule.ui.components.customIntentIcon
@@ -144,6 +147,21 @@ fun CapsuleTab(
                 IntSlider(stringResource(R.string.cap_width), geometry.widthDp, 60..260) { v -> updateGeometry { it.copy(widthDp = v) } }
                 IntSlider(stringResource(R.string.cap_height), geometry.heightDp, 20..64) { v -> updateGeometry { it.copy(heightDp = v) } }
                 IntSlider(stringResource(R.string.cap_corner_radius), geometry.cornerDp, 0..32) { v -> updateGeometry { it.copy(cornerDp = v) } }
+                Text(stringResource(R.string.mini_title), style = MaterialTheme.typography.titleSmall)
+                Text(
+                    stringResource(R.string.mini_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                IntSlider(stringResource(R.string.mini_extra_width), geometry.miniExtraWidthDp, MiniExtraWidthRange) { v ->
+                    updateGeometry { it.copy(miniExtraWidthDp = v) }
+                }
+                IntSlider(stringResource(R.string.mini_row), geometry.miniRowDp, MiniRowRange) { v ->
+                    updateGeometry { it.copy(miniRowDp = v) }
+                }
+                IntSlider(stringResource(R.string.mini_offset_x), geometry.miniOffsetXDp, MiniOffsetXRange) { v ->
+                    updateGeometry { it.copy(miniOffsetXDp = v) }
+                }
                 profile?.let { key ->
                     val calibrated = key in settings.profiles
                     Text(
@@ -185,6 +203,12 @@ fun CapsuleTab(
                         stringResource(if (it == CardWidthMode.CONTENT) R.string.mode_width_content else R.string.mode_width_full)
                     },
                     onSelect = { mode -> onUpdate { it.copy(cardWidthMode = mode) } }
+                )
+                SwitchRow(
+                    title = stringResource(R.string.tap_title),
+                    description = stringResource(R.string.tap_desc),
+                    checked = settings.cardTapSwitch,
+                    onChange = { on -> onUpdate { it.copy(cardTapSwitch = on) } }
                 )
                 IntSlider(
                     stringResource(R.string.mode_card_radius),
