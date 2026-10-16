@@ -10,9 +10,12 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.iqbalwork.capsule.model.BarcodeContent
+import com.iqbalwork.capsule.model.BarcodeFormat
 import com.iqbalwork.capsule.model.EventCategory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -103,6 +106,17 @@ object SettingsMapper {
     private val AutomationBroadcast = booleanPreferencesKey("automation.broadcastOut")
     private val Shortcuts = stringPreferencesKey("shortcuts.items")
     private val ThemedShortcutIcons = booleanPreferencesKey("shortcuts.themedIcons")
+    private val BarcodeCardEnabled = booleanPreferencesKey("cards.barcode.enabled")
+    private val BarcodeContentKey = stringPreferencesKey("barcode.content")
+    private val BarcodeFormatKey = stringPreferencesKey("barcode.format")
+    private val BarcodeLabelKey = stringPreferencesKey("barcode.label")
+    private val BarcodeColorKey = longPreferencesKey("barcode.color")
+    private val BarcodeFlippedKey = booleanPreferencesKey("barcode.flipped")
+    private val BarcodeEnabledKey = booleanPreferencesKey("barcode.enabled")
+    private val CustomIntents = stringPreferencesKey("automation.intents")
+    private val StaticCards = stringPreferencesKey("cards.static")
+    private val StaticStart = stringPreferencesKey("cards.staticStart")
+    private val StaticViewMode = stringPreferencesKey("cards.staticViewMode")
 
     fun read(prefs: Preferences): Settings {
         val defaults = Settings()
@@ -159,6 +173,19 @@ object SettingsMapper {
             brightnessMax = prefs[BrightnessMax] ?: defaults.brightnessMax,
             progressEnabled = prefs[ProgressEnabled] ?: defaults.progressEnabled,
             timerEnabled = prefs[TimerEnabled] ?: defaults.timerEnabled,
+            barcode = BarcodeContent(
+                content = prefs[BarcodeContentKey] ?: defaults.barcode.content,
+                format = enumOrDefault(prefs[BarcodeFormatKey], defaults.barcode.format),
+                label = prefs[BarcodeLabelKey] ?: defaults.barcode.label,
+                color = prefs[BarcodeColorKey] ?: defaults.barcode.color,
+                flipped = prefs[BarcodeFlippedKey] ?: defaults.barcode.flipped,
+                enabled = prefs[BarcodeEnabledKey] ?: defaults.barcode.enabled
+            ),
+            barcodeCardEnabled = prefs[BarcodeCardEnabled] ?: defaults.barcodeCardEnabled,
+            customIntents = CustomIntent.decodeAll(prefs[CustomIntents]),
+            staticCards = StaticCard.decodeAll(prefs[StaticCards]),
+            startCardId = prefs[StaticStart]?.ifEmpty { null },
+            staticCardViewMode = enumOrDefault(prefs[StaticViewMode], defaults.staticCardViewMode),
             disclosureAccepted = prefs[DisclosureAccepted] ?: defaults.disclosureAccepted
         )
     }
@@ -209,6 +236,17 @@ object SettingsMapper {
         prefs[BrightnessMax] = settings.brightnessMax
         prefs[ProgressEnabled] = settings.progressEnabled
         prefs[TimerEnabled] = settings.timerEnabled
+        prefs[BarcodeCardEnabled] = settings.barcodeCardEnabled
+        prefs[BarcodeContentKey] = settings.barcode.content
+        prefs[BarcodeFormatKey] = settings.barcode.format.name
+        prefs[BarcodeLabelKey] = settings.barcode.label
+        prefs[BarcodeColorKey] = settings.barcode.color
+        prefs[BarcodeFlippedKey] = settings.barcode.flipped
+        prefs[BarcodeEnabledKey] = settings.barcode.enabled
+        prefs[CustomIntents] = CustomIntent.encodeAll(settings.customIntents)
+        prefs[StaticCards] = StaticCard.encodeAll(settings.staticCards)
+        prefs[StaticStart] = settings.startCardId.orEmpty()
+        prefs[StaticViewMode] = settings.staticCardViewMode.name
         prefs[DisclosureAccepted] = settings.disclosureAccepted
     }
 

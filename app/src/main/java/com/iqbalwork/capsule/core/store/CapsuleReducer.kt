@@ -33,7 +33,7 @@ object CapsuleReducer {
     private fun reduceIntent(state: CapsuleState, intent: UserIntent): Reduction = when (intent) {
         is UserIntent.Gesture -> withAutomationBroadcast(state, intent.type, reduceGesture(state, state.gesture(intent.type)))
         UserIntent.SwipeUp, UserIntent.Collapse -> collapse(state)
-        is UserIntent.SelectCard -> Reduction(state.copy(focusedCard = intent.card))
+        is UserIntent.SelectCard -> Reduction(state.copy(focusedPageKey = CardPage.Dynamic(intent.card).key))
 
         UserIntent.MediaPlayPause -> playPause(state)
         UserIntent.MediaNext -> Reduction(state, listOf(Effect.Media(Effect.MediaCommand.NEXT)))
@@ -107,6 +107,15 @@ object CapsuleReducer {
         is UserIntent.TimerAction -> Reduction(state, listOf(Effect.NotificationAction(intent.key, intent.index)))
 
         is UserIntent.LaunchShortcut -> Reduction(state.copy(isExpanded = false), listOf(Effect.LaunchShortcut(intent.id)))
+
+        // Mirrors the gesture path: only fire an intent that is still configured, and collapse
+        // so the user lands back where they were.
+        is UserIntent.RunCustomIntent ->
+            if (state.settings.customIntents.any { it.id == intent.id }) {
+                Reduction(state.copy(isExpanded = false), listOf(Effect.SendCustomIntent(intent.id)))
+            } else {
+                Reduction(state)
+            }
     }
 
     /** F-73: every gesture can also be reported to automation apps. */
@@ -134,7 +143,17 @@ object CapsuleReducer {
         GestureAction.MEDIA_PREVIOUS ->
             state.media?.let { Reduction(state, listOf(Effect.Media(Effect.MediaCommand.PREVIOUS))) } ?: Reduction(state)
         GestureAction.OPEN_CONTROLS -> toggleOpenedCard(state, CapsuleCardType.SLIDERS)
-        GestureAction.OPEN_SHORTCUTS -> toggleOpenedCard(state, CapsuleCardType.SHORTCUTS)
+        GestureAction.OPEN_SHORTCUTS -> {
+            // If the user configured static cards, OPEN_SHORTCUTS simply expands the capsule
+            // so that the static card carousel is visible (starting at effectiveStartCardId).
+            // If no static cards are configured, fall back to opening the dynamic Shortcuts card.
+            if (state.settings.effectiveStaticCards.isNotEmpty()) {
+                val startKey = state.settings.effectiveStartCardId?.let { "static:$it" }
+                Reduction(state.copy(isExpanded = true, miniEvent = null, focusedPageKey = startKey ?: state.focusedPageKey))
+            } else {
+                toggleOpenedCard(state, CapsuleCardType.SHORTCUTS)
+            }
+        }
         GestureAction.TOGGLE_FLASHLIGHT -> reduceIntent(state, UserIntent.ToggleTorch)
         GestureAction.SCREENSHOT -> Reduction(
             state.copy(isExpanded = false, screenshotPending = true),
@@ -149,6 +168,14 @@ object CapsuleReducer {
             Reduction(state.copy(isExpanded = false), listOf(Effect.Global(Effect.GlobalAction.NOTIFICATIONS)))
         GestureAction.OPEN_QUICK_SETTINGS ->
             Reduction(state.copy(isExpanded = false), listOf(Effect.Global(Effect.GlobalAction.QUICK_SETTINGS)))
+        GestureAction.CUSTOM_INTENT -> {
+            val target = binding.target
+            if (target != null && state.settings.customIntents.any { it.id == target }) {
+                Reduction(state.copy(isExpanded = false), listOf(Effect.SendCustomIntent(target)))
+            } else {
+                Reduction(state)
+            }
+        }
     }
 
     private fun openControls(state: CapsuleState): Reduction = openCard(state, CapsuleCardType.SLIDERS)
@@ -158,7 +185,12 @@ object CapsuleReducer {
         if (state.isExpanded && state.activeCard == card) collapse(state) else openCard(state, card)
 
     private fun openCard(state: CapsuleState, card: CapsuleCardType): Reduction = Reduction(
-        state.copy(openedCard = card, isExpanded = true, focusedCard = card, miniEvent = null),
+        state.copy(
+            openedCard = card,
+            isExpanded = true,
+            focusedPageKey = CardPage.Dynamic(card).key,
+            miniEvent = null
+        ),
         if (card == CapsuleCardType.SLIDERS) listOf(Effect.RefreshControls) else emptyList()
     )
 
@@ -191,10 +223,11 @@ object CapsuleReducer {
     }
 
     private fun cycleCard(state: CapsuleState, step: Int): CapsuleState {
-        val cards = state.activeCards
-        val current = state.activeCard ?: return state
-        val index = (cards.indexOf(current) + step).mod(cards.size)
-        return state.copy(focusedCard = cards[index])
+        val pageList = state.pages
+        if (pageList.isEmpty()) return state
+        val current = state.activePage ?: return state
+        val index = (pageList.indexOf(current) + step).mod(pageList.size)
+        return state.copy(focusedPageKey = pageList[index].key)
     }
 
     private fun reduceEvent(state: CapsuleState, event: SystemEvent): CapsuleState = when (event) {
@@ -256,7 +289,7 @@ object CapsuleReducer {
             state.settings.notificationsEnabled && state.isAllowedOnScreen
         return state.copy(
             notifications = queue,
-            focusedCard = CapsuleCardType.NOTIFICATION,
+            focusedPageKey = CardPage.Dynamic(CapsuleCardType.NOTIFICATION).key,
             isExpanded = state.isExpanded || autoExpand,
             miniEvent = if (autoExpand) null else state.miniEvent
         )
@@ -285,7 +318,7 @@ object CapsuleReducer {
 
     /** Invariants that hold after every action. */
     private fun normalize(state: CapsuleState): CapsuleState {
-        val expandable = state.activeCards.isNotEmpty() && state.isAllowedOnScreen
+        val expandable = state.pages.isNotEmpty() && state.isAllowedOnScreen
         val expanded = state.isExpanded && expandable
         val replying = state.replyingTo.takeIf { expanded && state.activeCard == CapsuleCardType.NOTIFICATION }
         val opened = state.openedCard.takeIf { expanded }

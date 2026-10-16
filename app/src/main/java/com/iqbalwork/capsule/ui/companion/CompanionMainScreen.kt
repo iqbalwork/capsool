@@ -72,6 +72,8 @@ private fun CompanionMainScreen(
         add("Capsule")
         add("Shortcuts")
         add("Gestures")
+        add("Custom Actions")
+        add("Cards")
         if (DiagnosticsPanel.isAvailable) add("Debug")
     }
     var selected by rememberSaveable { mutableIntStateOf(0) }
@@ -125,6 +127,8 @@ private fun CompanionMainScreen(
                     )
                     "Shortcuts" -> ShortcutsTab(settings = state.settings, onUpdate = onUpdateSettings)
                     "Gestures" -> GesturesTab(settings = state.settings, onUpdate = onUpdateSettings)
+                    "Custom Actions" -> IntentsTab(settings = state.settings, onUpdate = onUpdateSettings)
+                    "Cards" -> StaticCardsTab(settings = state.settings, onUpdate = onUpdateSettings)
                     "Debug" -> DiagnosticsPanel.Content(dispatch = dispatch)
                 }
             }

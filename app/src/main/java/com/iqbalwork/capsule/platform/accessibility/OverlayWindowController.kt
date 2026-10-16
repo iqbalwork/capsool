@@ -24,9 +24,13 @@ import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.iqbalwork.capsule.core.settings.Geometry
+import com.iqbalwork.capsule.core.settings.StaticCardType
+import com.iqbalwork.capsule.core.store.CardPage
 import com.iqbalwork.capsule.core.store.CapsuleMode
 import com.iqbalwork.capsule.core.store.CapsuleStore
 import com.iqbalwork.capsule.core.store.UserIntent
+import com.iqbalwork.capsule.model.CapsuleCardType
+import com.iqbalwork.capsule.platform.barcode.BarcodeValidator
 import com.iqbalwork.capsule.ui.overlay.OverlayRoot
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -64,7 +68,14 @@ class OverlayWindowController(
     private var lastLayout: LayoutKey? = null
     private val placement = mutableStateOf<WindowPlacement?>(null)
 
-    private data class LayoutKey(val mode: CapsuleMode, val geometry: Geometry, val focusable: Boolean)
+    private data class LayoutKey(
+        val mode: CapsuleMode,
+        val geometry: Geometry,
+        val focusable: Boolean,
+        val barcodeShowing: Boolean = false,
+        /** Rows the LIST panel would show; 0 when the carousel is used. */
+        val listRows: Int = 0
+    )
 
     fun attach() {
         if (view != null) return
@@ -111,7 +122,26 @@ class OverlayWindowController(
 
         layoutJob = scope.launch {
             store.state
-                .map { LayoutKey(it.mode, it.settings.geometry(it.visibility.orientation), focusable = it.replyingTo != null) }
+                .map {
+                    val barcodeShowing = it.mode == CapsuleMode.EXPANDED &&
+                        it.settings.barcode.enabled &&
+                        BarcodeValidator.validate(it.settings.barcode.content, it.settings.barcode.format).isValid &&
+                        // Keyed on the page, not on activeCard: a static Barcode card makes
+                        // activeCard null, and without the boost the code is hard to scan.
+                        when (val page = it.activePage) {
+                            is CardPage.Static -> page.card.type == StaticCardType.BARCODE ||
+                                (page.card.type == StaticCardType.SHORTCUTS && it.settings.barcodeCardEnabled)
+                            is CardPage.Dynamic -> page.type == CapsuleCardType.SHORTCUTS && it.settings.barcodeCardEnabled
+                            null -> false
+                        }
+                    LayoutKey(
+                        mode = it.mode,
+                        geometry = it.settings.geometry(it.visibility.orientation),
+                        focusable = it.replyingTo != null,
+                        barcodeShowing = barcodeShowing,
+                        listRows = it.listRows
+                    )
+                }
                 .distinctUntilChanged()
                 .collect { applyLayout(it) }
         }
@@ -163,7 +193,8 @@ class OverlayWindowController(
             geometry = key.geometry,
             // API 34+: the window keeps card size and only its touchable region changes.
             expanded = expanded || FIXED_SIZE_WINDOW,
-            miniEvent = key.mode == CapsuleMode.MINI_EVENT
+            miniEvent = key.mode == CapsuleMode.MINI_EVENT,
+            listRows = key.listRows
         )
         windowExpanded = expanded
         placement.value = newPlacement
@@ -181,6 +212,7 @@ class OverlayWindowController(
         if (key.focusable) flags = flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()
         layoutParams.flags = flags
         layoutParams.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING
+        layoutParams.screenBrightness = if (key.barcodeShowing) 1f else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
         runCatching { windowManager.updateViewLayout(composeView, layoutParams) }
             .onFailure { Log.w(TAG, "Overlay relayout failed", it) }
         if (FIXED_SIZE_WINDOW) {

@@ -28,6 +28,7 @@ sealed interface Effect {
     data class NotificationAction(val key: String, val index: Int) : Effect
     data class Global(val action: GlobalAction) : Effect
     data class LaunchShortcut(val id: String) : Effect
+    data class SendCustomIntent(val id: String) : Effect
     data class OpenApp(val packageName: String) : Effect
     data object ScrollToTop : Effect
     /** F-73: tell automation apps a gesture happened. */

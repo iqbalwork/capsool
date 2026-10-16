@@ -1,5 +1,6 @@
 package com.iqbalwork.capsule.core.settings
 
+import com.iqbalwork.capsule.model.BarcodeContent
 import com.iqbalwork.capsule.model.EventCategory
 
 /**
@@ -79,7 +80,8 @@ enum class GestureAction {
     SCREENSHOT,
     LOCK_SCREEN,
     SCROLL_TO_TOP,
-    OPEN_APP
+    OPEN_APP,
+    CUSTOM_INTENT
 }
 
 /** A gesture's action plus its target, e.g. OPEN_APP and the package to open. */
@@ -152,8 +154,37 @@ data class Settings(
     val progressEnabled: Boolean = true,
     val timerEnabled: Boolean = true,
     val brightnessMax: Int = DEFAULT_BRIGHTNESS_MAX,
+    val barcode: BarcodeContent = BarcodeContent(),
+    val barcodeCardEnabled: Boolean = true,
+    val customIntents: List<CustomIntent> = emptyList(),
+    val staticCards: List<StaticCard> = emptyList(),
+    val startCardId: String? = null,
+    val staticCardViewMode: StaticCardViewMode = StaticCardViewMode.CAROUSEL,
     val disclosureAccepted: Boolean = false
 ) {
+    /** Kartu statis yang benar-benar tampil. Daftar kosong = perilaku lama diturunkan otomatis. */
+    val effectiveStaticCards: List<StaticCard>
+        get() {
+            if (staticCards.isNotEmpty()) return staticCards
+            val derived = mutableListOf<StaticCard>()
+            if (shortcuts.isNotEmpty()) {
+                derived += StaticCard("default-shortcuts", StaticCardType.SHORTCUTS, StaticCardType.SHORTCUTS.label)
+            }
+            // Presence only: `core` must not reach into the barcode layer, and invalid content is
+            // still shown so the card itself can explain what is wrong.
+            if (barcodeCardEnabled && barcode.content.isNotBlank()) {
+                derived += StaticCard("default-barcode", StaticCardType.BARCODE, StaticCardType.BARCODE.label)
+            }
+            if (customIntents.isNotEmpty()) {
+                derived += StaticCard("default-intent", StaticCardType.INTENT, StaticCardType.INTENT.label)
+            }
+            return derived
+        }
+
+    /** `startCardId` yang menunjuk kartu tidak ada dianggap tidak diset. */
+    val effectiveStartCardId: String?
+        get() = if (effectiveStaticCards.any { it.id == startCardId }) startCardId else null
+
     fun geometry(orientation: Orientation): Geometry =
         if (orientation == Orientation.LANDSCAPE) landscape else portrait
 

@@ -4,15 +4,37 @@ import android.app.Activity
 import android.content.Intent
 import android.provider.ContactsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import com.iqbalwork.capsule.model.BarcodeFormat
+import com.iqbalwork.capsule.platform.barcode.BarcodeEncoder
+import com.iqbalwork.capsule.platform.barcode.BarcodeValidationResult
+import com.iqbalwork.capsule.platform.barcode.BarcodeValidator
+import com.iqbalwork.capsule.ui.components.ExpandedBarcodeCard
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
@@ -41,6 +63,13 @@ import com.iqbalwork.capsule.core.settings.Settings
 import com.iqbalwork.capsule.core.settings.Shortcut
 import com.iqbalwork.capsule.core.settings.ShortcutKind
 import com.iqbalwork.capsule.core.settings.SystemShortcut
+import com.iqbalwork.capsule.platform.barcode.BarcodeScanResult
+import com.iqbalwork.capsule.platform.barcode.scanImage
+import com.iqbalwork.capsule.platform.barcode.scanWithPlayServices
+import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import java.util.UUID
 
 /** Most tiles the Shortcuts card shows (two rows of four). */
@@ -78,6 +107,47 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
         }
     }
 
+    val scope = rememberCoroutineScope()
+    var scanningImage by remember { mutableStateOf(false) }
+    var scanError by remember { mutableStateOf<String?>(null) }
+
+    // Both entry points (gallery image, camera) end in the same three outcomes.
+    val applyScanResult: (BarcodeScanResult) -> Unit = { result ->
+        when (result) {
+            is BarcodeScanResult.Found -> {
+                scanError = null
+                onUpdate { s ->
+                    s.copy(barcode = s.barcode.copy(
+                        content = result.code.content,
+                        format = result.code.format,
+                    ))
+                }
+            }
+            is BarcodeScanResult.Failed -> scanError = result.message
+            // The user backed out of the camera scanner; that is not an error.
+            BarcodeScanResult.Cancelled -> scanError = null
+        }
+    }
+
+    val pickImage = rememberLauncherForActivityResult(PickVisualMedia()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scanError = null
+        scanningImage = true
+        scope.launch {
+            applyScanResult(scanImage(context, uri, settings.barcode.format))
+            scanningImage = false
+        }
+    }
+
+    val startCameraScan: () -> Unit = {
+        scanError = null
+        scanningImage = true
+        scope.launch {
+            applyScanResult(scanWithPlayServices(context, settings.barcode.format))
+            scanningImage = false
+        }
+    }
+
     LazyColumn(modifier = modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
@@ -104,6 +174,223 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
                                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Switch(checked = settings.themedShortcutIcons, onCheckedChange = { on -> onUpdate { it.copy(themedShortcutIcons = on) } })
+                    }
+                }
+            }
+        }
+        item {
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Barcode card", style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                "Show loyalty barcode or QR code at the top of the capsule.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = settings.barcode.enabled,
+                            onCheckedChange = { on ->
+                                onUpdate { it.copy(barcode = it.barcode.copy(enabled = on)) }
+                            }
+                        )
+                    }
+
+                    var formatMenuExpanded by remember { mutableStateOf(false) }
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        Text("Format", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                        Box {
+                            OutlinedButton(onClick = { formatMenuExpanded = true }) {
+                                Text(settings.barcode.format.displayName)
+                            }
+                            DropdownMenu(
+                                expanded = formatMenuExpanded,
+                                onDismissRequest = { formatMenuExpanded = false }
+                            ) {
+                                BarcodeFormat.entries.forEach { format ->
+                                    DropdownMenuItem(
+                                        text = { Text(format.displayName) },
+                                        onClick = {
+                                            onUpdate { it.copy(barcode = it.barcode.copy(format = format)) }
+                                            formatMenuExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    val validation = remember(settings.barcode.content, settings.barcode.format) {
+                        BarcodeValidator.validate(settings.barcode.content, settings.barcode.format)
+                    }
+                    val encodeResult = remember(settings.barcode.content, settings.barcode.format) {
+                        if (validation is BarcodeValidationResult.Ok && settings.barcode.content.isNotEmpty()) {
+                            runCatching { BarcodeEncoder.encode(settings.barcode.content, settings.barcode.format) }
+                        } else {
+                            null
+                        }
+                    }
+                    val encoderError = encodeResult?.exceptionOrNull()?.message
+                    val barcodeErrorMessage = when {
+                        validation is BarcodeValidationResult.Error -> validation.message
+                        encoderError != null -> "Could not build the code: $encoderError"
+                        else -> null
+                    }
+
+                    OutlinedTextField(
+                        value = settings.barcode.content,
+                        onValueChange = { newContent ->
+                            onUpdate { it.copy(barcode = it.barcode.copy(content = newContent)) }
+                        },
+                        label = { Text("Content / Code") },
+                        placeholder = {
+                            Text(when (settings.barcode.format) {
+                                BarcodeFormat.QR_CODE -> "https://example.com"
+                                BarcodeFormat.EAN_13 -> "4006381333931"
+                                BarcodeFormat.EAN_8 -> "96385074"
+                                BarcodeFormat.UPC_A -> "036000291452"
+                                BarcodeFormat.UPC_E -> "01234565"
+                                BarcodeFormat.ITF -> "123456"
+                                BarcodeFormat.CODE_39 -> "CODE39"
+                                BarcodeFormat.CODE_93 -> "CODE93"
+                                BarcodeFormat.CODE_128 -> "Code 128"
+                                BarcodeFormat.CODABAR -> "A123456B"
+                            })
+                        },
+                        isError = barcodeErrorMessage != null && settings.barcode.content.isNotEmpty(),
+                        supportingText = {
+                            if (barcodeErrorMessage != null && settings.barcode.content.isNotEmpty()) {
+                                Text(
+                                    text = barcodeErrorMessage,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        },
+                        singleLine = settings.barcode.format != BarcodeFormat.QR_CODE,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                pickImage.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
+                            },
+                            enabled = !scanningImage
+                        ) {
+                            Text("Scan from image")
+                        }
+                        // Runs inside Play Services, so it needs no camera permission.
+                        OutlinedButton(
+                            onClick = startCameraScan,
+                            enabled = !scanningImage
+                        ) {
+                            Text("Scan with camera")
+                        }
+                    }
+                    if (scanningImage) {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    }
+                    scanError?.let { message ->
+                        Text(
+                            text = message,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+
+                    OutlinedTextField(
+                        value = settings.barcode.label,
+                        onValueChange = { newLabel ->
+                            onUpdate { it.copy(barcode = it.barcode.copy(label = newLabel)) }
+                        },
+                        label = { Text("Label (optional)") },
+                        placeholder = { Text("e.g. Member Card 🏷️") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("Barcode color", style = MaterialTheme.typography.bodyMedium)
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val presetColors = listOf(
+                                0xFF000000L to "Black",
+                                0xFF0D47A1L to "Navy",
+                                0xFF1B5E20L to "Green",
+                                0xFFB71C1CL to "Red",
+                                0xFF4A148CL to "Purple",
+                                0xFFE65100L to "Orange"
+                            )
+                            presetColors.forEach { (colorLong, _) ->
+                                val isSelected = settings.barcode.color == colorLong
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(colorLong))
+                                        .then(
+                                            if (isSelected) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                                            else Modifier.border(1.dp, Color.Gray.copy(alpha = 0.5f), CircleShape)
+                                        )
+                                        .clickable {
+                                            onUpdate { it.copy(barcode = it.barcode.copy(color = colorLong)) }
+                                        }
+                                )
+                            }
+                        }
+                    }
+
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Flip 180°", style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                "Rotates barcode upside-down for presenting to scanners.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = settings.barcode.flipped,
+                            onCheckedChange = { flipped ->
+                                onUpdate { it.copy(barcode = it.barcode.copy(flipped = flipped)) }
+                            }
+                        )
+                    }
+
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("Live preview", style = MaterialTheme.typography.titleSmall)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFF1E1B1A))
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (validation is BarcodeValidationResult.Ok && encoderError == null) {
+                                ExpandedBarcodeCard(
+                                    barcode = settings.barcode,
+                                    plateHeight = 90.dp,
+                                    showLabel = true
+                                )
+                            } else {
+                                val previewReason = barcodeErrorMessage ?: "Kode tidak valid"
+                                Text(
+                                    text = "Preview unavailable: $previewReason",
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
                     }
                 }
             }

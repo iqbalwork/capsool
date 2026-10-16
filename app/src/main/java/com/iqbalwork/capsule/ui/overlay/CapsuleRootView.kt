@@ -19,11 +19,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -40,7 +43,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.iqbalwork.capsule.core.settings.GestureAction
 import com.iqbalwork.capsule.core.settings.GestureType
+import com.iqbalwork.capsule.core.settings.StaticCardType
 import com.iqbalwork.capsule.core.store.Action
+import com.iqbalwork.capsule.core.store.CardPage
 import com.iqbalwork.capsule.core.store.CapsuleMode
 import com.iqbalwork.capsule.core.store.CapsuleState
 import com.iqbalwork.capsule.core.store.UserIntent
@@ -53,6 +58,8 @@ import com.iqbalwork.capsule.ui.components.ExpandedProgressCard
 import com.iqbalwork.capsule.ui.components.ExpandedShortcutsCard
 import com.iqbalwork.capsule.ui.components.ExpandedSliderCard
 import com.iqbalwork.capsule.ui.components.ExpandedTimerCard
+import com.iqbalwork.capsule.ui.components.ExpandedBarcodeCard
+import com.iqbalwork.capsule.ui.components.ExpandedIntentCard
 import com.iqbalwork.capsule.ui.components.MiniCapsuleView
 import com.iqbalwork.capsule.ui.components.RedTargetCalibratorView
 import com.iqbalwork.capsule.ui.theme.CapsuleTokens
@@ -148,7 +155,12 @@ fun CapsuleRootView(
                             .fillMaxSize()
                             .wrapContentSize(Alignment.TopCenter, unbounded = true)
                     ) {
-                        ExpandedCarousel(frame.state, dispatch, Modifier.size(expandedWidth, expandedHeight))
+                        val cardSize = Modifier.size(expandedWidth, expandedHeight)
+                        if (frame.state.showsStaticList) {
+                            ExpandedStaticList(frame.state, dispatch, cardSize)
+                        } else {
+                            ExpandedCarousel(frame.state, dispatch, cardSize)
+                        }
                     }
                 } else {
                     MiniCapsuleView(state = frame.state)
@@ -178,13 +190,13 @@ private fun Modifier.notificationGlow(color: Long?, enabled: Boolean, shape: Sha
 
 private data class ShellFrame(val expanded: Boolean, val state: CapsuleState)
 
-/** One carousel page; each notification is its own page so the next one slides in on dismiss. */
-private data class CardFrame(val card: CapsuleCardType, val notificationKey: String?, val state: CapsuleState)
+/** One carousel page keyed by page key + notification key (for per-notification animation). */
+private data class PageFrame(val pageKey: String, val notificationKey: String?, val state: CapsuleState)
 
 @Composable
 private fun ExpandedCarousel(state: CapsuleState, dispatch: (Action) -> Unit, modifier: Modifier = Modifier) {
-    val cards = state.activeCards
-    val active = state.activeCard ?: return
+    val pages = state.pages
+    val active = state.activePage ?: return
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.SpaceBetween,
@@ -192,15 +204,17 @@ private fun ExpandedCarousel(state: CapsuleState, dispatch: (Action) -> Unit, mo
     ) {
         Box(modifier = Modifier.weight(1f)) {
             AnimatedContent(
-                targetState = CardFrame(
-                    card = active,
-                    notificationKey = state.topNotification?.key.takeIf { active == CapsuleCardType.NOTIFICATION },
+                targetState = PageFrame(
+                    pageKey = active.key,
+                    notificationKey = state.topNotification?.key.takeIf {
+                        active is CardPage.Dynamic && active.type == CapsuleCardType.NOTIFICATION
+                    },
                     state = state
                 ),
-                contentKey = { it.card to it.notificationKey },
+                contentKey = { it.pageKey to it.notificationKey },
                 transitionSpec = {
-                    val from = cards.indexOf(initialState.card)
-                    val to = cards.indexOf(targetState.card)
+                    val from = pages.indexOfFirst { it.key == initialState.pageKey }
+                    val to = pages.indexOfFirst { it.key == targetState.pageKey }
                     val direction = if (from == -1 || to >= from) 1 else -1
                     (slideInHorizontally(CapsuleTokens.FruitSpringIntOffset) { direction * it } +
                         fadeIn(CapsuleTokens.FruitSpring)) togetherWith
@@ -209,18 +223,18 @@ private fun ExpandedCarousel(state: CapsuleState, dispatch: (Action) -> Unit, mo
                 },
                 label = "carousel_card"
             ) { frame ->
-                CardContent(frame.card, frame.state, dispatch)
+                PageContent(active, frame.state, dispatch)
             }
         }
 
-        if (cards.size > 1) {
+        if (pages.size > 1) {
             Row(
                 modifier = Modifier.padding(bottom = 6.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                cards.forEach { card ->
-                    val selected = card == active
+                pages.forEach { page ->
+                    val selected = page.key == active.key
                     Box(
                         modifier = Modifier
                             .size(if (selected) 8.dp else 5.dp)
@@ -236,8 +250,53 @@ private fun ExpandedCarousel(state: CapsuleState, dispatch: (Action) -> Unit, mo
     }
 }
 
+/**
+ * LIST view (spec line 81): the same static cards stacked vertically instead of side by side.
+ * Every row reuses [StaticCardContent], so a card cannot look different between the two modes;
+ * the panel scrolls when there are more rows than [OverlayPlacement.MAX_LIST_ROWS].
+ */
 @Composable
-private fun CardContent(card: CapsuleCardType, state: CapsuleState, dispatch: (Action) -> Unit) {
+private fun ExpandedStaticList(state: CapsuleState, dispatch: (Action) -> Unit, modifier: Modifier = Modifier) {
+    val pages = state.pages.filterIsInstance<CardPage.Static>()
+    val active = state.activePage
+    val scrollState = rememberScrollState()
+
+    Column(
+        modifier = modifier.verticalScroll(scrollState),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        pages.forEach { page ->
+            val selected = page.key == active?.key
+            val rowShape = RoundedCornerShape(20.dp)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(rowShape)
+                    .then(
+                        if (selected) {
+                            Modifier.border(1.dp, MaterialTheme.colorScheme.primary, rowShape)
+                        } else {
+                            Modifier
+                        }
+                    )
+            ) {
+                StaticCardContent(page, state, dispatch)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PageContent(page: CardPage, state: CapsuleState, dispatch: (Action) -> Unit) {
+    when (page) {
+        is CardPage.Dynamic -> DynamicCardContent(page.type, state, dispatch)
+        is CardPage.Static -> StaticCardContent(page, state, dispatch)
+    }
+}
+
+@Composable
+private fun DynamicCardContent(card: CapsuleCardType, state: CapsuleState, dispatch: (Action) -> Unit) {
     when (card) {
         CapsuleCardType.MEDIA -> state.media?.let { ExpandedMediaCard(mediaState = it, onAction = dispatch) }
         CapsuleCardType.SLIDERS -> ExpandedSliderCard(
@@ -263,7 +322,34 @@ private fun CardContent(card: CapsuleCardType, state: CapsuleState, dispatch: (A
         CapsuleCardType.SHORTCUTS -> ExpandedShortcutsCard(
             shortcuts = state.settings.shortcuts,
             themedIcons = state.settings.themedShortcutIcons,
+            onAction = dispatch,
+            barcode = state.settings.barcode,
+            barcodeEnabled = state.settings.barcodeCardEnabled
+        )
+    }
+}
+
+@Composable
+private fun StaticCardContent(page: CardPage.Static, state: CapsuleState, dispatch: (Action) -> Unit) {
+    when (page.card.type) {
+        StaticCardType.SHORTCUTS -> ExpandedShortcutsCard(
+            shortcuts = state.settings.shortcuts,
+            themedIcons = state.settings.themedShortcutIcons,
+            onAction = dispatch,
+            barcode = state.settings.barcode,
+            barcodeEnabled = state.settings.barcodeCardEnabled
+        )
+        StaticCardType.BARCODE -> ExpandedBarcodeCard(
+            barcode = state.settings.barcode
+        )
+        StaticCardType.SLIDERS -> ExpandedSliderCard(
+            sliders = state.sliders,
+            style = state.settings.sliderStyle,
             onAction = dispatch
+        )
+        StaticCardType.INTENT -> ExpandedIntentCard(
+            intents = state.settings.customIntents,
+            onRun = { dispatch(UserIntent.RunCustomIntent(it)) }
         )
     }
 }

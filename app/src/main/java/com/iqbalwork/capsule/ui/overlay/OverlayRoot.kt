@@ -36,7 +36,7 @@ fun OverlayRoot(
                 state = state,
                 dispatch = dispatch,
                 expandedWidth = OverlayPlacement.expandedWidthDp(screenWidthDp).dp,
-                expandedHeight = OverlayPlacement.EXPANDED_HEIGHT_DP.dp,
+                expandedHeight = OverlayPlacement.expandedContentHeightDp(state.listRows).dp,
                 modifier = Modifier
                     .offset { IntOffset(placement.contentOffsetXPx, placement.contentOffsetYPx) }
                     .padding(top = OverlayPlacement.MARGIN_DP.dp)

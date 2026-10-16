@@ -15,14 +15,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Chat
+import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.BatteryStd
 import androidx.compose.material.icons.rounded.Bluetooth
 import androidx.compose.material.icons.rounded.Call
-import androidx.compose.material.icons.rounded.Chat
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.NetworkCheck
 import androidx.compose.material.icons.rounded.SettingsBrightness
-import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Wifi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -45,6 +45,8 @@ import com.iqbalwork.capsule.core.settings.Shortcut
 import com.iqbalwork.capsule.core.settings.ShortcutKind
 import com.iqbalwork.capsule.core.settings.SystemShortcut
 import com.iqbalwork.capsule.core.store.UserIntent
+import com.iqbalwork.capsule.model.BarcodeContent
+import com.iqbalwork.capsule.platform.barcode.BarcodeValidator
 
 private const val COLUMNS = 4
 private const val MAX_TILES = 8
@@ -55,9 +57,15 @@ fun ExpandedShortcutsCard(
     shortcuts: List<Shortcut>,
     themedIcons: Boolean,
     onAction: (UserIntent) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    barcode: BarcodeContent = BarcodeContent(),
+    barcodeEnabled: Boolean = true
 ) {
-    if (shortcuts.isEmpty()) {
+    val showBarcode = barcodeEnabled && barcode.enabled && remember(barcode.content, barcode.format) {
+        BarcodeValidator.validate(barcode.content, barcode.format).isValid
+    }
+
+    if (!showBarcode && shortcuts.isEmpty()) {
         Box(modifier = modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
             Text(
                 "Add apps, contacts and system shortcuts in the Capsool app.",
@@ -68,13 +76,38 @@ fun ExpandedShortcutsCard(
         }
         return
     }
+
+    if (showBarcode && shortcuts.isEmpty()) {
+        Box(
+            modifier = modifier.fillMaxSize().padding(12.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            ExpandedBarcodeCard(
+                barcode = barcode,
+                plateHeight = 100.dp,
+                showLabel = true
+            )
+        }
+        return
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 12.dp, vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.SpaceBetween,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        shortcuts.take(MAX_TILES).chunked(COLUMNS).forEach { row ->
+        if (showBarcode) {
+            ExpandedBarcodeCard(
+                barcode = barcode,
+                plateHeight = 56.dp,
+                showLabel = true
+            )
+            Spacer(Modifier.height(4.dp))
+        }
+        val maxTiles = if (showBarcode) 4 else MAX_TILES
+        shortcuts.take(maxTiles).chunked(COLUMNS).forEach { row ->
             Row(modifier = Modifier.fillMaxWidth()) {
                 row.forEach { shortcut ->
                     ShortcutTile(
@@ -149,7 +182,7 @@ private fun ContactTileIcon(shortcut: Shortcut) {
             style = MaterialTheme.typography.titleLarge
         )
         Icon(
-            if (shortcut.contactAction == ContactAction.CALL) Icons.Rounded.Call else Icons.Rounded.Chat,
+            if (shortcut.contactAction == ContactAction.CALL) Icons.Rounded.Call else Icons.AutoMirrored.Rounded.Chat,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier
@@ -162,7 +195,7 @@ private fun ContactTileIcon(shortcut: Shortcut) {
 fun systemIcon(target: String): ImageVector = when (runCatching { SystemShortcut.valueOf(target) }.getOrNull()) {
     SystemShortcut.INTERNET_PANEL -> Icons.Rounded.NetworkCheck
     SystemShortcut.WIFI_PANEL -> Icons.Rounded.Wifi
-    SystemShortcut.VOLUME_PANEL -> Icons.Rounded.VolumeUp
+    SystemShortcut.VOLUME_PANEL -> Icons.AutoMirrored.Rounded.VolumeUp
     SystemShortcut.BLUETOOTH -> Icons.Rounded.Bluetooth
     SystemShortcut.DISPLAY -> Icons.Rounded.SettingsBrightness
     SystemShortcut.LOCATION -> Icons.Rounded.LocationOn
