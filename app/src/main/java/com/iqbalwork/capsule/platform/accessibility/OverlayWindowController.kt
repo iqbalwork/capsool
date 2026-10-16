@@ -32,6 +32,7 @@ import com.iqbalwork.capsule.core.store.UserIntent
 import com.iqbalwork.capsule.model.CapsuleCardType
 import com.iqbalwork.capsule.platform.barcode.BarcodeValidator
 import com.iqbalwork.capsule.ui.overlay.OverlayRoot
+import com.iqbalwork.capsule.ui.theme.CapsuleMotion
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -40,12 +41,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 private const val TAG = "CapsoolOverlay"
-
-/**
- * Keep the window at card size until the collapse spring has visibly settled; shrinking
- * earlier clips the still-moving edge (CollapseSpring: damping 0.8, stiffness 260).
- */
-private const val SHRINK_DELAY_MS = 750L
 
 /**
  * Owns the single TYPE_ACCESSIBILITY_OVERLAY window (spec §2.4.2). The window hugs the
@@ -242,7 +237,9 @@ class OverlayWindowController(
     /** Compose animations follow the system animator scale, so the shrink delay must too. */
     private fun scaledShrinkDelay(): Long {
         val scale = Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f)
-        return (SHRINK_DELAY_MS * scale).toLong()
+        // Keep the window card-sized until the collapse has visibly settled; the delay depends on
+        // the user's animation speed and bounce, so it comes from the same motion the overlay uses.
+        return (CapsuleMotion.of(store.state.value.settings).shrinkDelayMillis * scale).toLong()
     }
 
     /**

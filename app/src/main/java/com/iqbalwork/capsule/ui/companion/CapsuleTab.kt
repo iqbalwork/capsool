@@ -8,7 +8,15 @@ import android.net.Uri
 import android.provider.Settings as AndroidSettings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -38,7 +46,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.ui.unit.dp
+import com.iqbalwork.capsule.core.settings.BounceLevel
+import com.iqbalwork.capsule.core.settings.CapsuleShapeStyle
 import com.iqbalwork.capsule.core.settings.ColorSource
+import com.iqbalwork.capsule.core.settings.ExpandStyle
+import com.iqbalwork.capsule.core.settings.MAX_ANIMATION_SPEED
+import com.iqbalwork.capsule.core.settings.MAX_BORDER_DP
+import com.iqbalwork.capsule.core.settings.MAX_SHADOW_DP
+import com.iqbalwork.capsule.core.settings.MIN_ANIMATION_SPEED
 import com.iqbalwork.capsule.core.settings.DEFAULT_BRIGHTNESS_MAX
 import com.iqbalwork.capsule.core.settings.SliderStyle
 import com.iqbalwork.capsule.core.settings.Geometry
@@ -120,6 +135,108 @@ fun CapsuleTab(
                     description = "Vibrate when a gesture on the capsule does something.",
                     checked = settings.hapticsEnabled,
                     onChange = { on -> onUpdate { it.copy(hapticsEnabled = on) } }
+                )
+            }
+        }
+        item {
+            Section("Shape and colors") {
+                Text("Shape", style = MaterialTheme.typography.bodyMedium)
+                Options(
+                    options = CapsuleShapeStyle.entries,
+                    selected = settings.shapeStyle,
+                    label = {
+                        when (it) {
+                            CapsuleShapeStyle.PILL -> "Pill"
+                            CapsuleShapeStyle.ROUNDED_RECT -> "Rounded"
+                            CapsuleShapeStyle.SQUIRCLE -> "Squircle"
+                        }
+                    },
+                    onSelect = { style -> onUpdate { it.copy(shapeStyle = style) } }
+                )
+                if (settings.shapeStyle == CapsuleShapeStyle.PILL) {
+                    Text(
+                        "A pill is always fully round; the corner radius above is used by the other shapes.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Text("Background", style = MaterialTheme.typography.bodyMedium)
+                SwatchRow(
+                    colors = BackgroundSwatches,
+                    selected = settings.customBackground,
+                    defaultLabel = "Black",
+                    onSelect = { color -> onUpdate { it.copy(customBackground = color) } }
+                )
+                Text(
+                    "Black blends with the camera. Light colors are darkened so card text stays readable.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                IntSlider("Border", settings.borderDp, 0..MAX_BORDER_DP) { v -> onUpdate { it.copy(borderDp = v) } }
+                if (settings.borderDp > 0) {
+                    SwatchRow(
+                        colors = BorderSwatches,
+                        selected = settings.borderColor,
+                        defaultLabel = "Theme",
+                        onSelect = { color -> onUpdate { it.copy(borderColor = color) } }
+                    )
+                }
+                IntSlider("Shadow", settings.shadowDp, 0..MAX_SHADOW_DP) { v -> onUpdate { it.copy(shadowDp = v) } }
+                TextButton(onClick = {
+                    onUpdate {
+                        it.copy(
+                            shapeStyle = CapsuleShapeStyle.ROUNDED_RECT,
+                            customBackground = null,
+                            borderDp = 0,
+                            borderColor = null,
+                            shadowDp = 0
+                        )
+                    }
+                }) { Text("Reset shape and colors") }
+            }
+        }
+        item {
+            Section("Animation") {
+                Text(
+                    "Speed: ${"%.1f".format(settings.animationSpeed)}×",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Slider(
+                    value = settings.animationSpeed,
+                    onValueChange = { v -> onUpdate { it.copy(animationSpeed = (v * 10).roundToInt() / 10f) } },
+                    valueRange = MIN_ANIMATION_SPEED..MAX_ANIMATION_SPEED,
+                    steps = 14,
+                    enabled = !settings.reduceAnimations
+                )
+                Text("Expand style", style = MaterialTheme.typography.bodyMedium)
+                Options(
+                    options = ExpandStyle.entries,
+                    selected = settings.expandStyle,
+                    label = { if (it == ExpandStyle.ORGANIC) "Organic" else "Rigid" },
+                    onSelect = { style -> onUpdate { it.copy(expandStyle = style) } }
+                )
+                if (settings.expandStyle == ExpandStyle.ORGANIC && !settings.reduceAnimations) {
+                    Text("Bounce", style = MaterialTheme.typography.bodyMedium)
+                    Options(
+                        options = BounceLevel.entries,
+                        selected = settings.bounce,
+                        label = {
+                            when (it) {
+                                BounceLevel.NONE -> "None"
+                                BounceLevel.LOW -> "Low"
+                                BounceLevel.DEFAULT -> "Normal"
+                                BounceLevel.HIGH -> "High"
+                                BounceLevel.MAX -> "Max"
+                            }
+                        },
+                        onSelect = { level -> onUpdate { it.copy(bounce = level) } }
+                    )
+                }
+                SwitchRow(
+                    title = "Reduce animations",
+                    description = "Short, bounce-free transitions and fading cards instead of sliding.",
+                    checked = settings.reduceAnimations,
+                    onChange = { on -> onUpdate { it.copy(reduceAnimations = on) } }
                 )
             }
         }
@@ -516,6 +633,41 @@ private fun HiddenAppsList(settings: Settings, onUpdate: ((Settings) -> Settings
             },
             onDismiss = { pickingApp = false }
         )
+    }
+}
+
+/** Dark enough to keep the white card text readable; the first entry (null) means "default". */
+private val BackgroundSwatches = listOf(
+    0xFF1A1615, 0xFF1B2A41, 0xFF1F3A2E, 0xFF3B1F2B, 0xFF2D2438, 0xFF3A2A1A
+)
+private val BorderSwatches = listOf(
+    0xFFFFFFFF, 0xFFFFB690, 0xFF7FC8F8, 0xFF9BD67F, 0xFFF48FB1
+)
+
+/** A row of color dots plus a "default" chip; [selected] null = the default. */
+@Composable
+private fun SwatchRow(colors: List<Long>, selected: Long?, defaultLabel: String, onSelect: (Long?) -> Unit) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        FilterChip(selected = selected == null, onClick = { onSelect(null) }, label = { Text(defaultLabel) })
+        colors.forEach { argb ->
+            val isSelected = selected == argb
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(Color(argb))
+                    .border(
+                        width = if (isSelected) 3.dp else 1.dp,
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                        shape = CircleShape
+                    )
+                    .clickable { onSelect(argb) }
+            )
+        }
     }
 }
 

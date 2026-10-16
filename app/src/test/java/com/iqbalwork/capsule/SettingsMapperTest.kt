@@ -16,6 +16,14 @@ import com.iqbalwork.capsule.model.EventCategory
 import com.iqbalwork.capsule.core.settings.NotificationDelay
 import com.iqbalwork.capsule.core.settings.NotificationDisplay
 import com.iqbalwork.capsule.core.settings.Settings
+import org.junit.Assert.assertNull
+import com.iqbalwork.capsule.core.settings.MAX_BORDER_DP
+import com.iqbalwork.capsule.core.settings.MAX_ANIMATION_SPEED
+import com.iqbalwork.capsule.core.settings.ExpandStyle
+import com.iqbalwork.capsule.core.settings.CapsuleShapeStyle
+import com.iqbalwork.capsule.core.settings.BounceLevel
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.floatPreferencesKey
 import com.iqbalwork.capsule.core.settings.SettingsMapper
 import com.iqbalwork.capsule.core.settings.SliderStyle
 import org.junit.Assert.assertEquals
@@ -125,5 +133,46 @@ class SettingsMapperTest {
         val hidden = mutablePreferencesOf()
         SettingsMapper.write(hidden, Settings(lockScreenBehavior = LockScreenBehavior.HIDE))
         assertEquals(true, hidden[legacyHideTextKey])
+    }
+
+    @Test
+    fun appearanceAndAnimationSettingsRoundTrip() {
+        val settings = Settings(
+            shapeStyle = CapsuleShapeStyle.SQUIRCLE,
+            customBackground = 0xFF1B2A41L,
+            borderDp = 2,
+            borderColor = 0xFFFFB690L,
+            shadowDp = 4,
+            animationSpeed = 1.5f,
+            bounce = BounceLevel.HIGH,
+            expandStyle = ExpandStyle.RIGID,
+            reduceAnimations = true
+        )
+        val prefs = mutablePreferencesOf()
+        SettingsMapper.write(prefs, settings)
+        assertEquals(settings, SettingsMapper.read(prefs))
+    }
+
+    @Test
+    fun clearingTheCustomColorsRemovesThemFromStorage() {
+        val prefs = mutablePreferencesOf()
+        SettingsMapper.write(prefs, Settings(customBackground = 0xFF1B2A41L, borderColor = 0xFFFFFFFFL))
+        SettingsMapper.write(prefs, Settings(customBackground = null, borderColor = null))
+        val read = SettingsMapper.read(prefs)
+        assertNull(read.customBackground)
+        assertNull(read.borderColor)
+    }
+
+    @Test
+    fun outOfRangeStoredValuesAreClamped() {
+        val prefs = mutablePreferencesOf(
+            intPreferencesKey("appearance.border") to 40,
+            intPreferencesKey("appearance.shadow") to -3,
+            floatPreferencesKey("animation.speed") to 9f
+        )
+        val read = SettingsMapper.read(prefs)
+        assertEquals(MAX_BORDER_DP, read.borderDp)
+        assertEquals(0, read.shadowDp)
+        assertEquals(MAX_ANIMATION_SPEED, read.animationSpeed, 0f)
     }
 }
