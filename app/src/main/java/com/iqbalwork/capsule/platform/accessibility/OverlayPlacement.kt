@@ -97,8 +97,15 @@ object OverlayPlacement {
      * capsule (which covers the camera hole) nor wider than the user's extra width allows; with no
      * [content] it takes the full allowance.
      */
-    fun pillWidthDp(geometry: Geometry, miniEvent: Boolean, cameraGapDp: Int = 0, content: MiniContent? = null): Int {
-        if (!miniEvent) return geometry.widthDp
+    fun pillWidthDp(
+        geometry: Geometry,
+        miniEvent: Boolean,
+        cameraGapDp: Int = 0,
+        content: MiniContent? = null,
+        iconOnly: Boolean = false
+    ): Int {
+        // An icon-only event keeps the capsule's own size: nothing is widened.
+        if (!miniEvent || iconOnly) return geometry.widthDp
         val split = if (cameraGapDp > 0) cameraGapDp + SPLIT_EXTRA_WIDTH_DP else 0
         val most = geometry.widthDp + geometry.miniExtraWidthDp + split
         if (content == null) return most
@@ -161,8 +168,10 @@ object OverlayPlacement {
         val independent = mode == PlacementMode.INDEPENDENT
         // Independent ignores the camera: centered on the screen, just under the status bar.
         val baseCenterX = if (independent) screenWidthPx / 2f else cutout?.centerX ?: (screenWidthPx / 2f)
-        // The event pill has its own sideways shift on top of the capsule's.
-        val miniShiftDp = if (miniEvent) geometry.miniOffsetXDp else 0
+        // The event pill has its own sideways shift on top of the capsule's, but an icon-only event is the
+        // capsule itself and must stay over the camera.
+        val iconOnly = eventDisplay == EventDisplay.ICON_ONLY
+        val miniShiftDp = if (miniEvent && !iconOnly) geometry.miniOffsetXDp else 0
         val centerX = baseCenterX + px((geometry.offsetXDp + miniShiftDp).toFloat())
         val defaultCenterY = when {
             independent -> statusBarHeightPx + px(INDEPENDENT_GAP_DP.toFloat()) + capsuleHeight / 2f
@@ -176,7 +185,7 @@ object OverlayPlacement {
             if (overHole && eventDisplay == EventDisplay.SPLIT) cameraGapDp(cutout!!.right - cutout.left, density) else 0
         // Below the camera: the pill gets a row of its own under the hole instead of being split.
         val eventRow = if (overHole && miniEvent && eventDisplay == EventDisplay.BELOW_CAMERA) geometry.miniRowDp else 0
-        val pillWidthDp = pillWidthDp(geometry, miniEvent, cameraGap, miniContent)
+        val pillWidthDp = pillWidthDp(geometry, miniEvent, cameraGap, miniContent, iconOnly)
         val pillWidth = px(pillWidthDp.toFloat())
         val contentWidth =
             if (expanded) maxOf(px(expandedWidthDp(screenWidthPx / density, fullWidthCard)), pillWidth) else pillWidth

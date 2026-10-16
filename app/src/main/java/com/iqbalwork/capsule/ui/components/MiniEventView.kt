@@ -65,6 +65,10 @@ private val WifiBlue = Color(0xFF8AB4F8)
  * [cameraGapDp] the content is therefore split in two equal halves with that strip left empty
  * between them: icon and title on the left, value and ring on the right.
  *
+ * With [iconOnly] there is no text at all: the icon sits at the left edge and a level ring (the battery)
+ * at the right, like the compact cards, leaving the middle clear for the camera. The pill keeps the
+ * size it has when idle.
+ *
  * With [belowCameraTopDp] the pill is taller instead: the top [belowCameraTopDp] is left empty (the
  * hole is in it) and one full-width row of icon, title and value is drawn underneath.
  */
@@ -74,10 +78,30 @@ fun MiniEventView(
     modifier: Modifier = Modifier,
     style: EventStyle = EventStyle.Default,
     cameraGapDp: Int = 0,
-    belowCameraTopDp: Int = 0
+    belowCameraTopDp: Int = 0,
+    iconOnly: Boolean = false
 ) {
     val color = style.color?.let { Color(it) } ?: event.type.accent()
     val split = cameraGapDp > 0
+
+    @Composable
+    fun IconBadge() {
+        // The icon is the whole message here, so it stays even when the left shape is set to "none".
+        Box(
+            modifier = Modifier
+                .size(24.dp)
+                .clip(if (style.left == EventLeftShape.SQUARE) RoundedCornerShape(7.dp) else CircleShape)
+                .background(color.copy(alpha = 0.22f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                style.icon?.let(::customIntentIcon) ?: event.type.icon(),
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+    }
 
     @Composable
     fun Badge() {
@@ -134,9 +158,14 @@ fun MiniEventView(
         modifier = modifier
             .fillMaxSize()
             .padding(start = 7.dp, end = 7.dp, top = belowCameraTopDp.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = if (iconOnly) Arrangement.SpaceBetween else Arrangement.Start
     ) {
-        if (split) {
+        if (iconOnly) {
+            IconBadge()
+            val level = event.level?.takeIf { style.right == EventRightShape.AUTO }
+            if (level != null) LevelRing(level = level, color = color, size = 18.dp, stroke = 3.dp) else Spacer(Modifier.size(18.dp))
+        } else if (split) {
             Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                 Badge()
                 Title()

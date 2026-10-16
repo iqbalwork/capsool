@@ -115,8 +115,8 @@ class EventsLookTest {
     }
 
     @Test
-    fun eventDisplayDefaultsToBelowCameraAndSurvivesStorage() {
-        assertEquals(com.iqbalwork.capsule.core.settings.EventDisplay.BELOW_CAMERA, Settings().eventDisplay)
+    fun eventDisplayDefaultsToIconOnlyAndSurvivesStorage() {
+        assertEquals(com.iqbalwork.capsule.core.settings.EventDisplay.ICON_ONLY, Settings().eventDisplay)
         val split = Settings(eventDisplay = com.iqbalwork.capsule.core.settings.EventDisplay.SPLIT)
         val prefs = mutablePreferencesOf()
         SettingsMapper.write(prefs, split)

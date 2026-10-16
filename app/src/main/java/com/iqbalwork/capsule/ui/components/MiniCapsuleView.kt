@@ -66,7 +66,9 @@ fun MiniCapsuleView(
     /** Width of the camera hole under the middle of the pill, in dp; 0 = none. */
     cameraGapDp: Int = 0,
     /** When above 0, a pop-up event leaves this much empty at the top (the camera hole) and draws below. */
-    belowCameraTopDp: Int = 0
+    belowCameraTopDp: Int = 0,
+    /** Show a pop-up event as just its icon (and a ring), keeping the pill the size it is when idle. */
+    iconOnly: Boolean = false
 ) {
     val miniEvent = state.miniEvent
 
@@ -76,7 +78,8 @@ fun MiniCapsuleView(
             modifier = modifier,
             style = state.settings.eventStyle(miniEvent.type.category),
             cameraGapDp = cameraGapDp,
-            belowCameraTopDp = belowCameraTopDp
+            belowCameraTopDp = belowCameraTopDp,
+            iconOnly = iconOnly
         )
     } else {
         // Compact pill: the left and right slots follow the card the carousel would open.

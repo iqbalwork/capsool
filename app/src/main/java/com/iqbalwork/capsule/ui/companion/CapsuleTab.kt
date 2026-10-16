@@ -1008,11 +1008,25 @@ private fun EventStylesEditor(settings: Settings, onUpdate: ((Settings) -> Setti
     Options(
         options = EventDisplay.entries,
         selected = settings.eventDisplay,
-        label = { stringResource(if (it == EventDisplay.BELOW_CAMERA) R.string.evd_below else R.string.evd_split) },
+        label = {
+            stringResource(
+                when (it) {
+                    EventDisplay.ICON_ONLY -> R.string.evd_icon
+                    EventDisplay.BELOW_CAMERA -> R.string.evd_below
+                    EventDisplay.SPLIT -> R.string.evd_split
+                }
+            )
+        },
         onSelect = { display -> onUpdate { it.copy(eventDisplay = display) } }
     )
     Text(
-        stringResource(if (settings.eventDisplay == EventDisplay.BELOW_CAMERA) R.string.evd_below_desc else R.string.evd_split_desc),
+        stringResource(
+            when (settings.eventDisplay) {
+                EventDisplay.ICON_ONLY -> R.string.evd_icon_desc
+                EventDisplay.BELOW_CAMERA -> R.string.evd_below_desc
+                EventDisplay.SPLIT -> R.string.evd_split_desc
+            }
+        ),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )

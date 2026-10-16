@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="evd_position">Posisi pop-up</string>
+    <string name="evd_icon">Hanya ikon</string>
     <string name="evd_below">Di bawah kamera</string>
     <string name="evd_split">Di sekitar kamera</string>
+    <string name="evd_icon_desc">Hanya ikon event (dan cincin untuk level baterai) di kapsul. Tidak ada yang membesar dan tidak ada teks yang tertutup kamera. Deskripsi aksesibilitas kapsul tetap menyebutkan apa yang terjadi.</string>
     <string name="evd_below_desc">Pil memanjang ke bawah dan teks berada di baris di bawah lubang kamera, jadi tidak ada yang tertutup.</string>
     <string name="evd_split_desc">Pil tetap pendek dan teksnya dibelah dua di kiri dan kanan lubang kamera. Judul panjang bisa terpotong.</string>
 </resources>

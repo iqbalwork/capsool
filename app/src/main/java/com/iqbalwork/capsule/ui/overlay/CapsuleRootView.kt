@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule.ui.overlay
 
 import androidx.compose.animation.AnimatedContent
+import com.iqbalwork.capsule.core.settings.EventDisplay
 import com.iqbalwork.capsule.platform.accessibility.MiniEventWidth
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.heightIn
@@ -103,6 +104,7 @@ fun CapsuleRootView(
     val motion = remember(settings.animationSpeed, settings.bounce, settings.expandStyle, settings.reduceAnimations) {
         CapsuleMotion.of(settings)
     }
+    val iconOnly = settings.eventDisplay == EventDisplay.ICON_ONLY
     // The same estimate the window was sized with, so the pill and its window agree on the width.
     val miniContent = remember(state.miniEvent, settings.eventStyles) {
         state.miniEvent?.let { MiniEventWidth.of(it, settings.eventStyle(it.type.category)) }
@@ -111,7 +113,13 @@ fun CapsuleRootView(
 
     val width by animateDpAsState(
         targetValue = if (expanded) expandedWidth
-        else OverlayPlacement.pillWidthDp(geometry, miniEvent = mode == CapsuleMode.MINI_EVENT, cameraGapDp = cameraGapDp, content = miniContent).dp,
+        else OverlayPlacement.pillWidthDp(
+            geometry,
+            miniEvent = mode == CapsuleMode.MINI_EVENT,
+            cameraGapDp = cameraGapDp,
+            content = miniContent,
+            iconOnly = iconOnly
+        ).dp,
         animationSpec = sizeSpring,
         label = "capsule_width"
     )
@@ -210,7 +218,8 @@ fun CapsuleRootView(
                     MiniCapsuleView(
                         state = frame.state,
                         cameraGapDp = cameraGapDp,
-                        belowCameraTopDp = if (eventRowDp > 0) geometry.heightDp else 0
+                        belowCameraTopDp = if (eventRowDp > 0) geometry.heightDp else 0,
+                        iconOnly = iconOnly
                     )
                 }
             }
