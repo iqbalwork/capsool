@@ -335,7 +335,11 @@ data class Settings(
     /** F-08: the calibration of each panel x orientation the user has adjusted. */
     val profiles: Map<ScreenProfileKey, Geometry> = emptyMap(),
     val idleOpacity: Float = 1f,
-    val alwaysShowPill: Boolean = true,
+    /**
+     * Keep the idle pill on screen. Off by default: the capsule appears for events and active cards and
+     * is gone otherwise. The idle gestures (tap for Controls, long press for Shortcuts) need the pill.
+     */
+    val alwaysShowPill: Boolean = false,
     val showCalibrationTarget: Boolean = false,
     val colorSource: ColorSource = ColorSource.DYNAMIC,
     val hapticsEnabled: Boolean = true,

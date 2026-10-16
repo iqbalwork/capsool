@@ -88,7 +88,7 @@ class GesturesTest {
     // --- Actions ---
 
     private fun idle(type: GestureType, binding: GestureBinding) =
-        loaded.copy(settings = Settings(gesturesIdle = mapOf(type to binding)))
+        loaded.copy(settings = Settings(gesturesIdle = mapOf(type to binding), alwaysShowPill = true))
 
     @Test
     fun screenshotHidesTheCapsuleUntilDone() {

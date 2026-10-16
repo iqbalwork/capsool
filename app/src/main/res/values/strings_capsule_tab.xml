@@ -13,7 +13,7 @@
     <string name="cap_reset_orientation">Reset this orientation</string>
     <string name="cap_sec_appearance">Appearance</string>
     <string name="cap_always_show_pill">Always show pill</string>
-    <string name="cap_always_show_pill_desc">Keep the capsule visible even when nothing is happening.</string>
+    <string name="cap_always_show_pill_desc">Show the capsule even when nothing is happening. When off, it appears only for events and active cards, and the idle tap and long-press gestures are unavailable.</string>
     <string name="cap_idle_opacity">Idle opacity: %1$d%%</string>
     <string name="cap_accent_colors">Accent colors</string>
     <string name="cap_from_wallpaper">From wallpaper</string>

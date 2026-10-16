@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="st_a11y_title">Accessibility service</string>
-    <string name="st_a11y_on">Running. The capsule is drawn over other apps.</string>
+    <string name="st_a11y_on">Running. The capsule appears over other apps when something happens, such as a charger, a notification or music. To keep it always visible, turn on \"Always show pill\" in the Capsule tab.</string>
     <string name="st_a11y_off">Off. Turn on Capsool in Accessibility settings to show the capsule.</string>
     <string name="st_a11y_open">Open Accessibility settings</string>
     <string name="st_notif_title">Notification access</string>
