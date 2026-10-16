@@ -48,6 +48,7 @@ import com.iqbalwork.capsule.model.EventCategory
 import com.iqbalwork.capsule.core.settings.NotificationDelay
 import com.iqbalwork.capsule.core.settings.NotificationDisplay
 import com.iqbalwork.capsule.core.settings.Orientation
+import com.iqbalwork.capsule.core.settings.LockScreenBehavior
 import com.iqbalwork.capsule.core.settings.Settings
 import kotlin.math.roundToInt
 
@@ -182,11 +183,27 @@ fun CapsuleTab(
                         )
                     }
                 }
-                SwitchRow(
-                    title = "Hide message text when locked",
-                    description = "On the lock screen only the app name shows, unless the app marks it public.",
-                    checked = settings.hideNotificationTextWhenLocked,
-                    onChange = { on -> onUpdate { it.copy(hideNotificationTextWhenLocked = on) } }
+                Text("On the lock screen", style = MaterialTheme.typography.bodyMedium)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    LockScreenBehavior.entries.forEach { behavior ->
+                        FilterChip(
+                            selected = settings.lockScreenBehavior == behavior,
+                            onClick = { onUpdate { it.copy(lockScreenBehavior = behavior) } },
+                            label = { Text(behavior.displayName) }
+                        )
+                    }
+                }
+                Text(
+                    when (settings.lockScreenBehavior) {
+                        LockScreenBehavior.SHOW ->
+                            "The capsule shows, message text included."
+                        LockScreenBehavior.SHOW_WITHOUT_CONTENT ->
+                            "The capsule shows, but only the app name — unless the app marks the message public."
+                        LockScreenBehavior.HIDE ->
+                            "The capsule stays away until you unlock."
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 SwitchRow(
                     title = "Remove after viewing",
@@ -229,6 +246,7 @@ fun CapsuleTab(
                     checked = settings.hideInLandscape,
                     onChange = { on -> onUpdate { it.copy(hideInLandscape = on) } }
                 )
+                HiddenAppsList(settings = settings, onUpdate = onUpdate)
             }
         }
     }
@@ -443,6 +461,61 @@ private fun Section(title: String, content: @Composable () -> Unit) {
             Text(title, style = MaterialTheme.typography.titleMedium)
             content()
         }
+    }
+}
+
+/** F-84: apps where the capsule stays out of the way. Lives inside the "Hide the capsule" section. */
+@Composable
+private fun HiddenAppsList(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit) {
+    val context = LocalContext.current
+    var pickingApp by remember { mutableStateOf(false) }
+    val packageManager = context.packageManager
+    // Only package names are stored — that is what the visibility rule compares. Labels are
+    // resolved for display so the list reads like app names instead of package strings, and an
+    // unresolvable package falls back to its own name rather than vanishing.
+    val labels = remember(settings.hiddenPackages) {
+        settings.hiddenPackages.associateWith { packageName ->
+            runCatching { packageManager.getApplicationInfo(packageName, 0) }.getOrNull()
+                ?.let { packageManager.getApplicationLabel(it).toString() }
+                ?: packageName
+        }
+    }
+
+    Column {
+        Text("Stay hidden in these apps", style = MaterialTheme.typography.bodyLarge)
+        Text(
+            "The capsule hides while one of these apps is in front, and comes back when you leave.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        settings.hiddenPackages
+            .sortedBy { labels[it] ?: it }
+            .forEach { packageName ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        labels[packageName] ?: packageName,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(
+                        onClick = {
+                            onUpdate { it.copy(hiddenPackages = it.hiddenPackages - packageName) }
+                        }
+                    ) { Text("Remove") }
+                }
+            }
+        TextButton(onClick = { pickingApp = true }) { Text("Add an app") }
+    }
+
+    if (pickingApp) {
+        AppPickerDialog(
+            title = "Keep the capsule out of which app?",
+            onPick = { app ->
+                onUpdate { it.copy(hiddenPackages = it.hiddenPackages + app.packageName) }
+                pickingApp = false
+            },
+            onDismiss = { pickingApp = false }
+        )
     }
 }
 
