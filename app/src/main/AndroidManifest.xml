@@ -17,6 +17,13 @@
     <!-- Read-only check so the status screen can warn about Android Advanced Protection (F-97). -->
     <uses-permission android:name="android.permission.QUERY_ADVANCED_PROTECTION_MODE" />
 
+    <!-- ML Kit drags in com.google.android.datatransport (its logging transport), which injects
+         INTERNET into the merged manifest. The spec says this app does not use INTERNET, and
+         on-device barcode scanning never needs it, so the merged permission is stripped here. -->
+    <uses-permission
+        android:name="android.permission.INTERNET"
+        tools:node="remove" />
+
     <!-- Lets Capsool read the names and icons of launchable apps (notification sources, app lists).
          Narrower than QUERY_ALL_PACKAGES, which is not used. -->
     <queries>

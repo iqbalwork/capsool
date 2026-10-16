@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.provider.ContactsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -62,6 +63,12 @@ import com.iqbalwork.capsule.core.settings.Settings
 import com.iqbalwork.capsule.core.settings.Shortcut
 import com.iqbalwork.capsule.core.settings.ShortcutKind
 import com.iqbalwork.capsule.core.settings.SystemShortcut
+import com.iqbalwork.capsule.platform.barcode.BarcodeScanResult
+import com.iqbalwork.capsule.platform.barcode.scanImage
+import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import java.util.UUID
 
 /** Most tiles the Shortcuts card shows (two rows of four). */
@@ -96,6 +103,30 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
             null, null, null
         )?.use { cursor ->
             if (cursor.moveToFirst()) contact = PickedContact(cursor.getString(0).orEmpty(), cursor.getString(1).orEmpty())
+        }
+    }
+
+    val scope = rememberCoroutineScope()
+    var scanningImage by remember { mutableStateOf(false) }
+    var scanError by remember { mutableStateOf<String?>(null) }
+
+    val pickImage = rememberLauncherForActivityResult(PickVisualMedia()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scanError = null
+        scanningImage = true
+        scope.launch {
+            when (val result = scanImage(context, uri, settings.barcode.format)) {
+                is BarcodeScanResult.Found -> {
+                    onUpdate { s ->
+                        s.copy(barcode = s.barcode.copy(
+                            content = result.code.content,
+                            format = result.code.format,
+                        ))
+                    }
+                }
+                is BarcodeScanResult.Failed -> scanError = result.message
+            }
+            scanningImage = false
         }
     }
 
@@ -186,7 +217,7 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
                     val encoderError = encodeResult?.exceptionOrNull()?.message
                     val barcodeErrorMessage = when {
                         validation is BarcodeValidationResult.Error -> validation.message
-                        encoderError != null -> "Gagal membuat kode: $encoderError"
+                        encoderError != null -> "Could not build the code: $encoderError"
                         else -> null
                     }
 
@@ -222,6 +253,31 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
                         singleLine = settings.barcode.format != BarcodeFormat.QR_CODE,
                         modifier = Modifier.fillMaxWidth()
                     )
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                pickImage.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
+                            },
+                            enabled = !scanningImage
+                        ) {
+                            Text("Scan from image")
+                        }
+                        if (scanningImage) {
+                            LinearProgressIndicator(modifier = Modifier.weight(1f))
+                        }
+                    }
+                    scanError?.let { message ->
+                        Text(
+                            text = message,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
 
                     OutlinedTextField(
                         value = settings.barcode.label,
