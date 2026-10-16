@@ -176,6 +176,54 @@ enum class MiniEventDuration(val millis: Long) {
     SECONDS_6(6_000L)
 }
 
+/** F-43: the posting app's own icon, or a generic download badge. */
+enum class ProgressIconStyle { APP, SHAPE }
+
+/** F-68: what the left side of a mini event shows. */
+enum class EventLeftShape { CIRCLE, SQUARE, NONE }
+
+/** F-68: what the right side shows. AUTO = the value and, for battery, a ring. */
+enum class EventRightShape { AUTO, TEXT, NONE }
+
+/**
+ * F-68: how one kind of mini event looks. Everything null/default means "as designed", and a style
+ * equal to [Default] is never stored.
+ */
+data class EventStyle(
+    val color: Long? = null,
+    /** A name from the shared icon list ([com.iqbalwork.capsule.ui.components.AvailableIntentIcons]). */
+    val icon: String? = null,
+    val left: EventLeftShape = EventLeftShape.CIRCLE,
+    val right: EventRightShape = EventRightShape.AUTO
+) {
+    val isDefault: Boolean get() = this == Default
+
+    companion object {
+        val Default = EventStyle()
+    }
+}
+
+/** "CATEGORY;color;icon;LEFT;RIGHT" per line (color and icon empty when unset). Defaults are not written. */
+internal fun encodeEventStyles(styles: Map<EventCategory, EventStyle>): String =
+    styles.entries.filterNot { it.value.isDefault }.joinToString("\n") { (category, style) ->
+        listOf(category.name, style.color?.toString().orEmpty(), style.icon.orEmpty(), style.left.name, style.right.name)
+            .joinToString(";")
+    }
+
+internal fun decodeEventStyles(value: String?): Map<EventCategory, EventStyle> {
+    val result = linkedMapOf<EventCategory, EventStyle>()
+    value.orEmpty().lineSequence().forEach { line ->
+        val f = line.split(';')
+        if (f.size != 5) return@forEach
+        val category = EventCategory.entries.firstOrNull { it.name == f[0] } ?: return@forEach
+        val left = EventLeftShape.entries.firstOrNull { it.name == f[3] } ?: return@forEach
+        val right = EventRightShape.entries.firstOrNull { it.name == f[4] } ?: return@forEach
+        val color = if (f[1].isEmpty()) null else f[1].toLongOrNull() ?: return@forEach
+        result[category] = EventStyle(color, f[2].ifEmpty { null }, left, right)
+    }
+    return result
+}
+
 /** Unlock greetings are opt-in; every other event starts enabled. */
 val DefaultEventCategories: Set<EventCategory> = EventCategory.entries.toSet() - EventCategory.UNLOCK
 
@@ -322,6 +370,16 @@ data class Settings(
     val temperatureFahrenheit: Boolean = false,
     val sliderStyle: SliderStyle = SliderStyle.PILL,
     val progressEnabled: Boolean = true,
+    /** F-43: when true, only apps in [progressAllowedApps] show downloads/uploads. */
+    val progressOnlyAllowedApps: Boolean = false,
+    val progressAllowedApps: Set<String> = emptySet(),
+    val progressIconStyle: ProgressIconStyle = ProgressIconStyle.APP,
+    /** ARGB of the progress bar; null = derived from the app's color. */
+    val progressColor: Long? = null,
+    /** ARGB of the bar's track; null = a faint white. */
+    val progressTrackColor: Long? = null,
+    /** F-68: look of each kind of mini event; a category not listed is shown as designed. */
+    val eventStyles: Map<EventCategory, EventStyle> = emptyMap(),
     val timerEnabled: Boolean = true,
     val brightnessMax: Int = DEFAULT_BRIGHTNESS_MAX,
     val barcode: BarcodeContent = BarcodeContent(),
@@ -356,6 +414,11 @@ data class Settings(
         get() = if (effectiveStaticCards.any { it.id == startCardId }) startCardId else null
 
     /** The orientation's template, used when [profile] is unknown or has no calibration yet. */
+    /** F-43: may [packageName] show downloads/uploads in the capsule? */
+    fun allowsProgress(packageName: String): Boolean = !progressOnlyAllowedApps || packageName in progressAllowedApps
+
+    fun eventStyle(category: EventCategory?): EventStyle = category?.let { eventStyles[it] } ?: EventStyle.Default
+
     /** F-13: may the player from [packageName] show in the capsule? */
     fun allowsMedia(packageName: String): Boolean = !mediaOnlyAllowedApps || packageName in mediaAllowedApps
 

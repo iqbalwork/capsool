@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule.ui.overlay
 
 import androidx.compose.animation.AnimatedContent
+import com.iqbalwork.capsule.ui.components.progressStyle
 import com.iqbalwork.capsule.ui.theme.resolveAppearance
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -82,7 +83,9 @@ fun CapsuleRootView(
     dispatch: (Action) -> Unit,
     expandedWidth: Dp,
     expandedHeight: Dp,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Space kept free at the top of an opened card, below the status bar (camera mode). */
+    contentTopInset: Dp = 0.dp
 ) {
     val settings = state.settings
     val geometry = state.geometry
@@ -182,9 +185,9 @@ fun CapsuleRootView(
                     ) {
                         val cardSize = Modifier.size(expandedWidth, expandedHeight)
                         if (frame.state.showsStaticList) {
-                            ExpandedStaticList(frame.state, dispatch, cardSize)
+                            ExpandedStaticList(frame.state, dispatch, cardSize.padding(top = contentTopInset))
                         } else {
-                            ExpandedCarousel(frame.state, dispatch, motion, cardSize)
+                            ExpandedCarousel(frame.state, dispatch, motion, cardSize.padding(top = contentTopInset))
                         }
                     }
                 } else {
@@ -355,7 +358,7 @@ private fun DynamicCardContent(card: CapsuleCardType, state: CapsuleState, dispa
             )
         }
         CapsuleCardType.TIMER -> state.timer?.let { ExpandedTimerCard(timer = it, onAction = dispatch) }
-        CapsuleCardType.PROGRESS -> ExpandedProgressCard(items = state.progress)
+        CapsuleCardType.PROGRESS -> ExpandedProgressCard(items = state.progress, style = state.settings.progressStyle())
         CapsuleCardType.SHORTCUTS -> ExpandedShortcutsCard(
             shortcuts = state.settings.shortcuts,
             themedIcons = state.settings.themedShortcutIcons,

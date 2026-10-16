@@ -1,6 +1,10 @@
 package com.iqbalwork.capsule.platform
 
 import android.accessibilityservice.AccessibilityService
+import com.iqbalwork.capsule.platform.intents.IntentResult
+import com.iqbalwork.capsule.model.MiniEventType
+import com.iqbalwork.capsule.model.MiniEvent
+import com.iqbalwork.capsule.R
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
@@ -42,10 +46,23 @@ class PlatformEffectHandler(
             is Effect.Volume, is Effect.Ringer, is Effect.Brightness, is Effect.AdaptiveBrightness,
             is Effect.Torch, is Effect.OpenPermission, Effect.RefreshControls -> controls.execute(effect)
             is Effect.LaunchShortcut -> settings().shortcuts.firstOrNull { it.id == effect.id }?.let(launcher::launch)
-            // Fired from a gesture, so nobody is looking at the screen for a result: the
-            // "Send test" button in the companion app (IntentsTab) is the diagnostic path.
-            is Effect.SendCustomIntent -> settings().customIntents.firstOrNull { it.id == effect.id }
-                ?.let(customIntentRunner::run)
+            // Fired from a gesture: a failure is shown as a short "Action failed" pop-up naming the
+            // intent. The reason itself is long, so the "Send test" button in the companion app
+            // (IntentsTab) remains where it is explained.
+            is Effect.SendCustomIntent -> settings().customIntents.firstOrNull { it.id == effect.id }?.let { intent ->
+                if (customIntentRunner.run(intent) is IntentResult.Error) {
+                    dispatch(
+                        SystemEvent.MiniEventStarted(
+                            MiniEvent(
+                                id = System.nanoTime(),
+                                type = MiniEventType.ACTION_FAILED,
+                                title = context.getString(R.string.event_action_failed),
+                                subtitle = intent.label
+                            )
+                        )
+                    )
+                }
+            }
             is Effect.OpenApp -> launcher.openApp(effect.packageName)
             Effect.ScrollToTop -> accessibilityService?.let(ScrollToTop::run)
             is Effect.AutomationBroadcast -> Automation.sendGesture(context, effect.gesture, effect.action, effect.card)

@@ -164,7 +164,11 @@ fun formatClock(seconds: Long): String {
 /** Groups of mini events the user can switch on or off (F-60..F-69). */
 enum class EventCategory { CHARGING, LOW_BATTERY, RINGER, HEADPHONES, WIFI, AIRPLANE, UNLOCK, BRIGHTNESS_MODE, DOWNLOADS }
 
-enum class MiniEventType(val category: EventCategory) {
+/**
+ * [category] is what the user can switch on or off; a null category (a failed action) always shows,
+ * because it is feedback on something the user just did.
+ */
+enum class MiniEventType(val category: EventCategory?) {
     CHARGER_CONNECTED(EventCategory.CHARGING),
     CHARGER_DISCONNECTED(EventCategory.CHARGING),
     FULLY_CHARGED(EventCategory.CHARGING),
@@ -181,7 +185,8 @@ enum class MiniEventType(val category: EventCategory) {
     DEVICE_UNLOCKED(EventCategory.UNLOCK),
     AUTO_BRIGHTNESS_ON(EventCategory.BRIGHTNESS_MODE),
     AUTO_BRIGHTNESS_OFF(EventCategory.BRIGHTNESS_MODE),
-    PROGRESS_DONE(EventCategory.DOWNLOADS)
+    PROGRESS_DONE(EventCategory.DOWNLOADS),
+    ACTION_FAILED(null)
 }
 
 /** A 2-4 second event in the capsule. [level] is a 0-100 value shown as a ring (battery). */

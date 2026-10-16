@@ -67,7 +67,11 @@ fun MiniCapsuleView(
     val miniEvent = state.miniEvent
 
     if (miniEvent != null) {
-        MiniEventView(event = miniEvent, modifier = modifier)
+        MiniEventView(
+            event = miniEvent,
+            modifier = modifier,
+            style = state.settings.eventStyle(miniEvent.type.category)
+        )
     } else {
         // Compact pill: the left and right slots follow the card the carousel would open.
         Row(
@@ -116,8 +120,9 @@ fun MiniCapsuleView(
                 }
                 state.activeCard == CapsuleCardType.PROGRESS && state.progress.isNotEmpty() -> {
                     val item = state.progress.first()
-                    val accent = mediaPalette(Color(item.color)).accent
-                    AppIconBadge(item, accent, size = 22)
+                    val style = state.settings.progressStyle()
+                    val accent = style.accent(item)
+                    AppIconBadge(item, accent, size = 22, iconStyle = style.icon)
                     val fraction = item.fraction
                     if (fraction != null) {
                         LevelRing(level = (fraction * 100).toInt(), color = accent, size = 18.dp, stroke = 3.dp)

@@ -1,6 +1,13 @@
 package com.iqbalwork.capsule.ui.companion
 
 import android.Manifest
+import androidx.compose.material3.Icon
+import com.iqbalwork.capsule.ui.components.customIntentIcon
+import com.iqbalwork.capsule.ui.components.AvailableIntentIcons
+import com.iqbalwork.capsule.core.settings.EventStyle
+import com.iqbalwork.capsule.core.settings.EventRightShape
+import com.iqbalwork.capsule.core.settings.EventLeftShape
+import com.iqbalwork.capsule.core.settings.ProgressIconStyle
 import com.iqbalwork.capsule.core.settings.MIN_SHELL_ALPHA
 import com.iqbalwork.capsule.core.settings.MAX_CARD_CORNER_DP
 import com.iqbalwork.capsule.core.settings.MIN_CARD_CORNER_DP
@@ -503,6 +510,7 @@ fun CapsuleTab(
         item {
             EventsSection(settings = settings, onUpdate = onUpdate, onBluetoothGranted = onBluetoothGranted)
         }
+        item { Section(stringResource(R.string.evs_section)) { EventStylesEditor(settings = settings, onUpdate = onUpdate) } }
         item {
             Section(stringResource(R.string.cap_sec_hide)) {
                 SwitchRow(
@@ -654,6 +662,7 @@ private fun EventsSection(
             checked = settings.progressEnabled,
             onChange = { on -> onUpdate { it.copy(progressEnabled = on) } }
         )
+        if (settings.progressEnabled) ProgressOptions(settings = settings, onUpdate = onUpdate)
         SwitchRow(
             title = stringResource(R.string.cap_timers),
             description = stringResource(R.string.cap_timers_desc),
@@ -915,4 +924,118 @@ private fun <T> Options(options: List<T>, selected: T, label: @Composable (T) ->
             ) { Text(label(option)) }
         }
     }
+}
+
+private val ProgressTrackSwatches = listOf(0xFF2A2A2A, 0xFF404040, 0xFF1B2A41, 0xFF3A2A1A)
+
+/** F-43: which apps show downloads, and how they look. */
+@Composable
+private fun ProgressOptions(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit) {
+    SwitchRow(
+        title = stringResource(R.string.prg_only_selected),
+        description = stringResource(R.string.prg_only_selected_desc),
+        checked = settings.progressOnlyAllowedApps,
+        onChange = { on -> onUpdate { it.copy(progressOnlyAllowedApps = on) } }
+    )
+    if (settings.progressOnlyAllowedApps) {
+        PackageListEditor(
+            title = stringResource(R.string.prg_allowed_title),
+            description = stringResource(R.string.prg_allowed_desc),
+            packages = settings.progressAllowedApps,
+            pickerTitle = stringResource(R.string.prg_pick_title),
+            onChange = { packages -> onUpdate { it.copy(progressAllowedApps = packages(it.progressAllowedApps)) } }
+        )
+    }
+    Text(stringResource(R.string.prg_icon_style), style = MaterialTheme.typography.bodyMedium)
+    Options(
+        options = ProgressIconStyle.entries,
+        selected = settings.progressIconStyle,
+        label = { stringResource(if (it == ProgressIconStyle.APP) R.string.prg_icon_app else R.string.prg_icon_shape) },
+        onSelect = { style -> onUpdate { it.copy(progressIconStyle = style) } }
+    )
+    Text(stringResource(R.string.prg_bar_color), style = MaterialTheme.typography.bodyMedium)
+    SwatchRow(
+        colors = BorderSwatches,
+        selected = settings.progressColor,
+        defaultLabel = stringResource(R.string.prg_from_app),
+        onSelect = { color -> onUpdate { it.copy(progressColor = color) } }
+    )
+    Text(stringResource(R.string.prg_track_color), style = MaterialTheme.typography.bodyMedium)
+    SwatchRow(
+        colors = ProgressTrackSwatches,
+        selected = settings.progressTrackColor,
+        defaultLabel = stringResource(R.string.prg_default),
+        onSelect = { color -> onUpdate { it.copy(progressTrackColor = color) } }
+    )
+}
+
+/** F-68: color, icon and left/right shape for each kind of mini event. */
+@Composable
+private fun EventStylesEditor(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit) {
+    var category by remember { mutableStateOf(EventCategory.CHARGING) }
+    val style = settings.eventStyle(category)
+    fun edit(transform: (EventStyle) -> EventStyle) = onUpdate {
+        val updated = transform(it.eventStyle(category))
+        it.copy(eventStyles = if (updated.isDefault) it.eventStyles - category else it.eventStyles + (category to updated))
+    }
+
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+        EventCategory.entries.forEach { entry ->
+            FilterChip(selected = entry == category, onClick = { category = entry }, label = { Text(entry.label) })
+        }
+    }
+    Text(stringResource(R.string.evs_color), style = MaterialTheme.typography.bodyMedium)
+    SwatchRow(
+        colors = BorderSwatches,
+        selected = style.color,
+        defaultLabel = stringResource(R.string.prg_default),
+        onSelect = { color -> edit { it.copy(color = color) } }
+    )
+    Text(stringResource(R.string.evs_icon), style = MaterialTheme.typography.bodyMedium)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+        FilterChip(
+            selected = style.icon == null,
+            onClick = { edit { it.copy(icon = null) } },
+            label = { Text(stringResource(R.string.prg_default)) }
+        )
+        AvailableIntentIcons.forEach { name ->
+            FilterChip(
+                selected = style.icon == name,
+                onClick = { edit { it.copy(icon = name) } },
+                label = { Text(name) },
+                leadingIcon = { Icon(customIntentIcon(name), contentDescription = null, modifier = Modifier.size(18.dp)) }
+            )
+        }
+    }
+    Text(stringResource(R.string.evs_left), style = MaterialTheme.typography.bodyMedium)
+    Options(
+        options = EventLeftShape.entries,
+        selected = style.left,
+        label = {
+            stringResource(
+                when (it) {
+                    EventLeftShape.CIRCLE -> R.string.evs_shape_circle
+                    EventLeftShape.SQUARE -> R.string.evs_shape_square
+                    EventLeftShape.NONE -> R.string.evs_none
+                }
+            )
+        },
+        onSelect = { shape -> edit { it.copy(left = shape) } }
+    )
+    Text(stringResource(R.string.evs_right), style = MaterialTheme.typography.bodyMedium)
+    Options(
+        options = EventRightShape.entries,
+        selected = style.right,
+        label = {
+            stringResource(
+                when (it) {
+                    EventRightShape.AUTO -> R.string.evs_right_auto
+                    EventRightShape.TEXT -> R.string.evs_right_text
+                    EventRightShape.NONE -> R.string.evs_none
+                }
+            )
+        },
+        onSelect = { shape -> edit { it.copy(right = shape) } }
+    )
+    TextButton(onClick = { edit { EventStyle.Default } }) { Text(stringResource(R.string.evs_reset)) }
 }

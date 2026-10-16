@@ -41,6 +41,7 @@ fun OverlayRoot(
     val cappedDensity = remember(density) {
         Density(density.density, fontScale = density.fontScale.coerceAtMost(MAX_OVERLAY_FONT_SCALE))
     }
+    val topInsetDp = placement.contentTopInsetPx / density.density
     CompositionLocalProvider(LocalDensity provides cappedDensity) {
         OverlayTheme(colorSource = state.settings.colorSource) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
@@ -48,7 +49,8 @@ fun OverlayRoot(
                     state = state,
                     dispatch = dispatch,
                     expandedWidth = OverlayPlacement.expandedWidthDp(screenWidthDp, state.settings.cardWidthMode == CardWidthMode.FULL).dp,
-                    expandedHeight = OverlayPlacement.expandedContentHeightDp(state.listRows).dp,
+                    expandedHeight = (OverlayPlacement.expandedContentHeightDp(state.listRows) + topInsetDp).dp,
+                contentTopInset = topInsetDp.dp,
                     modifier = Modifier
                         .offset { IntOffset(placement.contentOffsetXPx, placement.contentOffsetYPx) }
                         .padding(top = OverlayPlacement.MARGIN_DP.dp)

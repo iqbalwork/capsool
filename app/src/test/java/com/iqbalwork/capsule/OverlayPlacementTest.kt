@@ -175,3 +175,47 @@ class OverlayPlacementTest {
         assertEquals(OverlayPlacement.expandedWidthDp(narrow), OverlayPlacement.expandedWidthDp(narrow, full = true), 0.01f)
     }
 }
+
+class DeadZoneTest {
+    private val density = 3f
+    private val cutout = CutoutBounds(left = 510, top = 60, right = 570, bottom = 120) // capsule top = 90 - 54 = 36 px
+    private val geometry = Geometry(widthDp = 120, heightDp = 36)
+
+    @Test
+    fun anOpenedCardInCameraModeStartsBelowTheStatusBar() {
+        val p = OverlayPlacement.compute(1080, density, cutout, geometry, expanded = true, statusBarHeightPx = 110)
+        assertEquals(110 - 36, p.contentTopInsetPx)
+        val plain = OverlayPlacement.compute(1080, density, cutout, geometry, expanded = true, statusBarHeightPx = 0)
+        assertEquals(0, plain.contentTopInsetPx)
+        assertEquals(plain.height + 74, p.height)
+    }
+
+    @Test
+    fun noInsetWhenTheCapsuleAlreadyClearsTheStatusBar() {
+        val p = OverlayPlacement.compute(1080, density, cutout, geometry, expanded = true, statusBarHeightPx = 20)
+        assertEquals(0, p.contentTopInsetPx)
+    }
+
+    @Test
+    fun noInsetForACollapsedCapsuleOrIndependentMode() {
+        assertEquals(
+            0,
+            OverlayPlacement.compute(1080, density, cutout, geometry, expanded = false, statusBarHeightPx = 110).contentTopInsetPx
+        )
+        assertEquals(
+            0,
+            OverlayPlacement.compute(
+                1080, density, cutout, geometry, expanded = true, statusBarHeightPx = 110,
+                mode = com.iqbalwork.capsule.core.settings.PlacementMode.INDEPENDENT
+            ).contentTopInsetPx
+        )
+    }
+
+    @Test
+    fun theTouchableRegionOfAnOpenCardCoversTheInsetToo() {
+        val window = OverlayPlacement.compute(1080, density, cutout, geometry, expanded = true, statusBarHeightPx = 110)
+        val rect = OverlayPlacement.capsuleRect(window, density, geometry, expanded = true)
+        val margin = (OverlayPlacement.MARGIN_DP * density).toInt()
+        assertEquals(window.height - 2 * margin, rect.bottom - rect.top)
+    }
+}

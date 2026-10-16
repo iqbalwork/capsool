@@ -232,7 +232,12 @@ object CapsuleReducer {
     }
 
     private fun reduceEvent(state: CapsuleState, event: SystemEvent): CapsuleState = when (event) {
-        is SystemEvent.SettingsChanged -> state.copy(settings = event.settings, settingsLoaded = true)
+        is SystemEvent.SettingsChanged -> state.copy(
+            settings = event.settings,
+            settingsLoaded = true,
+            // Narrowing the allowed apps takes effect at once, not when the next update arrives.
+            progress = state.progress.filter { event.settings.allowsProgress(it.packageName) }
+        )
         is SystemEvent.VisibilityChanged -> state.copy(visibility = event.visibility)
         is SystemEvent.MediaUpdated -> state.copy(media = event.media?.let { mediaWithPauseRule(state.media, it) })
         is SystemEvent.MediaPauseTimedOut -> state.copy(media = state.media?.let { media ->
@@ -249,7 +254,7 @@ object CapsuleReducer {
             if (beingRead || state.replyingTo == event.key) state else state.withoutNotification(event.key)
         }
         is SystemEvent.TimerUpdated -> state.copy(timer = event.timer)
-        is SystemEvent.ProgressUpdated -> state.copy(
+        is SystemEvent.ProgressUpdated -> if (!state.settings.allowsProgress(event.item.packageName)) state else state.copy(
             progress = if (state.progress.any { it.key == event.item.key }) {
                 state.progress.map { if (it.key == event.item.key) event.item else it }
             } else {
@@ -258,7 +263,11 @@ object CapsuleReducer {
         )
         is SystemEvent.ProgressRemoved -> state.copy(progress = state.progress.filter { it.key != event.key })
         is SystemEvent.MiniEventStarted ->
-            if (event.event.type.category in state.settings.enabledEvents) state.copy(miniEvent = event.event) else state
+            if (event.event.type.category.let { it == null || it in state.settings.enabledEvents }) {
+                state.copy(miniEvent = event.event)
+            } else {
+                state
+            }
         is SystemEvent.MiniEventFinished ->
             if (state.miniEvent?.id == event.id) state.copy(miniEvent = null) else state
         SystemEvent.ExpandedTimedOut -> state // handled in reduce(), it may emit effects
