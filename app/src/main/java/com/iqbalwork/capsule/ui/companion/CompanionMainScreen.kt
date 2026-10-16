@@ -30,6 +30,19 @@ import com.iqbalwork.capsule.core.store.CapsuleState
 import com.iqbalwork.capsule.debugtools.DiagnosticsPanel
 import com.iqbalwork.capsule.platform.accessibility.OverlayPlacement
 import com.iqbalwork.capsule.ui.overlay.CapsuleRootView
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
+import com.iqbalwork.capsule.R
+
+private enum class CompanionTab(@StringRes val titleRes: Int) {
+    STATUS(R.string.gx_tab_status),
+    CAPSULE(R.string.gx_tab_capsule),
+    SHORTCUTS(R.string.gx_tab_shortcuts),
+    GESTURES(R.string.gx_tab_gestures),
+    CUSTOM_ACTIONS(R.string.gx_tab_custom_actions),
+    CARDS(R.string.gx_tab_cards),
+    DEBUG(R.string.gx_tab_debug)
+}
 
 @Composable
 fun CompanionApp(
@@ -68,13 +81,13 @@ private fun CompanionMainScreen(
     onControlsPermissionsChanged: () -> Unit
 ) {
     val tabs = buildList {
-        add("Status")
-        add("Capsule")
-        add("Shortcuts")
-        add("Gestures")
-        add("Custom Actions")
-        add("Cards")
-        if (DiagnosticsPanel.isAvailable) add("Debug")
+        add(CompanionTab.STATUS)
+        add(CompanionTab.CAPSULE)
+        add(CompanionTab.SHORTCUTS)
+        add(CompanionTab.GESTURES)
+        add(CompanionTab.CUSTOM_ACTIONS)
+        add(CompanionTab.CARDS)
+        if (DiagnosticsPanel.isAvailable) add(CompanionTab.DEBUG)
     }
     var selected by rememberSaveable { mutableIntStateOf(0) }
     var showNotificationApps by rememberSaveable { mutableStateOf(false) }
@@ -110,14 +123,14 @@ private fun CompanionMainScreen(
                 }
             }
             PrimaryScrollableTabRow(selectedTabIndex = selected, edgePadding = 8.dp) {
-                tabs.forEachIndexed { index, title ->
-                    Tab(selected = selected == index, onClick = { selected = index }, text = { Text(title) })
+                tabs.forEachIndexed { index, tab ->
+                    Tab(selected = selected == index, onClick = { selected = index }, text = { Text(stringResource(tab.titleRes)) })
                 }
             }
             Box(modifier = Modifier.fillMaxSize().padding(top = 12.dp)) {
                 when (tabs.getOrNull(selected)) {
-                    "Status" -> StatusTab(serviceRunning = serviceRunning, notificationAccess = notificationAccess)
-                    "Capsule" -> CapsuleTab(
+                    CompanionTab.STATUS -> StatusTab(serviceRunning = serviceRunning, notificationAccess = notificationAccess)
+                    CompanionTab.CAPSULE -> CapsuleTab(
                         settings = state.settings,
                         currentOrientation = state.visibility.orientation,
                         onUpdate = onUpdateSettings,
@@ -125,11 +138,12 @@ private fun CompanionMainScreen(
                         onBluetoothGranted = onBluetoothGranted,
                         onControlsPermissionsChanged = onControlsPermissionsChanged
                     )
-                    "Shortcuts" -> ShortcutsTab(settings = state.settings, onUpdate = onUpdateSettings)
-                    "Gestures" -> GesturesTab(settings = state.settings, onUpdate = onUpdateSettings)
-                    "Custom Actions" -> IntentsTab(settings = state.settings, onUpdate = onUpdateSettings)
-                    "Cards" -> StaticCardsTab(settings = state.settings, onUpdate = onUpdateSettings)
-                    "Debug" -> DiagnosticsPanel.Content(dispatch = dispatch)
+                    CompanionTab.SHORTCUTS -> ShortcutsTab(settings = state.settings, onUpdate = onUpdateSettings)
+                    CompanionTab.GESTURES -> GesturesTab(settings = state.settings, onUpdate = onUpdateSettings)
+                    CompanionTab.CUSTOM_ACTIONS -> IntentsTab(settings = state.settings, onUpdate = onUpdateSettings)
+                    CompanionTab.CARDS -> StaticCardsTab(settings = state.settings, onUpdate = onUpdateSettings)
+                    CompanionTab.DEBUG -> DiagnosticsPanel.Content(dispatch = dispatch)
+                    null -> Unit
                 }
             }
         }

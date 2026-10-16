@@ -1,5 +1,8 @@
 package com.iqbalwork.capsule.core.settings
 
+import com.iqbalwork.capsule.R
+import com.iqbalwork.capsule.core.UiText
+
 enum class CustomIntentType { ACTIVITY, SERVICE, BROADCAST }
 
 /**
@@ -89,20 +92,20 @@ data class CustomIntent(
 object CustomIntentValidator {
     sealed interface Result {
         data object Valid : Result
-        data class Error(val message: String) : Result
+        data class Error(val message: UiText) : Result
     }
 
     val Result.isValid: Boolean get() = this is Result.Valid
 
     fun validate(action: String, component: String?): Result {
         if (action.trim().isEmpty()) {
-            return Result.Error("Action cannot be empty")
+            return Result.Error(UiText.res(R.string.intent_err_action_empty))
         }
         if (!component.isNullOrBlank()) {
             val trimmed = component.trim()
             val parts = trimmed.split('/')
             if (parts.size != 2 || parts[0].isEmpty() || parts[1].isEmpty()) {
-                return Result.Error("Component must follow package/class format (e.g. com.example/.MyReceiver)")
+                return Result.Error(UiText.res(R.string.intent_err_component_format))
             }
         }
         return Result.Valid

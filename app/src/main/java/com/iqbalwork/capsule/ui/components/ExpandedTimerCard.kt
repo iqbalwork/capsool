@@ -1,5 +1,7 @@
 package com.iqbalwork.capsule.ui.components
 
+import com.iqbalwork.capsule.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -87,7 +89,7 @@ fun ExpandedTimerCard(
                 modifier = Modifier.weight(1f)
             )
             Text(
-                text = if (timer.isRunning) timer.appName else "Paused",
+                text = if (timer.isRunning) timer.appName else stringResource(R.string.st_paused),
                 color = Color.White.copy(alpha = 0.6f),
                 style = MaterialTheme.typography.labelMedium
             )

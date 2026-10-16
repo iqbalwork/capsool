@@ -43,9 +43,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.ui.unit.dp
+import com.iqbalwork.capsule.R
 import com.iqbalwork.capsule.core.settings.BounceLevel
 import com.iqbalwork.capsule.core.settings.CapsuleShapeStyle
 import com.iqbalwork.capsule.core.settings.ColorSource
@@ -92,60 +94,60 @@ fun CapsuleTab(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Section("Size and position") {
+            Section(stringResource(R.string.cap_sec_size_position)) {
                 SwitchRow(
-                    title = "Calibration target",
-                    description = "Move the capsule until the red target disappears under the camera.",
+                    title = stringResource(R.string.cap_calibration_target),
+                    description = stringResource(R.string.cap_calibration_target_desc),
                     checked = settings.showCalibrationTarget,
                     onChange = { show -> onUpdate { it.copy(showCalibrationTarget = show) } }
                 )
                 Options(
                     options = Orientation.entries,
                     selected = editing,
-                    label = { if (it == Orientation.PORTRAIT) "Portrait" else "Landscape" },
+                    label = { stringResource(if (it == Orientation.PORTRAIT) R.string.cap_portrait else R.string.cap_landscape) },
                     onSelect = { editing = it }
                 )
-                IntSlider("Horizontal offset", geometry.offsetXDp, -200..200) { v -> updateGeometry { it.copy(offsetXDp = v) } }
-                IntSlider("Vertical offset", geometry.offsetYDp, -60..60) { v -> updateGeometry { it.copy(offsetYDp = v) } }
-                IntSlider("Width", geometry.widthDp, 60..260) { v -> updateGeometry { it.copy(widthDp = v) } }
-                IntSlider("Height", geometry.heightDp, 20..64) { v -> updateGeometry { it.copy(heightDp = v) } }
-                IntSlider("Corner radius", geometry.cornerDp, 0..32) { v -> updateGeometry { it.copy(cornerDp = v) } }
-                TextButton(onClick = { updateGeometry { Geometry() } }) { Text("Reset this orientation") }
+                IntSlider(stringResource(R.string.cap_offset_x), geometry.offsetXDp, -200..200) { v -> updateGeometry { it.copy(offsetXDp = v) } }
+                IntSlider(stringResource(R.string.cap_offset_y), geometry.offsetYDp, -60..60) { v -> updateGeometry { it.copy(offsetYDp = v) } }
+                IntSlider(stringResource(R.string.cap_width), geometry.widthDp, 60..260) { v -> updateGeometry { it.copy(widthDp = v) } }
+                IntSlider(stringResource(R.string.cap_height), geometry.heightDp, 20..64) { v -> updateGeometry { it.copy(heightDp = v) } }
+                IntSlider(stringResource(R.string.cap_corner_radius), geometry.cornerDp, 0..32) { v -> updateGeometry { it.copy(cornerDp = v) } }
+                TextButton(onClick = { updateGeometry { Geometry() } }) { Text(stringResource(R.string.cap_reset_orientation)) }
             }
         }
         item {
-            Section("Appearance") {
+            Section(stringResource(R.string.cap_sec_appearance)) {
                 SwitchRow(
-                    title = "Always show pill",
-                    description = "Keep the capsule visible even when nothing is happening.",
+                    title = stringResource(R.string.cap_always_show_pill),
+                    description = stringResource(R.string.cap_always_show_pill_desc),
                     checked = settings.alwaysShowPill,
                     onChange = { show -> onUpdate { it.copy(alwaysShowPill = show) } }
                 )
-                Text("Idle opacity: ${(settings.idleOpacity * 100).roundToInt()}%", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.cap_idle_opacity, (settings.idleOpacity * 100).roundToInt()), style = MaterialTheme.typography.bodyMedium)
                 Slider(
                     value = settings.idleOpacity,
                     onValueChange = { v -> onUpdate { it.copy(idleOpacity = v) } },
                     steps = 4
                 )
-                Text("Accent colors", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.cap_accent_colors), style = MaterialTheme.typography.bodyMedium)
                 Options(
                     options = ColorSource.entries,
                     selected = settings.colorSource,
-                    label = { if (it == ColorSource.DYNAMIC) "From wallpaper" else "Capsool palette" },
+                    label = { stringResource(if (it == ColorSource.DYNAMIC) R.string.cap_from_wallpaper else R.string.cap_capsool_palette) },
                     onSelect = { source -> onUpdate { it.copy(colorSource = source) } }
                 )
                 SwitchRow(
-                    title = "Haptics",
-                    description = "Vibrate when a gesture on the capsule does something.",
+                    title = stringResource(R.string.cap_haptics),
+                    description = stringResource(R.string.cap_haptics_desc),
                     checked = settings.hapticsEnabled,
                     onChange = { on -> onUpdate { it.copy(hapticsEnabled = on) } }
                 )
             }
         }
         item {
-            Section("Card priority") {
+            Section(stringResource(R.string.cap_sec_card_priority)) {
                 Text(
-                    "When several things are active at once, the card higher in this list comes first.",
+                    stringResource(R.string.cap_card_priority_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -153,69 +155,69 @@ fun CapsuleTab(
                 order.forEachIndexed { index, card ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            "${index + 1}. ${card.displayName}",
+                            stringResource(R.string.cap_card_priority_item, index + 1, stringResource(card.labelRes)),
                             style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier.weight(1f)
                         )
                         TextButton(
                             enabled = index > 0,
                             onClick = { onUpdate { it.copy(cardPriority = moveCard(it.cardPriority, card, -1)) } }
-                        ) { Text("Up") }
+                        ) { Text(stringResource(R.string.cap_up)) }
                         TextButton(
                             enabled = index < order.lastIndex,
                             onClick = { onUpdate { it.copy(cardPriority = moveCard(it.cardPriority, card, 1)) } }
-                        ) { Text("Down") }
+                        ) { Text(stringResource(R.string.cap_down)) }
                     }
                 }
                 TextButton(onClick = { onUpdate { it.copy(cardPriority = DefaultCardPriority) } }) {
-                    Text("Reset order")
+                    Text(stringResource(R.string.cap_reset_order))
                 }
             }
         }
         item {
-            Section("Shape and colors") {
-                Text("Shape", style = MaterialTheme.typography.bodyMedium)
+            Section(stringResource(R.string.cap_sec_shape_colors)) {
+                Text(stringResource(R.string.cap_shape), style = MaterialTheme.typography.bodyMedium)
                 Options(
                     options = CapsuleShapeStyle.entries,
                     selected = settings.shapeStyle,
                     label = {
                         when (it) {
-                            CapsuleShapeStyle.PILL -> "Pill"
-                            CapsuleShapeStyle.ROUNDED_RECT -> "Rounded"
-                            CapsuleShapeStyle.SQUIRCLE -> "Squircle"
+                            CapsuleShapeStyle.PILL -> stringResource(R.string.cap_shape_pill)
+                            CapsuleShapeStyle.ROUNDED_RECT -> stringResource(R.string.cap_shape_rounded)
+                            CapsuleShapeStyle.SQUIRCLE -> stringResource(R.string.cap_shape_squircle)
                         }
                     },
                     onSelect = { style -> onUpdate { it.copy(shapeStyle = style) } }
                 )
                 if (settings.shapeStyle == CapsuleShapeStyle.PILL) {
                     Text(
-                        "A pill is always fully round; the corner radius above is used by the other shapes.",
+                        stringResource(R.string.cap_pill_round_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Text("Background", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.cap_background), style = MaterialTheme.typography.bodyMedium)
                 SwatchRow(
                     colors = BackgroundSwatches,
                     selected = settings.customBackground,
-                    defaultLabel = "Black",
+                    defaultLabel = stringResource(R.string.cap_black),
                     onSelect = { color -> onUpdate { it.copy(customBackground = color) } }
                 )
                 Text(
-                    "Black blends with the camera. Light colors are darkened so card text stays readable.",
+                    stringResource(R.string.cap_background_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                IntSlider("Border", settings.borderDp, 0..MAX_BORDER_DP) { v -> onUpdate { it.copy(borderDp = v) } }
+                IntSlider(stringResource(R.string.cap_border), settings.borderDp, 0..MAX_BORDER_DP) { v -> onUpdate { it.copy(borderDp = v) } }
                 if (settings.borderDp > 0) {
                     SwatchRow(
                         colors = BorderSwatches,
                         selected = settings.borderColor,
-                        defaultLabel = "Theme",
+                        defaultLabel = stringResource(R.string.cap_theme),
                         onSelect = { color -> onUpdate { it.copy(borderColor = color) } }
                     )
                 }
-                IntSlider("Shadow", settings.shadowDp, 0..MAX_SHADOW_DP) { v -> onUpdate { it.copy(shadowDp = v) } }
+                IntSlider(stringResource(R.string.cap_shadow), settings.shadowDp, 0..MAX_SHADOW_DP) { v -> onUpdate { it.copy(shadowDp = v) } }
                 TextButton(onClick = {
                     onUpdate {
                         it.copy(
@@ -226,13 +228,13 @@ fun CapsuleTab(
                             shadowDp = 0
                         )
                     }
-                }) { Text("Reset shape and colors") }
+                }) { Text(stringResource(R.string.cap_reset_shape_colors)) }
             }
         }
         item {
-            Section("Animation") {
+            Section(stringResource(R.string.cap_sec_animation)) {
                 Text(
-                    "Speed: ${"%.1f".format(settings.animationSpeed)}×",
+                    stringResource(R.string.cap_speed, "%.1f".format(settings.animationSpeed)),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Slider(
@@ -242,53 +244,53 @@ fun CapsuleTab(
                     steps = 14,
                     enabled = !settings.reduceAnimations
                 )
-                Text("Expand style", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.cap_expand_style), style = MaterialTheme.typography.bodyMedium)
                 Options(
                     options = ExpandStyle.entries,
                     selected = settings.expandStyle,
-                    label = { if (it == ExpandStyle.ORGANIC) "Organic" else "Rigid" },
+                    label = { stringResource(if (it == ExpandStyle.ORGANIC) R.string.cap_organic else R.string.cap_rigid) },
                     onSelect = { style -> onUpdate { it.copy(expandStyle = style) } }
                 )
                 if (settings.expandStyle == ExpandStyle.ORGANIC && !settings.reduceAnimations) {
-                    Text("Bounce", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.cap_bounce), style = MaterialTheme.typography.bodyMedium)
                     Options(
                         options = BounceLevel.entries,
                         selected = settings.bounce,
                         label = {
                             when (it) {
-                                BounceLevel.NONE -> "None"
-                                BounceLevel.LOW -> "Low"
-                                BounceLevel.DEFAULT -> "Normal"
-                                BounceLevel.HIGH -> "High"
-                                BounceLevel.MAX -> "Max"
+                                BounceLevel.NONE -> stringResource(R.string.cap_bounce_none)
+                                BounceLevel.LOW -> stringResource(R.string.cap_bounce_low)
+                                BounceLevel.DEFAULT -> stringResource(R.string.cap_bounce_normal)
+                                BounceLevel.HIGH -> stringResource(R.string.cap_bounce_high)
+                                BounceLevel.MAX -> stringResource(R.string.cap_bounce_max)
                             }
                         },
                         onSelect = { level -> onUpdate { it.copy(bounce = level) } }
                     )
                 }
                 SwitchRow(
-                    title = "Reduce animations",
-                    description = "Short, bounce-free transitions and fading cards instead of sliding.",
+                    title = stringResource(R.string.cap_reduce_animations),
+                    description = stringResource(R.string.cap_reduce_animations_desc),
                     checked = settings.reduceAnimations,
                     onChange = { on -> onUpdate { it.copy(reduceAnimations = on) } }
                 )
             }
         }
         item {
-            Section("Media") {
+            Section(stringResource(R.string.cap_sec_media)) {
                 SwitchRow(
-                    title = "Show what is playing",
-                    description = "Music, podcasts and videos from any player app.",
+                    title = stringResource(R.string.cap_media_show),
+                    description = stringResource(R.string.cap_media_show_desc),
                     checked = settings.mediaEnabled,
                     onChange = { on -> onUpdate { it.copy(mediaEnabled = on) } }
                 )
                 SwitchRow(
-                    title = "Hide while the player is open",
-                    description = "No need for the card when the app is already on screen.",
+                    title = stringResource(R.string.cap_media_hide_open),
+                    description = stringResource(R.string.cap_media_hide_open_desc),
                     checked = settings.hideMediaWhenAppInFront,
                     onChange = { on -> onUpdate { it.copy(hideMediaWhenAppInFront = on) } }
                 )
-                Text("After pausing, keep the card for", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.cap_media_keep_for), style = MaterialTheme.typography.bodyMedium)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     MediaCollapseDelay.entries.forEach { delay ->
                         FilterChip(
@@ -301,30 +303,30 @@ fun CapsuleTab(
             }
         }
         item {
-            Section("Notifications") {
+            Section(stringResource(R.string.cap_sec_notifications)) {
                 SwitchRow(
-                    title = "Show notifications",
-                    description = "Messages and alerts from your apps appear in the capsule.",
+                    title = stringResource(R.string.cap_notif_show),
+                    description = stringResource(R.string.cap_notif_show_desc),
                     checked = settings.notificationsEnabled,
                     onChange = { on -> onUpdate { it.copy(notificationsEnabled = on) } }
                 )
-                Text("Notification style", style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(R.string.cap_notif_style), style = MaterialTheme.typography.bodyLarge)
                 Options(
                     options = NotificationDisplay.entries,
                     selected = settings.notificationDisplay,
-                    label = { if (it == NotificationDisplay.COMPACT) "Compact" else "Expanded" },
+                    label = { stringResource(if (it == NotificationDisplay.COMPACT) R.string.cap_notif_compact else R.string.cap_notif_expanded) },
                     onSelect = { display -> onUpdate { it.copy(notificationDisplay = display) } }
                 )
                 Text(
                     text = if (settings.notificationDisplay == NotificationDisplay.COMPACT) {
-                        "New notifications appear as a small pill with the sender's photo. Tap it to read and reply."
+                        stringResource(R.string.cap_notif_compact_desc)
                     } else {
-                        "New notifications open the full card right away, with the message and reply buttons."
+                        stringResource(R.string.cap_notif_expanded_desc)
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Text("Keep it in the capsule for", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.cap_notif_keep_for), style = MaterialTheme.typography.bodyMedium)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     NotificationDelay.entries.forEach { delay ->
                         FilterChip(
@@ -334,41 +336,41 @@ fun CapsuleTab(
                         )
                     }
                 }
-                Text("On the lock screen", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.cap_lock_screen), style = MaterialTheme.typography.bodyMedium)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     LockScreenBehavior.entries.forEach { behavior ->
                         FilterChip(
                             selected = settings.lockScreenBehavior == behavior,
                             onClick = { onUpdate { it.copy(lockScreenBehavior = behavior) } },
-                            label = { Text(behavior.displayName) }
+                            label = { Text(stringResource(behavior.labelRes)) }
                         )
                     }
                 }
                 Text(
                     when (settings.lockScreenBehavior) {
                         LockScreenBehavior.SHOW ->
-                            "The capsule shows, message text included."
+                            stringResource(R.string.cap_lock_show_desc)
                         LockScreenBehavior.SHOW_WITHOUT_CONTENT ->
-                            "The capsule shows, but only the app name — unless the app marks the message public."
+                            stringResource(R.string.cap_lock_without_content_desc)
                         LockScreenBehavior.HIDE ->
-                            "The capsule stays away until you unlock."
+                            stringResource(R.string.cap_lock_hide_desc)
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 SwitchRow(
-                    title = "Remove after viewing",
-                    description = "Clear it from the notification shade once you have opened it in the capsule.",
+                    title = stringResource(R.string.cap_remove_after_viewing),
+                    description = stringResource(R.string.cap_remove_after_viewing_desc),
                     checked = settings.removeNotificationAfterViewing,
                     onChange = { on -> onUpdate { it.copy(removeNotificationAfterViewing = on) } }
                 )
                 SwitchRow(
-                    title = "Glow",
-                    description = "Outline the capsule in the app's color while a notification waits.",
+                    title = stringResource(R.string.cap_glow),
+                    description = stringResource(R.string.cap_glow_desc),
                     checked = settings.notificationGlow,
                     onChange = { on -> onUpdate { it.copy(notificationGlow = on) } }
                 )
-                TextButton(onClick = onOpenNotificationApps) { Text("Choose apps and turn off pop-ups") }
+                TextButton(onClick = onOpenNotificationApps) { Text(stringResource(R.string.cap_choose_apps)) }
             }
         }
         item {
@@ -378,21 +380,21 @@ fun CapsuleTab(
             EventsSection(settings = settings, onUpdate = onUpdate, onBluetoothGranted = onBluetoothGranted)
         }
         item {
-            Section("Hide the capsule") {
+            Section(stringResource(R.string.cap_sec_hide)) {
                 SwitchRow(
-                    title = "In fullscreen apps",
-                    description = "Videos, games and other apps that hide the status bar.",
+                    title = stringResource(R.string.cap_hide_fullscreen),
+                    description = stringResource(R.string.cap_hide_fullscreen_desc),
                     checked = settings.hideInFullscreen,
                     onChange = { on -> onUpdate { it.copy(hideInFullscreen = on) } }
                 )
                 SwitchRow(
-                    title = "While the keyboard is open",
+                    title = stringResource(R.string.cap_hide_keyboard),
                     description = null,
                     checked = settings.hideWithKeyboard,
                     onChange = { on -> onUpdate { it.copy(hideWithKeyboard = on) } }
                 )
                 SwitchRow(
-                    title = "In landscape",
+                    title = stringResource(R.string.cap_hide_landscape),
                     description = null,
                     checked = settings.hideInLandscape,
                     onChange = { on -> onUpdate { it.copy(hideInLandscape = on) } }
@@ -404,14 +406,14 @@ fun CapsuleTab(
 }
 
 private val MediaCollapseDelay.label: String
-    get() = when (this) {
-        MediaCollapseDelay.INSTANT -> "No time"
-        MediaCollapseDelay.SECONDS_5 -> "5 s"
-        MediaCollapseDelay.SECONDS_15 -> "15 s"
-        MediaCollapseDelay.SECONDS_30 -> "30 s"
-        MediaCollapseDelay.SECONDS_60 -> "1 min"
-        MediaCollapseDelay.MINUTES_2 -> "2 min"
-        MediaCollapseDelay.NEVER -> "Always"
+    @Composable get() = when (this) {
+        MediaCollapseDelay.INSTANT -> stringResource(R.string.cap_delay_none)
+        MediaCollapseDelay.SECONDS_5 -> stringResource(R.string.cap_seconds_fmt, 5)
+        MediaCollapseDelay.SECONDS_15 -> stringResource(R.string.cap_seconds_fmt, 15)
+        MediaCollapseDelay.SECONDS_30 -> stringResource(R.string.cap_seconds_fmt, 30)
+        MediaCollapseDelay.SECONDS_60 -> stringResource(R.string.cap_minutes_fmt, 1)
+        MediaCollapseDelay.MINUTES_2 -> stringResource(R.string.cap_minutes_fmt, 2)
+        MediaCollapseDelay.NEVER -> stringResource(R.string.cap_delay_always)
     }
 
 /** F-51..F-53: slider look, brightness calibration and the permissions the controls need. */
@@ -430,27 +432,27 @@ private fun ControlsSection(
         onPermissionsChanged() // the user may have just granted something in Settings
         onPauseOrDispose { }
     }
-    Section("Controls") {
+    Section(stringResource(R.string.cap_sec_controls)) {
         Text(
-            "Tap the capsule when nothing is happening, or long-press it, to open volume, brightness and flashlight.",
+            stringResource(R.string.cap_controls_hint),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Text("Slider style", style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(R.string.cap_slider_style), style = MaterialTheme.typography.bodyMedium)
         Options(
             options = SliderStyle.entries,
             selected = settings.sliderStyle,
             label = {
                 when (it) {
-                    SliderStyle.PILL -> "Pill"
-                    SliderStyle.SPLIT -> "Split"
-                    SliderStyle.ROUNDED -> "Rounded"
+                    SliderStyle.PILL -> stringResource(R.string.cap_slider_pill)
+                    SliderStyle.SPLIT -> stringResource(R.string.cap_slider_split)
+                    SliderStyle.ROUNDED -> stringResource(R.string.cap_slider_rounded)
                 }
             },
             onSelect = { style -> onUpdate { it.copy(sliderStyle = style) } }
         )
         PermissionRow(
-            title = "Brightness control",
+            title = stringResource(R.string.cap_perm_brightness),
             granted = canWrite,
             onGrant = {
                 context.startActivity(
@@ -459,14 +461,13 @@ private fun ControlsSection(
             }
         )
         PermissionRow(
-            title = "Silent mode",
+            title = stringResource(R.string.cap_perm_silent),
             granted = canSilence,
             onGrant = { context.startActivity(Intent(AndroidSettings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)) }
         )
-        Text("Brightness calibration", style = MaterialTheme.typography.bodyLarge)
+        Text(stringResource(R.string.cap_brightness_calibration), style = MaterialTheme.typography.bodyLarge)
         Text(
-            "Android 13+ does not tell apps the highest brightness value. Drag the system brightness slider " +
-                "all the way up, then tap Calibrate. Current maximum: ${settings.brightnessMax}.",
+            stringResource(R.string.cap_brightness_calibration_desc, settings.brightnessMax),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -474,8 +475,8 @@ private fun ControlsSection(
             FilledTonalButton(onClick = {
                 val current = AndroidSettings.System.getInt(context.contentResolver, AndroidSettings.System.SCREEN_BRIGHTNESS, 0)
                 if (current > 0) onUpdate { it.copy(brightnessMax = current) }
-            }) { Text("Calibrate") }
-            TextButton(onClick = { onUpdate { it.copy(brightnessMax = DEFAULT_BRIGHTNESS_MAX) } }) { Text("Reset") }
+            }) { Text(stringResource(R.string.cap_calibrate)) }
+            TextButton(onClick = { onUpdate { it.copy(brightnessMax = DEFAULT_BRIGHTNESS_MAX) } }) { Text(stringResource(R.string.cap_reset)) }
         }
     }
 }
@@ -486,12 +487,12 @@ private fun PermissionRow(title: String, granted: Boolean, onGrant: () -> Unit) 
         Column(modifier = Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.bodyLarge)
             Text(
-                if (granted) "Allowed" else "Not allowed yet",
+                stringResource(if (granted) R.string.cap_allowed else R.string.cap_not_allowed),
                 style = MaterialTheme.typography.bodySmall,
                 color = if (granted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
             )
         }
-        if (!granted) TextButton(onClick = onGrant) { Text("Allow") }
+        if (!granted) TextButton(onClick = onGrant) { Text(stringResource(R.string.cap_allow)) }
     }
 }
 
@@ -516,26 +517,26 @@ private fun EventsSection(
         it.copy(enabledEvents = if (on) it.enabledEvents + category else it.enabledEvents - category)
     }
 
-    Section("Events") {
+    Section(stringResource(R.string.cap_sec_events)) {
         SwitchRow(
-            title = "Charging card",
-            description = "Show the battery level in the capsule while charging.",
+            title = stringResource(R.string.cap_charging_card),
+            description = stringResource(R.string.cap_charging_card_desc),
             checked = settings.chargingCardEnabled,
             onChange = { on -> onUpdate { it.copy(chargingCardEnabled = on) } }
         )
         SwitchRow(
-            title = "Downloads and uploads",
-            description = "Progress from any app that shows a progress bar in its notification.",
+            title = stringResource(R.string.cap_downloads_uploads),
+            description = stringResource(R.string.cap_downloads_uploads_desc),
             checked = settings.progressEnabled,
             onChange = { on -> onUpdate { it.copy(progressEnabled = on) } }
         )
         SwitchRow(
-            title = "Timers and stopwatches",
-            description = "From your clock app, with its own buttons.",
+            title = stringResource(R.string.cap_timers),
+            description = stringResource(R.string.cap_timers_desc),
             checked = settings.timerEnabled,
             onChange = { on -> onUpdate { it.copy(timerEnabled = on) } }
         )
-        Text("Pop-ups for", style = MaterialTheme.typography.bodyLarge)
+        Text(stringResource(R.string.cap_popups_for), style = MaterialTheme.typography.bodyLarge)
         EventCategory.entries.forEach { category ->
             SwitchRow(
                 title = category.label,
@@ -545,25 +546,25 @@ private fun EventsSection(
             )
             if (category == EventCategory.HEADPHONES && category in settings.enabledEvents && !bluetoothAllowed) {
                 TextButton(onClick = { requestBluetooth.launch(Manifest.permission.BLUETOOTH_CONNECT) }) {
-                    Text("Allow Bluetooth access to see headphones")
+                    Text(stringResource(R.string.cap_allow_bluetooth))
                 }
             }
         }
-        Text("Show each pop-up for", style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(R.string.cap_popup_duration), style = MaterialTheme.typography.bodyMedium)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             MiniEventDuration.entries.forEach { duration ->
                 FilterChip(
                     selected = settings.miniEventDuration == duration,
                     onClick = { onUpdate { it.copy(miniEventDuration = duration) } },
-                    label = { Text("${duration.millis / 1000} s") }
+                    label = { Text(stringResource(R.string.cap_seconds_fmt, duration.millis / 1000)) }
                 )
             }
         }
-        IntSlider("Low battery warning at", settings.lowBatteryThreshold, 5..30, unit = "%") { v ->
+        IntSlider(stringResource(R.string.cap_low_battery_at), settings.lowBatteryThreshold, 5..30, unit = "%") { v ->
             onUpdate { it.copy(lowBatteryThreshold = v) }
         }
         SwitchRow(
-            title = "Temperature in °F",
+            title = stringResource(R.string.cap_temp_f),
             description = null,
             checked = settings.temperatureFahrenheit,
             onChange = { on -> onUpdate { it.copy(temperatureFahrenheit = on) } }
@@ -572,34 +573,34 @@ private fun EventsSection(
 }
 
 private val EventCategory.label: String
-    get() = when (this) {
-        EventCategory.CHARGING -> "Charger plugged in or out"
-        EventCategory.LOW_BATTERY -> "Low battery"
-        EventCategory.RINGER -> "Ring, vibrate, silent"
-        EventCategory.HEADPHONES -> "Bluetooth headphones"
-        EventCategory.WIFI -> "Wi-Fi connected or lost"
-        EventCategory.AIRPLANE -> "Airplane mode"
-        EventCategory.UNLOCK -> "Unlocking the phone"
-        EventCategory.BRIGHTNESS_MODE -> "Auto-brightness"
-        EventCategory.DOWNLOADS -> "Download finished"
-    }
+    @Composable get() = stringResource(when (this) {
+        EventCategory.CHARGING -> R.string.cap_event_charging
+        EventCategory.LOW_BATTERY -> R.string.cap_event_low_battery
+        EventCategory.RINGER -> R.string.cap_event_ringer
+        EventCategory.HEADPHONES -> R.string.cap_event_headphones
+        EventCategory.WIFI -> R.string.cap_event_wifi
+        EventCategory.AIRPLANE -> R.string.cap_event_airplane
+        EventCategory.UNLOCK -> R.string.cap_event_unlock
+        EventCategory.BRIGHTNESS_MODE -> R.string.cap_event_brightness_mode
+        EventCategory.DOWNLOADS -> R.string.cap_event_downloads
+    })
 
 private val EventCategory.description: String?
-    get() = when (this) {
-        EventCategory.HEADPHONES -> "Shows the battery too, if the headphones report it."
-        EventCategory.LOW_BATTERY -> "At your threshold and again at 5%."
+    @Composable get() = when (this) {
+        EventCategory.HEADPHONES -> stringResource(R.string.cap_event_headphones_desc)
+        EventCategory.LOW_BATTERY -> stringResource(R.string.cap_event_low_battery_desc)
         else -> null
     }
 
 private val NotificationDelay.label: String
-    get() = when (this) {
-        NotificationDelay.SECONDS_1 -> "1 s"
-        NotificationDelay.SECONDS_3 -> "3 s"
-        NotificationDelay.SECONDS_5 -> "5 s"
-        NotificationDelay.SECONDS_10 -> "10 s"
-        NotificationDelay.SECONDS_20 -> "20 s"
-        NotificationDelay.SECONDS_30 -> "30 s"
-        NotificationDelay.UNTIL_OPENED -> "Until opened"
+    @Composable get() = when (this) {
+        NotificationDelay.SECONDS_1 -> stringResource(R.string.cap_seconds_fmt, 1)
+        NotificationDelay.SECONDS_3 -> stringResource(R.string.cap_seconds_fmt, 3)
+        NotificationDelay.SECONDS_5 -> stringResource(R.string.cap_seconds_fmt, 5)
+        NotificationDelay.SECONDS_10 -> stringResource(R.string.cap_seconds_fmt, 10)
+        NotificationDelay.SECONDS_20 -> stringResource(R.string.cap_seconds_fmt, 20)
+        NotificationDelay.SECONDS_30 -> stringResource(R.string.cap_seconds_fmt, 30)
+        NotificationDelay.UNTIL_OPENED -> stringResource(R.string.cap_delay_until_opened)
     }
 
 @Composable
@@ -633,9 +634,9 @@ private fun HiddenAppsList(settings: Settings, onUpdate: ((Settings) -> Settings
     }
 
     Column {
-        Text("Stay hidden in these apps", style = MaterialTheme.typography.bodyLarge)
+        Text(stringResource(R.string.cap_hidden_stay), style = MaterialTheme.typography.bodyLarge)
         Text(
-            "The capsule hides while one of these apps is in front, and comes back when you leave.",
+            stringResource(R.string.cap_hidden_desc),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -652,15 +653,15 @@ private fun HiddenAppsList(settings: Settings, onUpdate: ((Settings) -> Settings
                         onClick = {
                             onUpdate { it.copy(hiddenPackages = it.hiddenPackages - packageName) }
                         }
-                    ) { Text("Remove") }
+                    ) { Text(stringResource(R.string.cap_remove)) }
                 }
             }
-        TextButton(onClick = { pickingApp = true }) { Text("Add an app") }
+        TextButton(onClick = { pickingApp = true }) { Text(stringResource(R.string.cap_add_app)) }
     }
 
     if (pickingApp) {
         AppPickerDialog(
-            title = "Keep the capsule out of which app?",
+            title = stringResource(R.string.cap_pick_app_title),
             onPick = { app ->
                 onUpdate { it.copy(hiddenPackages = it.hiddenPackages + app.packageName) }
                 pickingApp = false
@@ -729,7 +730,7 @@ private fun IntSlider(label: String, value: Int, range: IntRange, unit: String =
 }
 
 @Composable
-private fun <T> Options(options: List<T>, selected: T, label: (T) -> String, onSelect: (T) -> Unit) {
+private fun <T> Options(options: List<T>, selected: T, label: @Composable (T) -> String, onSelect: (T) -> Unit) {
     SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
         options.forEachIndexed { index, option ->
             SegmentedButton(

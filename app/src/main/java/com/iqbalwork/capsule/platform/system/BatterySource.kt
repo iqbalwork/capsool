@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule.platform.system
 
 import android.content.BroadcastReceiver
+import com.iqbalwork.capsule.R
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -84,10 +85,10 @@ class BatterySource(
     private fun miniEvent(type: MiniEventType, state: ChargingState): MiniEvent {
         val percent = "${state.chargePercentage}%"
         val title = when (type) {
-            MiniEventType.CHARGER_CONNECTED -> BatteryEventDetector.chargerLabel(state.chargeType)
-            MiniEventType.CHARGER_DISCONNECTED -> "Charger removed"
-            MiniEventType.FULLY_CHARGED -> "Fully charged"
-            else -> "Low battery"
+            MiniEventType.CHARGER_CONNECTED -> context.getString(BatteryEventDetector.chargerLabelRes(state.chargeType))
+            MiniEventType.CHARGER_DISCONNECTED -> context.getString(R.string.event_charger_removed)
+            MiniEventType.FULLY_CHARGED -> context.getString(R.string.event_fully_charged)
+            else -> context.getString(R.string.event_low_battery)
         }
         return MiniEvent(id = System.nanoTime(), type = type, title = title, subtitle = percent, level = state.chargePercentage)
     }

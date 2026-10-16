@@ -64,6 +64,8 @@ import com.iqbalwork.capsule.platform.intents.IntentResult
 import com.iqbalwork.capsule.ui.components.AvailableIntentIcons
 import com.iqbalwork.capsule.ui.components.customIntentIcon
 import java.util.UUID
+import androidx.compose.ui.res.stringResource
+import com.iqbalwork.capsule.R
 
 /**
  * F-76: Custom intent builder UI for Activity / Service / Broadcast actions.
@@ -102,10 +104,9 @@ fun IntentsTab(
         item {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Intent Builder", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.gx_intent_builder), style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Create custom Activity, Service, or Broadcast intents. " +
-                            "These can be bound to gestures in the Gestures tab.",
+                        stringResource(R.string.gx_intent_builder_desc),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -115,7 +116,7 @@ fun IntentsTab(
                     ) {
                         Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Add custom action")
+                        Text(stringResource(R.string.gx_add_custom_action))
                     }
                 }
             }
@@ -131,7 +132,7 @@ fun IntentsTab(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            "No custom actions yet",
+                            stringResource(R.string.gx_no_intents_yet),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -208,16 +209,16 @@ private fun IntentItemCard(
                     )
                 }
                 IconButton(onClick = onEdit) {
-                    Icon(Icons.Rounded.Edit, contentDescription = "Edit")
+                    Icon(Icons.Rounded.Edit, contentDescription = stringResource(R.string.gx_edit))
                 }
                 IconButton(onClick = onDelete) {
-                    Icon(Icons.Rounded.Delete, contentDescription = "Delete")
+                    Icon(Icons.Rounded.Delete, contentDescription = stringResource(R.string.gx_delete))
                 }
             }
 
             if (!intent.component.isNullOrBlank()) {
                 Text(
-                    "Component: ${intent.component}",
+                    stringResource(R.string.gx_component_line, intent.component),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -225,7 +226,11 @@ private fun IntentItemCard(
 
             if (intent.extras.isNotEmpty()) {
                 Text(
-                    "Extras (${intent.extras.size}): ${intent.extras.entries.joinToString(", ") { "${it.key}=${it.value}" }}",
+                    stringResource(
+                        R.string.gx_extras_line,
+                        intent.extras.size,
+                        intent.extras.entries.joinToString(", ") { "${it.key}=${it.value}" }
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -233,18 +238,18 @@ private fun IntentItemCard(
 
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 OutlinedButton(onClick = onTest) {
-                    Text("Send test")
+                    Text(stringResource(R.string.gx_send_test))
                 }
                 Spacer(Modifier.width(12.dp))
                 if (testResult != null) {
                     when (testResult) {
                         is IntentResult.Ok -> Text(
-                            "✓ Berhasil dikirim",
+                            stringResource(R.string.gx_test_ok),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary
                         )
                         is IntentResult.Error -> Text(
-                            "✕ ${testResult.message}",
+                            stringResource(R.string.gx_test_error, testResult.message.asString()),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                             modifier = Modifier.weight(1f)
@@ -278,7 +283,7 @@ private fun IntentEditDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (initial == null) "New Custom Action" else "Edit Custom Action") },
+        title = { Text(stringResource(if (initial == null) R.string.gx_new_custom_action else R.string.gx_edit_custom_action)) },
         text = {
             LazyColumn(
                 modifier = Modifier.heightIn(max = 450.dp),
@@ -288,8 +293,8 @@ private fun IntentEditDialog(
                     OutlinedTextField(
                         value = label,
                         onValueChange = { label = it },
-                        label = { Text("Label") },
-                        placeholder = { Text("e.g. Toggle MacroDroid") },
+                        label = { Text(stringResource(R.string.gx_label)) },
+                        placeholder = { Text(stringResource(R.string.gx_label_placeholder)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -302,7 +307,7 @@ private fun IntentEditDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Type", style = MaterialTheme.typography.labelMedium)
+                            Text(stringResource(R.string.gx_type), style = MaterialTheme.typography.labelMedium)
                             TextButton(
                                 onClick = { typeMenuOpen = true },
                                 modifier = Modifier.fillMaxWidth()
@@ -326,7 +331,7 @@ private fun IntentEditDialog(
                         }
 
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Icon", style = MaterialTheme.typography.labelMedium)
+                            Text(stringResource(R.string.gx_icon), style = MaterialTheme.typography.labelMedium)
                             TextButton(
                                 onClick = { iconMenuOpen = true },
                                 modifier = Modifier.fillMaxWidth()
@@ -368,8 +373,8 @@ private fun IntentEditDialog(
                     OutlinedTextField(
                         value = action,
                         onValueChange = { action = it },
-                        label = { Text("Action *") },
-                        placeholder = { Text("e.g. com.example.ACTION_EVENT") },
+                        label = { Text(stringResource(R.string.gx_action_field)) },
+                        placeholder = { Text(stringResource(R.string.gx_action_placeholder)) },
                         singleLine = true,
                         isError = action.isBlank(),
                         modifier = Modifier.fillMaxWidth()
@@ -380,15 +385,15 @@ private fun IntentEditDialog(
                     OutlinedTextField(
                         value = component,
                         onValueChange = { component = it },
-                        label = { Text("Component (optional)") },
-                        placeholder = { Text("package/class, e.g. com.example/.MyReceiver") },
+                        label = { Text(stringResource(R.string.gx_component_field)) },
+                        placeholder = { Text(stringResource(R.string.gx_component_placeholder)) },
                         singleLine = true,
                         isError = validation is CustomIntentValidator.Result.Error && component.isNotBlank(),
                         supportingText = {
                             if (validation is CustomIntentValidator.Result.Error && component.isNotBlank()) {
-                                Text(validation.message, color = MaterialTheme.colorScheme.error)
+                                Text(validation.message.asString(), color = MaterialTheme.colorScheme.error)
                             } else {
-                                Text("Format: package/class. Leave empty for implicit.")
+                                Text(stringResource(R.string.gx_component_hint))
                             }
                         },
                         modifier = Modifier.fillMaxWidth()
@@ -401,11 +406,11 @@ private fun IntentEditDialog(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Extras (key-value)", style = MaterialTheme.typography.titleSmall)
+                        Text(stringResource(R.string.gx_extras_title), style = MaterialTheme.typography.titleSmall)
                         TextButton(onClick = { extras = extras + ("" to "") }) {
                             Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text("Add Extra")
+                            Text(stringResource(R.string.gx_add_extra))
                         }
                     }
                 }
@@ -424,7 +429,7 @@ private fun IntentEditDialog(
                                 list[index] = newKey to pair.second
                                 extras = list
                             },
-                            label = { Text("Key") },
+                            label = { Text(stringResource(R.string.gx_key)) },
                             singleLine = true,
                             modifier = Modifier.weight(1f)
                         )
@@ -435,7 +440,7 @@ private fun IntentEditDialog(
                                 list[index] = pair.first to newVal
                                 extras = list
                             },
-                            label = { Text("Value") },
+                            label = { Text(stringResource(R.string.gx_value)) },
                             singleLine = true,
                             modifier = Modifier.weight(1f)
                         )
@@ -444,7 +449,7 @@ private fun IntentEditDialog(
                             list.removeAt(index)
                             extras = list
                         }) {
-                            Icon(Icons.Rounded.Delete, contentDescription = "Remove extra")
+                            Icon(Icons.Rounded.Delete, contentDescription = stringResource(R.string.gx_remove_extra))
                         }
                     }
                 }
@@ -469,12 +474,12 @@ private fun IntentEditDialog(
                 },
                 enabled = validation.isValid
             ) {
-                Text("Save")
+                Text(stringResource(R.string.gx_save))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.gx_cancel))
             }
         }
     )

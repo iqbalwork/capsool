@@ -40,6 +40,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.iqbalwork.capsule.R
 import androidx.compose.ui.unit.dp
 import com.iqbalwork.capsule.core.settings.Settings
 import com.iqbalwork.capsule.core.settings.StaticCard
@@ -79,7 +81,7 @@ fun StaticCardsTab(
         item {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("View mode", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.sc_view_mode), style = MaterialTheme.typography.titleMedium)
                     SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                         StaticCardViewMode.entries.forEachIndexed { index, mode ->
                             SegmentedButton(
@@ -87,15 +89,15 @@ fun StaticCardsTab(
                                 onClick = { onUpdate { it.copy(staticCardViewMode = mode) } },
                                 shape = SegmentedButtonDefaults.itemShape(index, StaticCardViewMode.entries.size)
                             ) {
-                                Text(if (mode == StaticCardViewMode.CAROUSEL) "Carousel" else "List")
+                                Text(stringResource(if (mode == StaticCardViewMode.CAROUSEL) R.string.sc_carousel else R.string.sc_list))
                             }
                         }
                     }
                     Text(
                         if (settings.staticCardViewMode == StaticCardViewMode.CAROUSEL) {
-                            "Carousel: swipe left and right to move between cards."
+                            stringResource(R.string.sc_carousel_desc)
                         } else {
-                            "List: the cards are stacked vertically and scroll in the capsule."
+                            stringResource(R.string.sc_list_desc)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -109,10 +111,9 @@ fun StaticCardsTab(
             item {
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Cards are automatic", style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.sc_auto_title), style = MaterialTheme.typography.titleMedium)
                         Text(
-                            "These cards come from the shortcut, barcode and custom-action settings. " +
-                                "Edit them to set the order, pick a start card, or add cards by hand.",
+                            stringResource(R.string.sc_auto_desc),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -120,7 +121,7 @@ fun StaticCardsTab(
                             onClick = { onUpdate { it.seedStaticCards() } },
                             enabled = displayCards.isNotEmpty()
                         ) {
-                            Text("Edit cards")
+                            Text(stringResource(R.string.sc_edit_cards))
                         }
                     }
                 }
@@ -136,9 +137,9 @@ fun StaticCardsTab(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Cards", style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(R.string.sc_cards), style = MaterialTheme.typography.titleMedium)
                             Text(
-                                "The order these cards appear in on the capsule.",
+                                stringResource(R.string.sc_cards_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -150,19 +151,20 @@ fun StaticCardsTab(
                             ) {
                                 Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.width(8.dp))
-                                Text("Add card")
+                                Text(stringResource(R.string.sc_add_card))
                             }
                             DropdownMenu(
                                 expanded = addMenuExpanded,
                                 onDismissRequest = { addMenuExpanded = false }
                             ) {
                                 availableTypes.forEach { type ->
+                                    val typeName = stringResource(type.labelRes)
                                     DropdownMenuItem(
-                                        text = { Text(type.label) },
+                                        text = { Text(typeName) },
                                         onClick = {
                                             addMenuExpanded = false
                                             dialogType = type
-                                            dialogLabel = type.label
+                                            dialogLabel = typeName
                                             showAddDialog = true
                                         }
                                     )
@@ -185,7 +187,7 @@ fun StaticCardsTab(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            "No static cards yet",
+                            stringResource(R.string.sc_empty),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -207,10 +209,13 @@ fun StaticCardsTab(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Text(card.label, style = MaterialTheme.typography.titleSmall)
+                                Text(
+                                    if (card.label == card.type.label) stringResource(card.type.labelRes) else card.label,
+                                    style = MaterialTheme.typography.titleSmall
+                                )
                                 if (isStart) {
                                     Text(
-                                        "• Start",
+                                        stringResource(R.string.sc_start_marker),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.primary
                                     )
@@ -219,7 +224,7 @@ fun StaticCardsTab(
                             // The type only adds information once the card has been renamed.
                             if (card.label != card.type.label) {
                                 Text(
-                                    card.type.label,
+                                    stringResource(card.type.labelRes),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -228,7 +233,7 @@ fun StaticCardsTab(
 
                         if (isDerived) {
                             Text(
-                                "Automatic",
+                                stringResource(R.string.sc_automatic),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -243,7 +248,7 @@ fun StaticCardsTab(
                             ) {
                                 Icon(
                                     imageVector = if (isStart) Icons.Rounded.Star else Icons.Rounded.StarBorder,
-                                    contentDescription = if (isStart) "Unset start card" else "Set as start card",
+                                    contentDescription = stringResource(if (isStart) R.string.sc_unset_start else R.string.sc_set_start),
                                     tint = if (isStart) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
@@ -251,13 +256,13 @@ fun StaticCardsTab(
                                 onClick = { onUpdate { s -> s.copy(staticCards = s.staticCards.moveUp(card.id)) } },
                                 enabled = index > 0
                             ) {
-                                Icon(Icons.Rounded.KeyboardArrowUp, contentDescription = "Move up")
+                                Icon(Icons.Rounded.KeyboardArrowUp, contentDescription = stringResource(R.string.sc_move_up))
                             }
                             IconButton(
                                 onClick = { onUpdate { s -> s.copy(staticCards = s.staticCards.moveDown(card.id)) } },
                                 enabled = index < displayCards.lastIndex
                             ) {
-                                Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = "Move down")
+                                Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = stringResource(R.string.sc_move_down))
                             }
                             IconButton(
                                 onClick = {
@@ -270,7 +275,7 @@ fun StaticCardsTab(
                                     }
                                 }
                             ) {
-                                Icon(Icons.Rounded.Delete, contentDescription = "Remove")
+                                Icon(Icons.Rounded.Delete, contentDescription = stringResource(R.string.sc_remove))
                             }
                         }
                     }
@@ -282,15 +287,16 @@ fun StaticCardsTab(
     if (showAddDialog) {
         val type = dialogType
         if (type != null) {
+            val defaultName = stringResource(type.labelRes)
             AlertDialog(
                 onDismissRequest = { showAddDialog = false },
-                title = { Text("Add ${type.label} card") },
+                title = { Text(stringResource(R.string.sc_add_card_title, stringResource(type.labelRes))) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(
                             value = dialogLabel,
                             onValueChange = { dialogLabel = it },
-                            label = { Text("Label") },
+                            label = { Text(stringResource(R.string.sc_label)) },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -299,7 +305,10 @@ fun StaticCardsTab(
                 confirmButton = {
                     FilledTonalButton(
                         onClick = {
-                            val label = dialogLabel.trim().ifEmpty { type.label }
+                            // An untouched default is stored as the stable English key, so it keeps following the app
+                            // language; only a name the user typed is stored as written.
+                            val typed = dialogLabel.trim()
+                            val label = if (typed.isEmpty() || typed == defaultName) type.label else typed
                             val newCard = StaticCard(
                                 id = UUID.randomUUID().toString(),
                                 type = type,
@@ -313,12 +322,12 @@ fun StaticCardsTab(
                         },
                         enabled = dialogLabel.isNotBlank()
                     ) {
-                        Text("Add")
+                        Text(stringResource(R.string.sc_add))
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showAddDialog = false }) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.sc_cancel))
                     }
                 }
             )

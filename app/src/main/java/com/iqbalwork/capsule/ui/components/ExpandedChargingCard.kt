@@ -1,5 +1,7 @@
 package com.iqbalwork.capsule.ui.components
 
+import com.iqbalwork.capsule.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -57,7 +59,11 @@ fun ExpandedChargingCard(
                 Icon(Icons.Rounded.Bolt, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(4.dp))
                 Text(
-                    text = if (chargingState.isCharging) BatteryEventDetector.chargerLabel(chargingState.chargeType) else "On battery",
+                    text = if (chargingState.isCharging) {
+                        stringResource(BatteryEventDetector.chargerLabelRes(chargingState.chargeType))
+                    } else {
+                        stringResource(R.string.st_on_battery)
+                    },
                     color = Color.White,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
@@ -65,9 +71,9 @@ fun ExpandedChargingCard(
             }
             Text(
                 text = when {
-                    chargingState.isFullCharged -> "Fully charged"
-                    chargingState.chargeTimeRemainingMs != null -> "Full in ${formatDuration(chargingState.chargeTimeRemainingMs)}"
-                    else -> "Estimating time to full…"
+                    chargingState.isFullCharged -> stringResource(R.string.st_fully_charged)
+                    chargingState.chargeTimeRemainingMs != null -> stringResource(R.string.st_full_in, formatDuration(chargingState.chargeTimeRemainingMs))
+                    else -> stringResource(R.string.st_estimating)
                 },
                 color = Color.White.copy(alpha = 0.75f),
                 style = MaterialTheme.typography.bodyMedium
@@ -88,8 +94,13 @@ fun ExpandedChargingCard(
 fun formatTemperature(celsius: Float, fahrenheit: Boolean): String =
     if (fahrenheit) "%.1f °F".format(celsius * 9 / 5 + 32) else "%.1f °C".format(celsius)
 
+@Composable
 private fun formatDuration(ms: Long): String {
     val minutes = (ms / 60_000).coerceAtLeast(1)
     val hours = minutes / 60
-    return if (hours > 0) "$hours h ${minutes % 60} min" else "$minutes min"
+    return if (hours > 0) {
+        stringResource(R.string.st_duration_hm, hours, minutes % 60)
+    } else {
+        stringResource(R.string.st_duration_m, minutes)
+    }
 }

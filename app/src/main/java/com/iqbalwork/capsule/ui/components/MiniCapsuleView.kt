@@ -1,5 +1,7 @@
 package com.iqbalwork.capsule.ui.components
 
+import com.iqbalwork.capsule.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -142,7 +144,7 @@ fun MiniCapsuleView(
                 }
                 state.activeCard == CapsuleCardType.SLIDERS && state.sliders.isTorchOn -> {
                     Icon(Icons.Rounded.FlashlightOn, contentDescription = null, tint = Color(0xFFFFE082), modifier = Modifier.size(18.dp))
-                    Text("On", color = Color(0xFFFFE082), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.st_on), color = Color(0xFFFFE082), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
                 // Idle pill stays plain so it blends with the camera cutout.
                 else -> Spacer(Modifier.size(8.dp))

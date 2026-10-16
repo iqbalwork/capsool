@@ -1,5 +1,6 @@
 package com.iqbalwork.capsule.ui.components
 
+import androidx.compose.ui.res.stringResource
 import android.os.SystemClock
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Image
@@ -115,9 +116,9 @@ fun ExpandedMediaCard(
             horizontalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            ControlButton(R.drawable.ic_skip_previous, "Previous", Color.White) { onAction(UserIntent.MediaPrevious) }
+            ControlButton(R.drawable.ic_skip_previous, stringResource(R.string.st_media_previous), Color.White) { onAction(UserIntent.MediaPrevious) }
             PlayPauseButton(mediaState.isPlaying, palette) { onAction(UserIntent.MediaPlayPause) }
-            ControlButton(R.drawable.ic_skip_next, "Next", Color.White) { onAction(UserIntent.MediaNext) }
+            ControlButton(R.drawable.ic_skip_next, stringResource(R.string.st_media_next), Color.White) { onAction(UserIntent.MediaNext) }
         }
     }
 }
@@ -129,7 +130,7 @@ private fun Cover(mediaState: MediaState, palette: MediaPalette, modifier: Modif
     if (artwork != null) {
         Image(
             bitmap = remember(artwork) { artwork.asImageBitmap() },
-            contentDescription = "Open player",
+            contentDescription = stringResource(R.string.st_media_open_player),
             contentScale = ContentScale.Crop,
             modifier = modifier
                 .size(56.dp)
@@ -207,7 +208,7 @@ private fun PlayPauseButton(isPlaying: Boolean, palette: MediaPalette, onClick: 
     ) {
         Icon(
             painter = painterResource(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
-            contentDescription = if (isPlaying) "Pause" else "Play",
+            contentDescription = stringResource(if (isPlaying) R.string.st_media_pause else R.string.st_media_play),
             tint = palette.onAccent,
             modifier = Modifier.size(28.dp)
         )

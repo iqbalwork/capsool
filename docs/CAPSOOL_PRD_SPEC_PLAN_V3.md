@@ -774,7 +774,7 @@ Acceptance di device:
 ### M8 — Polish & rilis
 - [ ] Profiling: RAM idle, baterai 1 jam, jank expand/collapse — semua memenuhi §1.3 di 3 device matriks.
 - [ ] Screenshot test semua kartu; accessibility (TalkBack membaca isi kartu di app pendamping), RTL, font besar.
-- [ ] Terjemahan EN + ID.
+- [x] Terjemahan EN + ID (M8a). Semua teks UI (±550 string) dipindah ke `res/values/strings_*.xml` dengan padanan `values-in`. Teks dari kode tanpa Context (validator barcode, hasil scan, validasi/eksekusi intent) memakai `UiText` (`core/UiText.kt`: id resource + argumen, atau `Raw` untuk pesan sistem) supaya tetap murni dan tes menilai id/argumen, bukan kata-kata. Enum yang tampil di UI memakai `@StringRes labelRes`; `StaticCardType.label` tetap kunci bawaan Inggris yang tidak ditampilkan (label bawaan disimpan sebagai kunci itu agar mengikuti bahasa app). Teks event mini dibuat saat event terjadi lewat `context.getString`. Bahasa app bisa dipilih per-app lewat `locales_config` (en, id). `StringResourcesTest` menjaga kunci EN/ID sama dan placeholder-nya sama. Nama teknis (format barcode, istilah intent) sengaja tidak diterjemahkan. **Belum**: tinjauan terjemahan ID oleh penutur asli dan uji tampilan di bahasa ID (teks lebih panjang bisa terpotong).
 - [ ] Play Console: deklarasi AccessibilityService + video disclosure, Data safety ("tidak mengumpulkan data"), kebijakan privasi.
 - [ ] Release build (R8) diuji ulang seluruh acceptance M0–M7 secara cepat (smoke).
 

@@ -1,15 +1,17 @@
 package com.iqbalwork.capsule.model
 
 import android.graphics.Bitmap
+import com.iqbalwork.capsule.R
+import androidx.annotation.StringRes
 
-enum class CapsuleCardType(val displayName: String) {
-    MEDIA("Media Player"),
-    SLIDERS("System Sliders"),
-    CHARGING("Battery & Charging"),
-    NOTIFICATION("Notifications"),
-    TIMER("Timer & Stopwatch"),
-    PROGRESS("Downloads & uploads"),
-    SHORTCUTS("Shortcuts & Barcode")
+enum class CapsuleCardType(@StringRes val labelRes: Int) {
+    MEDIA(R.string.card_type_media),
+    SLIDERS(R.string.card_type_sliders),
+    CHARGING(R.string.card_type_charging),
+    NOTIFICATION(R.string.card_type_notification),
+    TIMER(R.string.card_type_timer),
+    PROGRESS(R.string.card_type_progress),
+    SHORTCUTS(R.string.card_type_shortcuts)
 }
 
 data class MediaState(
@@ -42,10 +44,10 @@ data class MediaState(
         other != null && other.packageName == packageName && other.title == title && other.artist == artist
 }
 
-enum class RingerMode(val displayName: String) {
-    NORMAL("Ring"),
-    VIBRATE("Vibrate"),
-    SILENT("Silent")
+enum class RingerMode(@StringRes val labelRes: Int) {
+    NORMAL(R.string.ringer_ring),
+    VIBRATE(R.string.ringer_vibrate),
+    SILENT(R.string.ringer_silent)
 }
 
 enum class TorchState {

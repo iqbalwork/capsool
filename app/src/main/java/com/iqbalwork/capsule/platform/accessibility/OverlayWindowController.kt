@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule.platform.accessibility
 
 import android.annotation.SuppressLint
+import com.iqbalwork.capsule.R
 import android.content.Context
 import android.graphics.PixelFormat
 import android.graphics.RectF
@@ -102,7 +103,7 @@ class OverlayWindowController(
             // moves the content sideways, even for the frame before it is laid out again.
             gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
             layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
-            title = "Capsool"
+            title = context.getString(R.string.app_name)
         }
 
         try {

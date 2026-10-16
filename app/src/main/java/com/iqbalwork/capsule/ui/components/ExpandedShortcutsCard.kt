@@ -1,5 +1,7 @@
 package com.iqbalwork.capsule.ui.components
 
+import com.iqbalwork.capsule.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -68,7 +70,7 @@ fun ExpandedShortcutsCard(
     if (!showBarcode && shortcuts.isEmpty()) {
         Box(modifier = modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
             Text(
-                "Add apps, contacts and system shortcuts in the Capsool app.",
+                stringResource(R.string.st_shortcuts_empty),
                 color = Color.White.copy(alpha = 0.7f),
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center

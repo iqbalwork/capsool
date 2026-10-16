@@ -1,6 +1,8 @@
 package com.iqbalwork.capsule.ui.components
 
 import androidx.compose.foundation.Image
+import com.iqbalwork.capsule.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,7 +48,7 @@ fun ExpandedProgressCard(items: List<ProgressItem>, modifier: Modifier = Modifie
         items.take(MAX_ROWS).forEach { item -> ProgressRow(item) }
         if (items.size > MAX_ROWS) {
             Text(
-                "+${items.size - MAX_ROWS} more",
+                stringResource(R.string.st_progress_more, items.size - MAX_ROWS),
                 color = Color.White.copy(alpha = 0.6f),
                 style = MaterialTheme.typography.labelMedium
             )

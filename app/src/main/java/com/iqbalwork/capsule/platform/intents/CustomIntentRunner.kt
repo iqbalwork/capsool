@@ -1,6 +1,8 @@
 package com.iqbalwork.capsule.platform.intents
 
 import android.content.ActivityNotFoundException
+import com.iqbalwork.capsule.core.UiText
+import com.iqbalwork.capsule.R
 import android.content.Context
 import android.content.Intent
 import com.iqbalwork.capsule.core.settings.CustomIntent
@@ -8,7 +10,7 @@ import com.iqbalwork.capsule.core.settings.CustomIntentType
 
 sealed interface IntentResult {
     data object Ok : IntentResult
-    data class Error(val message: String) : IntentResult
+    data class Error(val message: UiText) : IntentResult
 }
 
 /**
@@ -24,7 +26,7 @@ class CustomIntentRunner(private val context: Context) {
 
     fun run(customIntent: CustomIntent): IntentResult {
         if (customIntent.action.isBlank() && customIntent.component.isNullOrBlank()) {
-            return IntentResult.Error("Action cannot be empty.")
+            return IntentResult.Error(UiText.res(R.string.intent_run_action_empty))
         }
 
         return try {
@@ -46,17 +48,17 @@ class CustomIntentRunner(private val context: Context) {
             }
         } catch (e: ActivityNotFoundException) {
             val target = customIntent.component ?: customIntent.action
-            IntentResult.Error("Activity not found for '$target'. Check that the target app is installed and the action/component is correct.")
+            IntentResult.Error(UiText.res(R.string.intent_run_not_found, target))
         } catch (e: SecurityException) {
-            IntentResult.Error("Security error: ${e.localizedMessage ?: e.message ?: "Permission denied"}. On Android 12+, components must be exported (android:exported=\"true\") or require specific permissions to be triggered from another app.")
+            IntentResult.Error(UiText.res(R.string.intent_run_security, detail(e)))
         } catch (e: IllegalStateException) {
-            IntentResult.Error("Illegal state error: ${e.localizedMessage ?: e.message ?: "Action not allowed"}. Android restricts background service and activity launches (especially on Android 14+). Ensure background launch is permitted.")
+            IntentResult.Error(UiText.res(R.string.intent_run_illegal_state, detail(e)))
         } catch (e: IllegalArgumentException) {
-            IntentResult.Error("Invalid intent argument: ${e.localizedMessage ?: e.message ?: "Invalid parameter"}.")
+            IntentResult.Error(UiText.res(R.string.intent_run_bad_argument, detail(e)))
         } catch (e: ClassNotFoundException) {
-            IntentResult.Error("Component class not found: ${e.localizedMessage ?: e.message ?: "Class not found"}. Verify the component package and class name.")
+            IntentResult.Error(UiText.res(R.string.intent_run_class_not_found, detail(e)))
         } catch (e: Exception) {
-            IntentResult.Error("Execution error (${e.javaClass.simpleName}): ${e.localizedMessage ?: e.message ?: "Unknown error"}")
+            IntentResult.Error(UiText.res(R.string.intent_run_unknown, e.javaClass.simpleName, detail(e)))
         }
     }
 
@@ -81,4 +83,8 @@ class CustomIntentRunner(private val context: Context) {
             return intent
         }
     }
+
+    /** The system's own wording for [e]; it is not ours to translate, so it is passed in as an argument. */
+    private fun detail(e: Exception): String =
+        e.localizedMessage ?: e.message ?: e.javaClass.simpleName
 }

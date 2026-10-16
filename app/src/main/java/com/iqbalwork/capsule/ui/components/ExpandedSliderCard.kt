@@ -1,5 +1,7 @@
 package com.iqbalwork.capsule.ui.components
 
+import com.iqbalwork.capsule.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -75,7 +77,7 @@ fun ExpandedSliderCard(
                 RingerMode.VIBRATE -> Icons.Rounded.Vibration
                 RingerMode.SILENT -> Icons.Rounded.NotificationsOff
             },
-            description = "Ringer: ${sliders.ringerMode.displayName}",
+            description = stringResource(R.string.st_ringer, stringResource(sliders.ringerMode.labelRes)),
             active = sliders.ringerMode != RingerMode.NORMAL,
             onIcon = { onAction(UserIntent.CycleRinger) }
         ) {
@@ -84,34 +86,34 @@ fun ExpandedSliderCard(
 
         ControlRow(
             icon = if (sliders.isAdaptiveBrightness) Icons.Rounded.BrightnessAuto else Icons.Rounded.BrightnessMedium,
-            description = "Auto-brightness",
+            description = stringResource(R.string.st_auto_brightness),
             active = sliders.isAdaptiveBrightness,
             onIcon = { onAction(UserIntent.ToggleAdaptiveBrightness) }
         ) {
             if (sliders.canWriteBrightness) {
                 StyledSlider(sliders.brightnessLevel, style, onValueChange = { onAction(UserIntent.SetBrightness(it)) })
             } else {
-                Hint("Tap to allow brightness control") { onAction(UserIntent.SetBrightness(sliders.brightnessLevel)) }
+                Hint(stringResource(R.string.st_brightness_allow)) { onAction(UserIntent.SetBrightness(sliders.brightnessLevel)) }
             }
         }
 
         val torchUsable = sliders.torch == TorchState.ON || sliders.torch == TorchState.OFF
         ControlRow(
             icon = if (sliders.isTorchOn) Icons.Rounded.FlashlightOn else Icons.Rounded.FlashlightOff,
-            description = "Flashlight",
+            description = stringResource(R.string.st_flashlight),
             active = sliders.isTorchOn,
             enabled = torchUsable,
             onIcon = { onAction(UserIntent.ToggleTorch) }
         ) {
             when {
-                sliders.torch == TorchState.NONE -> Hint("No flashlight on this device")
-                sliders.torch == TorchState.BUSY -> Hint("Camera in use")
+                sliders.torch == TorchState.NONE -> Hint(stringResource(R.string.st_no_flashlight))
+                sliders.torch == TorchState.BUSY -> Hint(stringResource(R.string.st_camera_busy))
                 sliders.torchStrengthSupported -> StyledSlider(
                     value = if (sliders.isTorchOn) sliders.torchStrengthLevel else 0f,
                     style = style,
                     onValueChange = { onAction(UserIntent.SetTorchLevel(it)) }
                 )
-                else -> Hint(if (sliders.isTorchOn) "On" else "Off")
+                else -> Hint(stringResource(if (sliders.isTorchOn) R.string.st_on else R.string.st_off))
             }
         }
     }

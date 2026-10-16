@@ -1,18 +1,21 @@
 package com.iqbalwork.capsule.core.settings
 
+import androidx.annotation.StringRes
+import com.iqbalwork.capsule.R
+
 enum class ShortcutKind { APP, CONTACT, SYSTEM }
 
 enum class ContactAction { CALL, WHATSAPP }
 
 /** System screens a shortcut can open (F-56); panels slide up over the current app. */
-enum class SystemShortcut(val label: String) {
-    INTERNET_PANEL("Internet"),
-    WIFI_PANEL("Wi-Fi"),
-    VOLUME_PANEL("Volume"),
-    BLUETOOTH("Bluetooth"),
-    DISPLAY("Display"),
-    LOCATION("Location"),
-    BATTERY("Battery")
+enum class SystemShortcut(@StringRes val labelRes: Int) {
+    INTERNET_PANEL(R.string.sys_internet),
+    WIFI_PANEL(R.string.sys_wifi),
+    VOLUME_PANEL(R.string.sys_volume),
+    BLUETOOTH(R.string.sys_bluetooth),
+    DISPLAY(R.string.sys_display),
+    LOCATION(R.string.sys_location),
+    BATTERY(R.string.sys_battery)
 }
 
 /**

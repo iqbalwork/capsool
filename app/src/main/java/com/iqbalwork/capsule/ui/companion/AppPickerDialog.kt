@@ -26,6 +26,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.iqbalwork.capsule.R
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -46,13 +48,13 @@ fun AppPickerDialog(title: String, onPick: (LaunchableApp) -> Unit, onDismiss: (
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
-                    placeholder = { Text("Search apps") },
+                    placeholder = { Text(stringResource(R.string.sc_search_apps)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
                 val list = apps
                 if (list == null) {
-                    Text("Loading apps…", modifier = Modifier.padding(top = 12.dp))
+                    Text(stringResource(R.string.sc_loading_apps), modifier = Modifier.padding(top = 12.dp))
                 } else {
                     LazyColumn(modifier = Modifier.heightIn(max = 360.dp)) {
                         items(list.filter { query.isBlank() || it.label.contains(query, ignoreCase = true) }, key = { it.packageName }) { app ->
@@ -73,6 +75,6 @@ fun AppPickerDialog(title: String, onPick: (LaunchableApp) -> Unit, onDismiss: (
             }
         },
         confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.sc_cancel)) } }
     )
 }

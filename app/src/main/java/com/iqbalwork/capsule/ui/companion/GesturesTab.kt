@@ -33,6 +33,9 @@ import com.iqbalwork.capsule.core.settings.GestureBinding
 import com.iqbalwork.capsule.core.settings.GestureType
 import com.iqbalwork.capsule.core.settings.Settings
 import com.iqbalwork.capsule.platform.Automation
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
+import com.iqbalwork.capsule.R
 
 /** F-70..F-77: per-gesture actions in two contexts, plus the automation broadcast. */
 @Composable
@@ -41,8 +44,8 @@ fun GesturesTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit, 
     LazyColumn(modifier = modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             GestureSection(
-                title = "While something is showing",
-                description = "Music, a notification, a timer, charging… Swipes move between cards.",
+                title = stringResource(R.string.gx_gest_active_title),
+                description = stringResource(R.string.gx_gest_active_desc),
                 active = true,
                 settings = settings,
                 onUpdate = onUpdate
@@ -50,8 +53,8 @@ fun GesturesTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit, 
         }
         item {
             GestureSection(
-                title = "When the capsule is idle",
-                description = "Nothing going on: the plain pill over the camera.",
+                title = stringResource(R.string.gx_gest_idle_title),
+                description = stringResource(R.string.gx_gest_idle_desc),
                 active = false,
                 settings = settings,
                 onUpdate = onUpdate
@@ -60,13 +63,12 @@ fun GesturesTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit, 
         item {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Automation", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.gx_automation), style = MaterialTheme.typography.titleMedium)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Broadcast gestures", style = MaterialTheme.typography.bodyLarge)
+                            Text(stringResource(R.string.gx_broadcast_gestures), style = MaterialTheme.typography.bodyLarge)
                             Text(
-                                "Tasker, MacroDroid or Automate can react with an \"Intent received\" trigger for " +
-                                    "${Automation.ACTION_EVENT}. Extras: type, gesture, action, card.",
+                                stringResource(R.string.gx_broadcast_desc, Automation.ACTION_EVENT),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -74,7 +76,7 @@ fun GesturesTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit, 
                         Switch(checked = settings.automationBroadcast, onCheckedChange = { on -> onUpdate { it.copy(automationBroadcast = on) } })
                     }
                     TextButton(onClick = { Automation.sendGesture(context, gesture = "test", action = "none", card = null) }) {
-                        Text("Send test broadcast")
+                        Text(stringResource(R.string.gx_send_test_broadcast))
                     }
                 }
             }
@@ -121,18 +123,18 @@ private fun GestureRow(
     val intentName = if (binding.action == GestureAction.CUSTOM_INTENT) {
         customIntents.firstOrNull { it.id == binding.target }?.label?.ifEmpty { null }
             ?: binding.target
-            ?: "Custom action"
+            ?: stringResource(R.string.gx_custom_action)
     } else null
     val buttonLabel = when (binding.action) {
-        GestureAction.OPEN_APP -> "Open ${binding.target ?: "app"}"
-        GestureAction.CUSTOM_INTENT -> intentName ?: "Custom action…"
-        else -> binding.action.label
+        GestureAction.OPEN_APP -> stringResource(R.string.gx_open_app_target, binding.target ?: stringResource(R.string.gx_app))
+        GestureAction.CUSTOM_INTENT -> intentName ?: stringResource(R.string.gx_a_custom_intent)
+        else -> stringResource(binding.action.labelRes)
     }
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(type.label, style = MaterialTheme.typography.bodyLarge)
+            Text(stringResource(type.labelRes), style = MaterialTheme.typography.bodyLarge)
             if (type == GestureType.DOUBLE_TAP && binding.action != GestureAction.NONE) {
-                Text("Single taps wait a moment to tell them apart.", style = MaterialTheme.typography.bodySmall,
+                Text(stringResource(R.string.gx_double_tap_note), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -142,7 +144,7 @@ private fun GestureRow(
             }
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                 actions.forEach { action ->
-                    DropdownMenuItem(text = { Text(action.label) }, onClick = {
+                    DropdownMenuItem(text = { Text(stringResource(action.labelRes)) }, onClick = {
                         menuOpen = false
                         when (action) {
                             GestureAction.OPEN_APP -> pickingApp = true
@@ -156,7 +158,7 @@ private fun GestureRow(
     }
     if (pickingApp) {
         AppPickerDialog(
-            title = "Open which app?",
+            title = stringResource(R.string.gx_open_which_app),
             onPick = { app ->
                 onChange(GestureBinding(GestureAction.OPEN_APP, app.packageName))
                 pickingApp = false
@@ -184,11 +186,11 @@ private fun CustomIntentPickerDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Choose custom action") },
+        title = { Text(stringResource(R.string.gx_choose_custom_action)) },
         text = {
             if (intents.isEmpty()) {
                 Text(
-                    "No custom actions created yet. Create one in the Custom Actions tab.",
+                    stringResource(R.string.gx_no_custom_actions),
                     style = MaterialTheme.typography.bodyMedium
                 )
             } else {
@@ -218,37 +220,37 @@ private fun CustomIntentPickerDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Close") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.gx_close)) }
         }
     )
 }
 
-private val GestureType.label: String
-    get() = when (this) {
-        GestureType.TAP -> "Tap"
-        GestureType.DOUBLE_TAP -> "Double tap"
-        GestureType.LONG_PRESS -> "Long press"
-        GestureType.SWIPE_LEFT -> "Swipe left"
-        GestureType.SWIPE_RIGHT -> "Swipe right"
+private val GestureType.labelRes: Int
+    @StringRes get() = when (this) {
+        GestureType.TAP -> R.string.gx_g_tap
+        GestureType.DOUBLE_TAP -> R.string.gx_g_double_tap
+        GestureType.LONG_PRESS -> R.string.gx_g_long_press
+        GestureType.SWIPE_LEFT -> R.string.gx_g_swipe_left
+        GestureType.SWIPE_RIGHT -> R.string.gx_g_swipe_right
     }
 
-val GestureAction.label: String
-    get() = when (this) {
-        GestureAction.NONE -> "Nothing"
-        GestureAction.TOGGLE_EXPAND -> "Open / close card"
-        GestureAction.NEXT_CARD -> "Next card"
-        GestureAction.PREVIOUS_CARD -> "Previous card"
-        GestureAction.MEDIA_PLAY_PAUSE -> "Play / pause"
-        GestureAction.MEDIA_NEXT -> "Next track"
-        GestureAction.MEDIA_PREVIOUS -> "Previous track"
-        GestureAction.OPEN_CONTROLS -> "Controls"
-        GestureAction.OPEN_SHORTCUTS -> "Shortcuts"
-        GestureAction.TOGGLE_FLASHLIGHT -> "Flashlight"
-        GestureAction.OPEN_NOTIFICATIONS -> "Notification shade"
-        GestureAction.OPEN_QUICK_SETTINGS -> "Quick settings"
-        GestureAction.SCREENSHOT -> "Screenshot"
-        GestureAction.LOCK_SCREEN -> "Lock screen"
-        GestureAction.SCROLL_TO_TOP -> "Scroll to top"
-        GestureAction.OPEN_APP -> "Open app…"
-        GestureAction.CUSTOM_INTENT -> "Custom action…"
+val GestureAction.labelRes: Int
+    @StringRes get() = when (this) {
+        GestureAction.NONE -> R.string.gx_a_none
+        GestureAction.TOGGLE_EXPAND -> R.string.gx_a_toggle_expand
+        GestureAction.NEXT_CARD -> R.string.gx_a_next_card
+        GestureAction.PREVIOUS_CARD -> R.string.gx_a_previous_card
+        GestureAction.MEDIA_PLAY_PAUSE -> R.string.gx_a_media_play_pause
+        GestureAction.MEDIA_NEXT -> R.string.gx_a_media_next
+        GestureAction.MEDIA_PREVIOUS -> R.string.gx_a_media_previous
+        GestureAction.OPEN_CONTROLS -> R.string.gx_a_open_controls
+        GestureAction.OPEN_SHORTCUTS -> R.string.gx_a_open_shortcuts
+        GestureAction.TOGGLE_FLASHLIGHT -> R.string.gx_a_toggle_flashlight
+        GestureAction.OPEN_NOTIFICATIONS -> R.string.gx_a_open_notifications
+        GestureAction.OPEN_QUICK_SETTINGS -> R.string.gx_a_open_quick_settings
+        GestureAction.SCREENSHOT -> R.string.gx_a_screenshot
+        GestureAction.LOCK_SCREEN -> R.string.gx_a_lock_screen
+        GestureAction.SCROLL_TO_TOP -> R.string.gx_a_scroll_to_top
+        GestureAction.OPEN_APP -> R.string.gx_a_open_app
+        GestureAction.CUSTOM_INTENT -> R.string.gx_a_custom_intent
     }

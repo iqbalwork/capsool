@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule.platform.system
 
 import android.Manifest
+import com.iqbalwork.capsule.R
 import android.bluetooth.BluetoothClass
 import android.bluetooth.BluetoothDevice
 import android.content.BroadcastReceiver
@@ -57,9 +58,9 @@ class SystemEventSource(
                     if (!isOwnRingerChange()) ringerChanged(intent.getIntExtra(AudioManager.EXTRA_RINGER_MODE, -1))
                 Intent.ACTION_AIRPLANE_MODE_CHANGED -> emit(
                     if (intent.getBooleanExtra("state", false)) MiniEventType.AIRPLANE_ON else MiniEventType.AIRPLANE_OFF,
-                    if (intent.getBooleanExtra("state", false)) "Airplane mode on" else "Airplane mode off"
+                    context.getString(if (intent.getBooleanExtra("state", false)) R.string.event_airplane_on else R.string.event_airplane_off)
                 )
-                Intent.ACTION_USER_PRESENT -> emit(MiniEventType.DEVICE_UNLOCKED, "Welcome back")
+                Intent.ACTION_USER_PRESENT -> emit(MiniEventType.DEVICE_UNLOCKED, context.getString(R.string.event_welcome_back))
             }
         }
     }
@@ -72,11 +73,11 @@ class SystemEventSource(
             when (intent.action) {
                 BluetoothDevice.ACTION_ACL_CONNECTED -> {
                     headphonesConnectedAt[device.address] = SystemClock.elapsedRealtime()
-                    emit(MiniEventType.HEADPHONES_CONNECTED, name, "Connected")
+                    emit(MiniEventType.HEADPHONES_CONNECTED, name, context.getString(R.string.event_connected))
                 }
                 BluetoothDevice.ACTION_ACL_DISCONNECTED -> {
                     headphonesConnectedAt.remove(device.address)
-                    emit(MiniEventType.HEADPHONES_DISCONNECTED, name, "Disconnected")
+                    emit(MiniEventType.HEADPHONES_DISCONNECTED, name, context.getString(R.string.event_disconnected))
                 }
                 ACTION_BATTERY_LEVEL_CHANGED -> {
                     val level = intent.getIntExtra(EXTRA_BATTERY_LEVEL, -1).takeIf { it in 0..100 } ?: return
@@ -106,7 +107,7 @@ class SystemEventSource(
             ) == Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC
             emit(
                 if (auto) MiniEventType.AUTO_BRIGHTNESS_ON else MiniEventType.AUTO_BRIGHTNESS_OFF,
-                if (auto) "Auto-brightness on" else "Auto-brightness off"
+                context.getString(if (auto) R.string.event_auto_brightness_on else R.string.event_auto_brightness_off)
             )
         }
     }
@@ -170,15 +171,15 @@ class SystemEventSource(
         ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
 
     private fun ringerChanged(mode: Int) = when (mode) {
-        AudioManager.RINGER_MODE_NORMAL -> emit(MiniEventType.RINGER_NORMAL, "Ring")
-        AudioManager.RINGER_MODE_VIBRATE -> emit(MiniEventType.RINGER_VIBRATE, "Vibrate")
-        AudioManager.RINGER_MODE_SILENT -> emit(MiniEventType.RINGER_SILENT, "Silent")
+        AudioManager.RINGER_MODE_NORMAL -> emit(MiniEventType.RINGER_NORMAL, context.getString(R.string.ringer_ring))
+        AudioManager.RINGER_MODE_VIBRATE -> emit(MiniEventType.RINGER_VIBRATE, context.getString(R.string.ringer_vibrate))
+        AudioManager.RINGER_MODE_SILENT -> emit(MiniEventType.RINGER_SILENT, context.getString(R.string.ringer_silent))
         else -> Unit
     }
 
     private fun wifiChanged(connected: Boolean) = emit(
         if (connected) MiniEventType.WIFI_CONNECTED else MiniEventType.WIFI_DISCONNECTED,
-        if (connected) "Wi-Fi connected" else "Wi-Fi disconnected"
+        context.getString(if (connected) R.string.event_wifi_connected else R.string.event_wifi_disconnected)
     )
 
     private fun emit(type: MiniEventType, title: String, subtitle: String = "", level: Int? = null) {
@@ -192,7 +193,7 @@ class SystemEventSource(
 
     @Suppress("MissingPermission")
     private fun deviceName(device: BluetoothDevice): String =
-        runCatching { device.alias ?: device.name }.getOrNull()?.takeIf { it.isNotBlank() } ?: "Headphones"
+        runCatching { device.alias ?: device.name }.getOrNull()?.takeIf { it.isNotBlank() } ?: context.getString(R.string.event_headphones)
 
     private fun Intent.bluetoothDevice(): BluetoothDevice? =
         IntentCompat.getParcelableExtra(this, BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
