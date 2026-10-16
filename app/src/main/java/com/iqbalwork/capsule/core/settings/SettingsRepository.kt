@@ -77,6 +77,11 @@ object SettingsMapper {
     private val ShowCalibrationTarget = booleanPreferencesKey("geometry.showCalibrationTarget")
     private val ColorSourceKey = stringPreferencesKey("appearance.colorSource")
     private val Haptics = booleanPreferencesKey("haptics.enabled")
+    private val CustomBackgroundNight = longPreferencesKey("appearance.customBgNight")
+    private val OutlineInDark = booleanPreferencesKey("appearance.outlineInDark")
+    private val ShadowInLight = booleanPreferencesKey("appearance.shadowInLight")
+    private val ShellAlphaKey = floatPreferencesKey("appearance.alpha")
+    private val CutoutGradientKey = booleanPreferencesKey("appearance.cutoutGradient")
     private val PlacementModeKey = stringPreferencesKey("capsule.mode")
     private val CardWidthModeKey = stringPreferencesKey("capsule.widthMode")
     private val CardCornerKey = intPreferencesKey("capsule.cardRadius")
@@ -166,6 +171,11 @@ object SettingsMapper {
             cardPriority = readCardPriority(prefs[CardPriorityKey]),
             shapeStyle = enumOrDefault(prefs[ShapeStyleKey], defaults.shapeStyle),
             customBackground = prefs[CustomBackground],
+            customBackgroundNight = prefs[CustomBackgroundNight],
+            outlineInDark = prefs[OutlineInDark] ?: defaults.outlineInDark,
+            shadowInLight = prefs[ShadowInLight] ?: defaults.shadowInLight,
+            shellAlpha = (prefs[ShellAlphaKey] ?: defaults.shellAlpha).coerceIn(MIN_SHELL_ALPHA, 1f),
+            cutoutGradient = prefs[CutoutGradientKey] ?: defaults.cutoutGradient,
             borderDp = (prefs[BorderDp] ?: defaults.borderDp).coerceIn(0, MAX_BORDER_DP),
             borderColor = prefs[BorderColorKey],
             shadowDp = (prefs[ShadowDp] ?: defaults.shadowDp).coerceIn(0, MAX_SHADOW_DP),
@@ -253,6 +263,11 @@ object SettingsMapper {
         prefs[ShapeStyleKey] = settings.shapeStyle.name
         // Absent key = "no custom color", so clearing the color must remove the key.
         settings.customBackground?.let { prefs[CustomBackground] = it } ?: prefs.remove(CustomBackground)
+        settings.customBackgroundNight?.let { prefs[CustomBackgroundNight] = it } ?: prefs.remove(CustomBackgroundNight)
+        prefs[OutlineInDark] = settings.outlineInDark
+        prefs[ShadowInLight] = settings.shadowInLight
+        prefs[ShellAlphaKey] = settings.shellAlpha
+        prefs[CutoutGradientKey] = settings.cutoutGradient
         prefs[BorderDp] = settings.borderDp
         settings.borderColor?.let { prefs[BorderColorKey] = it } ?: prefs.remove(BorderColorKey)
         prefs[ShadowDp] = settings.shadowDp

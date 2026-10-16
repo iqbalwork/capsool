@@ -115,3 +115,35 @@ private const val MAX_DARKEN_STEPS = 40
 
 private fun scaleChannel(argb: Long, shift: Int, scale: Float): Long =
     (((argb shr shift) and 0xFF) * scale).toLong().coerceIn(0L, 255L)
+
+/** What the capsule actually draws for the current light/dark mode (F-86). */
+data class ResolvedAppearance(
+    /** The background as ARGB, alpha included. */
+    val shellArgb: Long,
+    val borderDp: Int,
+    val shadowDp: Int,
+    val cutoutGradient: Boolean
+)
+
+/** Smallest outline and shadow the "only in dark / only in light" options draw. */
+const val MIN_THEMED_OUTLINE_DP = 1
+const val MIN_THEMED_SHADOW_DP = 3
+
+private const val DEFAULT_SHELL_ARGB = 0xFF000000L
+
+/**
+ * Picks the background, outline and shadow for [night]. The night background falls back to the day
+ * one, a custom background is darkened until the cards' white text is readable, and the outline /
+ * shadow options only add to what the user set, never remove it.
+ */
+fun resolveAppearance(settings: com.iqbalwork.capsule.core.settings.Settings, night: Boolean): ResolvedAppearance {
+    val custom = if (night) settings.customBackgroundNight ?: settings.customBackground else settings.customBackground
+    val opaque = custom?.let(::readableShellColor) ?: DEFAULT_SHELL_ARGB
+    val alpha = (settings.shellAlpha.coerceIn(0f, 1f) * 255f).toLong().coerceIn(0L, 255L)
+    return ResolvedAppearance(
+        shellArgb = (alpha shl 24) or (opaque and 0xFFFFFFL),
+        borderDp = if (night && settings.outlineInDark) maxOf(settings.borderDp, MIN_THEMED_OUTLINE_DP) else settings.borderDp,
+        shadowDp = if (!night && settings.shadowInLight) maxOf(settings.shadowDp, MIN_THEMED_SHADOW_DP) else settings.shadowDp,
+        cutoutGradient = settings.cutoutGradient
+    )
+}

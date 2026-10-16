@@ -80,6 +80,8 @@ enum class PlacementMode { CAMERA, INDEPENDENT }
 /** F-09: CONTENT keeps the compact card width the cards are designed for; FULL spans the screen. */
 enum class CardWidthMode { CONTENT, FULL }
 
+const val MIN_SHELL_ALPHA = 0.4f
+
 const val DEFAULT_CARD_CORNER_DP = 32
 const val MIN_CARD_CORNER_DP = 8
 const val MAX_CARD_CORNER_DP = 40
@@ -263,6 +265,16 @@ data class Settings(
     val shapeStyle: CapsuleShapeStyle = CapsuleShapeStyle.ROUNDED_RECT,
     /** F-81: ARGB of the capsule background; null = the black shell that blends with the camera. */
     val customBackground: Long? = null,
+    /** F-86: background while the system is in dark mode; null = the same as [customBackground]. */
+    val customBackgroundNight: Long? = null,
+    /** F-86: draw an outline (at least 1 dp) only in dark mode, where a black capsule needs one. */
+    val outlineInDark: Boolean = false,
+    /** F-86: draw a shadow (at least 3 dp) only in light mode, where it is visible. */
+    val shadowInLight: Boolean = false,
+    /** F-86: opacity of the capsule's own background (cards that paint their own background stay solid). */
+    val shellAlpha: Float = 1f,
+    /** F-86: fade from black at the camera into the background color. */
+    val cutoutGradient: Boolean = false,
     val borderDp: Int = 0,
     /** ARGB of the border; null = the theme's outline color. */
     val borderColor: Long? = null,

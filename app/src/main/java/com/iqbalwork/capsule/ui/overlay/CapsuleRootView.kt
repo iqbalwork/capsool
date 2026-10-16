@@ -1,6 +1,9 @@
 package com.iqbalwork.capsule.ui.overlay
 
 import androidx.compose.animation.AnimatedContent
+import com.iqbalwork.capsule.ui.theme.resolveAppearance
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -68,7 +71,6 @@ import com.iqbalwork.capsule.ui.theme.CapsuleMotion
 import com.iqbalwork.capsule.ui.theme.CapsuleTokens
 import com.iqbalwork.capsule.ui.theme.capsuleShape
 import com.iqbalwork.capsule.ui.theme.collapsedCornerDp
-import com.iqbalwork.capsule.ui.theme.readableShellColor
 
 /**
  * The capsule itself: a black pill sized from the user's geometry that springs open into
@@ -111,7 +113,13 @@ fun CapsuleRootView(
     )
     val alpha = if (mode == CapsuleMode.IDLE) settings.idleOpacity else 1f
     val shape = capsuleShape(settings.shapeStyle, corner)
-    val shellColor = settings.customBackground?.let { Color(readableShellColor(it)) } ?: CapsuleTokens.Shell
+    val night = isSystemInDarkTheme()
+    val appearance = remember(settings, night) { resolveAppearance(settings, night) }
+    val shellColor = Color(appearance.shellArgb)
+    // Black where the camera is, fading into the background color: the pill blends with the hole.
+    val shellBrush = if (appearance.cutoutGradient) {
+        Brush.verticalGradient(listOf(Color.Black.copy(alpha = shellColor.alpha), shellColor))
+    } else null
     val borderColor = settings.borderColor?.let { Color(it) } ?: MaterialTheme.colorScheme.outline
 
     fun gesture(type: GestureType, haptic: HapticFeedbackType = HapticFeedbackType.TextHandleMove) {
@@ -127,8 +135,8 @@ fun CapsuleRootView(
                 .size(width = width, height = height)
                 .graphicsLayer { this.alpha = alpha }
                 // Shadow and border sit outside the clip below so the clip cannot cut them off.
-                .then(if (settings.shadowDp > 0) Modifier.shadow(settings.shadowDp.dp, shape, clip = false) else Modifier)
-                .then(if (settings.borderDp > 0) Modifier.border(settings.borderDp.dp, borderColor, shape) else Modifier)
+                .then(if (appearance.shadowDp > 0) Modifier.shadow(appearance.shadowDp.dp, shape, clip = false) else Modifier)
+                .then(if (appearance.borderDp > 0) Modifier.border(appearance.borderDp.dp, borderColor, shape) else Modifier)
                 .notificationGlow(
                     color = state.topNotification?.glowColor,
                     enabled = settings.notificationGlow && mode == CapsuleMode.COMPACT &&
@@ -136,6 +144,7 @@ fun CapsuleRootView(
                     shape = shape
                 )
                 .clip(shape)
+                .then(if (shellBrush != null) Modifier.background(shellBrush) else Modifier)
                 .capsuleSemantics(state, expanded, dispatch)
                 .capsuleGestures(
                     tapsEnabled = !expanded,
@@ -148,7 +157,7 @@ fun CapsuleRootView(
                     onSwipeUp = { dispatch(UserIntent.SwipeUp) }
                 ),
             shape = shape,
-            color = shellColor,
+            color = if (shellBrush != null) Color.Transparent else shellColor,
             contentColor = MaterialTheme.colorScheme.onSurface
         ) {
             // Keyed on expanded/collapsed only: the outgoing side keeps rendering the state it

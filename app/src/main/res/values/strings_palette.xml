@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pal_night_background">Background in dark mode</string>
+    <string name="pal_same_as_day">Same as day</string>
+    <string name="pal_transparency">Background transparency: %1$d%%</string>
+    <string name="pal_gradient">Fade from the camera</string>
+    <string name="pal_gradient_desc">Black at the camera hole, fading into the background color.</string>
+    <string name="pal_outline_dark">Outline in dark mode</string>
+    <string name="pal_outline_dark_desc">Draws at least a 1 dp outline only while the system is in dark mode.</string>
+    <string name="pal_shadow_light">Shadow in light mode</string>
+    <string name="pal_shadow_light_desc">Draws at least a 3 dp shadow only while the system is in light mode.</string>
+</resources>

@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule.ui.companion
 
 import android.Manifest
+import com.iqbalwork.capsule.core.settings.MIN_SHELL_ALPHA
 import com.iqbalwork.capsule.core.settings.MAX_CARD_CORNER_DP
 import com.iqbalwork.capsule.core.settings.MIN_CARD_CORNER_DP
 import com.iqbalwork.capsule.core.settings.CardWidthMode
@@ -281,6 +282,27 @@ fun CapsuleTab(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                Text(stringResource(R.string.pal_night_background), style = MaterialTheme.typography.bodyMedium)
+                SwatchRow(
+                    colors = BackgroundSwatches,
+                    selected = settings.customBackgroundNight,
+                    defaultLabel = stringResource(R.string.pal_same_as_day),
+                    onSelect = { color -> onUpdate { it.copy(customBackgroundNight = color) } }
+                )
+                val alphaLabel = stringResource(R.string.pal_transparency, ((1f - settings.shellAlpha) * 100).roundToInt())
+                Text(alphaLabel, style = MaterialTheme.typography.bodyMedium)
+                Slider(
+                    value = settings.shellAlpha,
+                    onValueChange = { v -> onUpdate { it.copy(shellAlpha = v) } },
+                    valueRange = MIN_SHELL_ALPHA..1f,
+                    modifier = Modifier.semantics { contentDescription = alphaLabel }
+                )
+                SwitchRow(
+                    title = stringResource(R.string.pal_gradient),
+                    description = stringResource(R.string.pal_gradient_desc),
+                    checked = settings.cutoutGradient,
+                    onChange = { on -> onUpdate { it.copy(cutoutGradient = on) } }
+                )
                 IntSlider(stringResource(R.string.cap_border), settings.borderDp, 0..MAX_BORDER_DP) { v -> onUpdate { it.copy(borderDp = v) } }
                 if (settings.borderDp > 0) {
                     SwatchRow(
@@ -291,11 +313,28 @@ fun CapsuleTab(
                     )
                 }
                 IntSlider(stringResource(R.string.cap_shadow), settings.shadowDp, 0..MAX_SHADOW_DP) { v -> onUpdate { it.copy(shadowDp = v) } }
+                SwitchRow(
+                    title = stringResource(R.string.pal_outline_dark),
+                    description = stringResource(R.string.pal_outline_dark_desc),
+                    checked = settings.outlineInDark,
+                    onChange = { on -> onUpdate { it.copy(outlineInDark = on) } }
+                )
+                SwitchRow(
+                    title = stringResource(R.string.pal_shadow_light),
+                    description = stringResource(R.string.pal_shadow_light_desc),
+                    checked = settings.shadowInLight,
+                    onChange = { on -> onUpdate { it.copy(shadowInLight = on) } }
+                )
                 TextButton(onClick = {
                     onUpdate {
                         it.copy(
                             shapeStyle = CapsuleShapeStyle.ROUNDED_RECT,
                             customBackground = null,
+                            customBackgroundNight = null,
+                            outlineInDark = false,
+                            shadowInLight = false,
+                            shellAlpha = 1f,
+                            cutoutGradient = false,
                             borderDp = 0,
                             borderColor = null,
                             shadowDp = 0
