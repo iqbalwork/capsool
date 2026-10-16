@@ -18,7 +18,73 @@ data class Geometry(
 
 enum class Orientation { PORTRAIT, LANDSCAPE }
 
+/**
+ * F-08: which calibration applies. The panel is identified by its short and long side in pixels, so
+ * rotating the phone keeps the same panel while switching resolution (FHD+ to QHD+) or unfolding a
+ * foldable gives another one, and each panel x orientation has its own geometry.
+ */
+data class ScreenProfileKey(val shortPx: Int, val longPx: Int, val orientation: Orientation) {
+    /** "1080x2400:PORTRAIT", as stored in preferences. */
+    fun encode(): String = "${shortPx}x$longPx:${orientation.name}"
+
+    fun withOrientation(value: Orientation) = copy(orientation = value)
+
+    companion object {
+        /** From a window's pixel size in either rotation; null when the size is unknown. */
+        fun of(widthPx: Int, heightPx: Int, orientation: Orientation): ScreenProfileKey? =
+            if (widthPx <= 0 || heightPx <= 0) null
+            else ScreenProfileKey(minOf(widthPx, heightPx), maxOf(widthPx, heightPx), orientation)
+
+        fun decode(value: String): ScreenProfileKey? {
+            val (size, orientation) = value.split(':', limit = 2).takeIf { it.size == 2 } ?: return null
+            val (short, long) = size.split('x', limit = 2).takeIf { it.size == 2 } ?: return null
+            return ScreenProfileKey(
+                shortPx = short.toIntOrNull()?.takeIf { it > 0 } ?: return null,
+                longPx = long.toIntOrNull()?.takeIf { it > 0 } ?: return null,
+                orientation = runCatching { Orientation.valueOf(orientation) }.getOrNull() ?: return null
+            )
+        }
+    }
+}
+
+/** Most calibrations kept; past this the oldest is forgotten (it falls back to the template again). */
+const val MAX_SCREEN_PROFILES = 12
+
+/** "key;offsetX;offsetY;width;height;corner" per line. Malformed lines are skipped. */
+internal fun encodeProfiles(profiles: Map<ScreenProfileKey, Geometry>): String =
+    profiles.entries.joinToString("\n") { (key, g) ->
+        listOf(key.encode(), g.offsetXDp, g.offsetYDp, g.widthDp, g.heightDp, g.cornerDp).joinToString(";")
+    }
+
+internal fun decodeProfiles(value: String?): Map<ScreenProfileKey, Geometry> {
+    val result = linkedMapOf<ScreenProfileKey, Geometry>()
+    value.orEmpty().lineSequence().forEach { line ->
+        val f = line.split(';')
+        if (f.size != 6) return@forEach
+        val key = ScreenProfileKey.decode(f[0]) ?: return@forEach
+        val n = f.drop(1).map { it.toIntOrNull() ?: return@forEach }
+        result[key] = Geometry(n[0], n[1], n[2], n[3], n[4])
+    }
+    return result
+}
+
 enum class ColorSource { DYNAMIC, BRAND }
+
+/**
+ * F-09: where the capsule sits. CAMERA covers the camera cutout (the capsule is a pill around it);
+ * INDEPENDENT puts it just below the status bar, centered on the screen, where every gesture works
+ * because the system's pull-down zone at the very top of the screen is not in the way.
+ */
+enum class PlacementMode { CAMERA, INDEPENDENT }
+
+/** F-09: CONTENT keeps the compact card width the cards are designed for; FULL spans the screen. */
+enum class CardWidthMode { CONTENT, FULL }
+
+const val MIN_SHELL_ALPHA = 0.4f
+
+const val DEFAULT_CARD_CORNER_DP = 32
+const val MIN_CARD_CORNER_DP = 8
+const val MAX_CARD_CORNER_DP = 40
 
 /** Activity cards, highest priority first (spec §2.3). The order the user starts with (F-06). */
 val DefaultCardPriority: List<CapsuleCardType> = listOf(
@@ -177,18 +243,38 @@ val DefaultIdleGestures: Map<GestureType, GestureBinding> = mapOf(
 )
 
 data class Settings(
+    /**
+     * Geometry used for a screen that has no profile of its own yet (F-08). These are the calibrations
+     * from before profiles existed, so nobody has to recalibrate; a new profile starts from them.
+     */
     val portrait: Geometry = Geometry(),
     val landscape: Geometry = Geometry(),
+    /** F-08: the calibration of each panel x orientation the user has adjusted. */
+    val profiles: Map<ScreenProfileKey, Geometry> = emptyMap(),
     val idleOpacity: Float = 1f,
     val alwaysShowPill: Boolean = true,
     val showCalibrationTarget: Boolean = false,
     val colorSource: ColorSource = ColorSource.DYNAMIC,
     val hapticsEnabled: Boolean = true,
+    val placementMode: PlacementMode = PlacementMode.CAMERA,
+    val cardWidthMode: CardWidthMode = CardWidthMode.CONTENT,
+    /** Corner radius of the opened card; the collapsed capsule uses the geometry's own radius. */
+    val cardCornerDp: Int = DEFAULT_CARD_CORNER_DP,
     /** F-06: which activity card comes first when several are active. Always a full permutation. */
     val cardPriority: List<CapsuleCardType> = DefaultCardPriority,
     val shapeStyle: CapsuleShapeStyle = CapsuleShapeStyle.ROUNDED_RECT,
     /** F-81: ARGB of the capsule background; null = the black shell that blends with the camera. */
     val customBackground: Long? = null,
+    /** F-86: background while the system is in dark mode; null = the same as [customBackground]. */
+    val customBackgroundNight: Long? = null,
+    /** F-86: draw an outline (at least 1 dp) only in dark mode, where a black capsule needs one. */
+    val outlineInDark: Boolean = false,
+    /** F-86: draw a shadow (at least 3 dp) only in light mode, where it is visible. */
+    val shadowInLight: Boolean = false,
+    /** F-86: opacity of the capsule's own background (cards that paint their own background stay solid). */
+    val shellAlpha: Float = 1f,
+    /** F-86: fade from black at the camera into the background color. */
+    val cutoutGradient: Boolean = false,
     val borderDp: Int = 0,
     /** ARGB of the border; null = the theme's outline color. */
     val borderColor: Long? = null,
@@ -211,6 +297,9 @@ data class Settings(
     val mediaEnabled: Boolean = true,
     val mediaCollapseDelay: MediaCollapseDelay = MediaCollapseDelay.SECONDS_30,
     val hideMediaWhenAppInFront: Boolean = true,
+    /** F-13: when true, only players in [mediaAllowedApps] may show in the capsule. */
+    val mediaOnlyAllowedApps: Boolean = false,
+    val mediaAllowedApps: Set<String> = emptySet(),
     val notificationsEnabled: Boolean = true,
     val notificationDisplay: NotificationDisplay = NotificationDisplay.COMPACT,
     val notificationDelay: NotificationDelay = NotificationDelay.SECONDS_5,
@@ -224,6 +313,8 @@ data class Settings(
     val hideNotificationTextWhenLocked: Boolean = true,
     val removeNotificationAfterViewing: Boolean = false,
     val notificationGlow: Boolean = true,
+    /** F-23: drag a notification card sideways to dismiss it. Off by default: swipes change cards. */
+    val notificationSwipeDismiss: Boolean = false,
     val chargingCardEnabled: Boolean = true,
     val enabledEvents: Set<EventCategory> = DefaultEventCategories,
     val miniEventDuration: MiniEventDuration = MiniEventDuration.SECONDS_3,
@@ -264,11 +355,31 @@ data class Settings(
     val effectiveStartCardId: String?
         get() = if (effectiveStaticCards.any { it.id == startCardId }) startCardId else null
 
+    /** The orientation's template, used when [profile] is unknown or has no calibration yet. */
+    /** F-13: may the player from [packageName] show in the capsule? */
+    fun allowsMedia(packageName: String): Boolean = !mediaOnlyAllowedApps || packageName in mediaAllowedApps
+
     fun geometry(orientation: Orientation): Geometry =
         if (orientation == Orientation.LANDSCAPE) landscape else portrait
 
-    fun withGeometry(orientation: Orientation, geometry: Geometry): Settings =
-        if (orientation == Orientation.LANDSCAPE) copy(landscape = geometry) else copy(portrait = geometry)
+    fun geometry(profile: ScreenProfileKey?, orientation: Orientation): Geometry =
+        profile?.let { profiles[it] } ?: geometry(orientation)
+
+    /**
+     * Saves [geometry] as the calibration of [profile]. With no profile (screen size not known) the
+     * orientation's template is changed instead.
+     */
+    fun withGeometry(profile: ScreenProfileKey?, orientation: Orientation, geometry: Geometry): Settings {
+        if (profile == null) {
+            return if (orientation == Orientation.LANDSCAPE) copy(landscape = geometry) else copy(portrait = geometry)
+        }
+        // Re-inserting moves the profile to the end, so the oldest one is what gets dropped.
+        val updated = (profiles - profile + (profile to geometry)).entries.toList().takeLast(MAX_SCREEN_PROFILES)
+        return copy(profiles = updated.associate { it.key to it.value })
+    }
+
+    /** Forgets [profile]'s calibration; it goes back to the template. */
+    fun withoutProfile(profile: ScreenProfileKey): Settings = copy(profiles = profiles - profile)
 
     fun gesture(type: GestureType, active: Boolean): GestureBinding =
         if (active) gesturesActive[type] ?: DefaultActiveGestures.getValue(type)

@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule
 
 import com.iqbalwork.capsule.core.settings.Geometry
+import com.iqbalwork.capsule.core.settings.PlacementMode
 import com.iqbalwork.capsule.platform.accessibility.CutoutBounds
 import com.iqbalwork.capsule.platform.accessibility.OverlayPlacement
 import org.junit.Assert.assertEquals
@@ -118,5 +119,59 @@ class OverlayPlacementTest {
         val collapsed = OverlayPlacement.compute(screenWidth, density, cutout, geometry, expanded = false, listRows = 2)
         val base = OverlayPlacement.compute(screenWidth, density, cutout, geometry, expanded = false)
         assertEquals(base.height, collapsed.height)
+    }
+
+    // --- F-09 ---
+
+    @Test
+    fun independentModeSitsUnderTheStatusBarWhateverTheCutoutIs() {
+        val statusBar = 90 // px
+        val p = OverlayPlacement.compute(
+            screenWidth, density, cutout.copy(left = 100, right = 160), geometry, expanded = false,
+            mode = PlacementMode.INDEPENDENT, statusBarHeightPx = statusBar
+        )
+        val width = (120 * density + 2 * margin).toInt()
+        // Centered on the screen, not on the (off-center) camera.
+        assertEquals(screenWidth / 2 - width / 2, p.x)
+        // Capsule top = status bar + gap; the window starts one margin above that.
+        assertEquals((statusBar + OverlayPlacement.INDEPENDENT_GAP_DP * density - margin).toInt(), p.y)
+    }
+
+    @Test
+    fun independentModeStillHonoursTheUsersOffsets() {
+        val moved = geometry.copy(offsetXDp = 10, offsetYDp = 5)
+        val base = OverlayPlacement.compute(
+            screenWidth, density, null, geometry, expanded = false, mode = PlacementMode.INDEPENDENT, statusBarHeightPx = 90
+        )
+        val shifted = OverlayPlacement.compute(
+            screenWidth, density, null, moved, expanded = false, mode = PlacementMode.INDEPENDENT, statusBarHeightPx = 90
+        )
+        assertEquals(base.x + (10 * density).toInt(), shifted.x)
+        assertEquals(base.y + (5 * density).toInt(), shifted.y)
+    }
+
+    @Test
+    fun cameraModeIgnoresTheStatusBarHeight() {
+        val a = OverlayPlacement.compute(screenWidth, density, cutout, geometry, expanded = false)
+        val b = OverlayPlacement.compute(screenWidth, density, cutout, geometry, expanded = false, statusBarHeightPx = 500)
+        assertEquals(a, b)
+    }
+
+    @Test
+    fun fullWidthCardSpansTheScreenLessTheGuttersWhileCompactStaysCapped() {
+        val wide = 1440 // px, 480 dp: wider than the compact cap
+        val wideDp = wide / density
+        assertEquals(OverlayPlacement.EXPANDED_MAX_WIDTH_DP.toFloat(), OverlayPlacement.expandedWidthDp(wideDp), 0.01f)
+        assertEquals(wideDp - 16, OverlayPlacement.expandedWidthDp(wideDp, full = true), 0.01f)
+        val compact = OverlayPlacement.compute(wide, density, cutout, geometry, expanded = true)
+        val full = OverlayPlacement.compute(wide, density, cutout, geometry, expanded = true, fullWidthCard = true)
+        assertEquals(OverlayPlacement.EXPANDED_MAX_WIDTH_DP * density + 2 * margin, compact.width.toFloat(), 1f)
+        assertEquals((wideDp - 16) * density + 2 * margin, full.width.toFloat(), 1f)
+    }
+
+    @Test
+    fun fullWidthIsNoNarrowerThanCompactOnSmallScreens() {
+        val narrow = 330f
+        assertEquals(OverlayPlacement.expandedWidthDp(narrow), OverlayPlacement.expandedWidthDp(narrow, full = true), 0.01f)
     }
 }

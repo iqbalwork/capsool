@@ -40,6 +40,8 @@ private const val ARTWORK_MAX_PX = 256
 class MediaSource(
     private val context: Context,
     private val scope: CoroutineScope,
+    /** F-13: players that are not allowed are not even considered, so they cannot hide an allowed one. */
+    private val isAllowed: (packageName: String) -> Boolean,
     private val dispatch: (SystemEvent) -> Unit
 ) {
     private val sessionManager = context.getSystemService(MediaSessionManager::class.java)
@@ -95,7 +97,8 @@ class MediaSource(
         }
     }
 
-    private fun refreshSelection() {
+    /** Picks the session again, e.g. after the list of allowed players changed. */
+    fun refreshSelection() {
         if (!started) return
         val sessions = try {
             sessionManager.getActiveSessions(listenerComponent)
@@ -107,9 +110,10 @@ class MediaSource(
     }
 
     private fun onSessionsChanged(sessions: List<MediaController>) {
-        val candidates = sessions.map { SessionCandidate(it.sessionToken.toString(), it.playbackState.isPlaying()) }
+        val allowed = sessions.filter { isAllowed(it.packageName) }
+        val candidates = allowed.map { SessionCandidate(it.sessionToken.toString(), it.playbackState.isPlaying()) }
         val chosenKey = MediaSessionSelector.select(candidates, controller?.sessionToken?.toString())
-        follow(sessions.firstOrNull { it.sessionToken.toString() == chosenKey })
+        follow(allowed.firstOrNull { it.sessionToken.toString() == chosenKey })
         schedulePublish()
     }
 

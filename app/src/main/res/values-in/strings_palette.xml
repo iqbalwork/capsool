@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pal_night_background">Latar saat mode gelap</string>
+    <string name="pal_same_as_day">Sama seperti siang</string>
+    <string name="pal_transparency">Transparansi latar: %1$d%%</string>
+    <string name="pal_gradient">Pudar dari kamera</string>
+    <string name="pal_gradient_desc">Hitam di lubang kamera, memudar ke warna latar.</string>
+    <string name="pal_outline_dark">Garis tepi saat mode gelap</string>
+    <string name="pal_outline_dark_desc">Menggambar garis tepi minimal 1 dp hanya saat sistem dalam mode gelap.</string>
+    <string name="pal_shadow_light">Bayangan saat mode terang</string>
+    <string name="pal_shadow_light_desc">Menggambar bayangan minimal 3 dp hanya saat sistem dalam mode terang.</string>
+</resources>

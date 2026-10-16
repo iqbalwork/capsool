@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="prof_info_own">Saved for this screen (%1$d × %2$d px). Other screen sizes and resolutions keep their own position.</string>
+    <string name="prof_info_template">This screen (%1$d × %2$d px) has not been adjusted yet. It starts from your earlier position; changes are saved for this screen only.</string>
+</resources>

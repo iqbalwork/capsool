@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mode_section">Capsule mode</string>
+    <string name="mode_placement">Position</string>
+    <string name="mode_camera">Around camera</string>
+    <string name="mode_independent">Below status bar</string>
+    <string name="mode_camera_desc">The capsule wraps the camera cutout. The very top edge of the screen is reserved by Android for pulling down the notification shade, so swipes there are not reliable.</string>
+    <string name="mode_independent_desc">The capsule sits just under the status bar, centered on the screen. All gestures work as usual. Use the position sliders to move it.</string>
+    <string name="mode_card_width">Card width</string>
+    <string name="mode_width_content">Compact</string>
+    <string name="mode_width_full">Full width</string>
+    <string name="mode_card_radius">Card corner radius</string>
+</resources>

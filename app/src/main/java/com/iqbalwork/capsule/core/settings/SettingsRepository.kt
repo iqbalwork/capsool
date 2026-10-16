@@ -77,6 +77,15 @@ object SettingsMapper {
     private val ShowCalibrationTarget = booleanPreferencesKey("geometry.showCalibrationTarget")
     private val ColorSourceKey = stringPreferencesKey("appearance.colorSource")
     private val Haptics = booleanPreferencesKey("haptics.enabled")
+    private val CustomBackgroundNight = longPreferencesKey("appearance.customBgNight")
+    private val OutlineInDark = booleanPreferencesKey("appearance.outlineInDark")
+    private val ShadowInLight = booleanPreferencesKey("appearance.shadowInLight")
+    private val ShellAlphaKey = floatPreferencesKey("appearance.alpha")
+    private val CutoutGradientKey = booleanPreferencesKey("appearance.cutoutGradient")
+    private val PlacementModeKey = stringPreferencesKey("capsule.mode")
+    private val CardWidthModeKey = stringPreferencesKey("capsule.widthMode")
+    private val CardCornerKey = intPreferencesKey("capsule.cardRadius")
+    private val ProfilesKey = stringPreferencesKey("geometry.profiles")
     private val CardPriorityKey = stringPreferencesKey("cards.priority")
     private val ShapeStyleKey = stringPreferencesKey("appearance.shape")
     private val CustomBackground = longPreferencesKey("appearance.customBg")
@@ -91,6 +100,8 @@ object SettingsMapper {
     private val HideKeyboard = booleanPreferencesKey("visibility.hideIme")
     private val HideLandscape = booleanPreferencesKey("visibility.hideLandscape")
     private val MediaEnabled = booleanPreferencesKey("cards.media.enabled")
+    private val MediaOnlyAllowed = booleanPreferencesKey("media.onlyAllowedApps")
+    private val MediaAllowedApps = stringSetPreferencesKey("media.appWhitelist")
     private val MediaCollapseDelayKey = stringPreferencesKey("media.collapseDelay")
     private val MediaHideWhenAppInFront = booleanPreferencesKey("media.hideWhenAppForeground")
     private val NotificationsEnabled = booleanPreferencesKey("cards.notification.enabled")
@@ -99,6 +110,7 @@ object SettingsMapper {
     private val NotificationBlockedApps = stringSetPreferencesKey("notification.blockedPackages")
     private val NotificationHideTextLocked = booleanPreferencesKey("notification.hideContentWhenLocked")
     private val NotificationRemoveAfterViewing = booleanPreferencesKey("notification.removeAfterViewing")
+    private val NotificationSwipeDismiss = booleanPreferencesKey("notification.swipeDismiss")
     private val NotificationGlow = booleanPreferencesKey("notification.glow")
     private val ChargingCardEnabled = booleanPreferencesKey("cards.charging.enabled")
     private val EnabledEvents = stringSetPreferencesKey("events.enabled")
@@ -150,6 +162,10 @@ object SettingsMapper {
         return Settings(
             portrait = readGeometry(Orientation.PORTRAIT, defaults.portrait),
             landscape = readGeometry(Orientation.LANDSCAPE, defaults.landscape),
+            profiles = decodeProfiles(prefs[ProfilesKey]),
+            placementMode = enumOrDefault(prefs[PlacementModeKey], defaults.placementMode),
+            cardWidthMode = enumOrDefault(prefs[CardWidthModeKey], defaults.cardWidthMode),
+            cardCornerDp = (prefs[CardCornerKey] ?: defaults.cardCornerDp).coerceIn(MIN_CARD_CORNER_DP, MAX_CARD_CORNER_DP),
             idleOpacity = prefs[IdleOpacity] ?: defaults.idleOpacity,
             alwaysShowPill = prefs[AlwaysShowPill] ?: defaults.alwaysShowPill,
             showCalibrationTarget = prefs[ShowCalibrationTarget] ?: defaults.showCalibrationTarget,
@@ -158,6 +174,11 @@ object SettingsMapper {
             cardPriority = readCardPriority(prefs[CardPriorityKey]),
             shapeStyle = enumOrDefault(prefs[ShapeStyleKey], defaults.shapeStyle),
             customBackground = prefs[CustomBackground],
+            customBackgroundNight = prefs[CustomBackgroundNight],
+            outlineInDark = prefs[OutlineInDark] ?: defaults.outlineInDark,
+            shadowInLight = prefs[ShadowInLight] ?: defaults.shadowInLight,
+            shellAlpha = (prefs[ShellAlphaKey] ?: defaults.shellAlpha).coerceIn(MIN_SHELL_ALPHA, 1f),
+            cutoutGradient = prefs[CutoutGradientKey] ?: defaults.cutoutGradient,
             borderDp = (prefs[BorderDp] ?: defaults.borderDp).coerceIn(0, MAX_BORDER_DP),
             borderColor = prefs[BorderColorKey],
             shadowDp = (prefs[ShadowDp] ?: defaults.shadowDp).coerceIn(0, MAX_SHADOW_DP),
@@ -182,6 +203,8 @@ object SettingsMapper {
             shortcuts = Shortcut.decodeAll(prefs[Shortcuts]),
             themedShortcutIcons = prefs[ThemedShortcutIcons] ?: defaults.themedShortcutIcons,
             mediaEnabled = prefs[MediaEnabled] ?: defaults.mediaEnabled,
+            mediaOnlyAllowedApps = prefs[MediaOnlyAllowed] ?: defaults.mediaOnlyAllowedApps,
+            mediaAllowedApps = prefs[MediaAllowedApps] ?: defaults.mediaAllowedApps,
             mediaCollapseDelay = enumOrDefault(prefs[MediaCollapseDelayKey], defaults.mediaCollapseDelay),
             hideMediaWhenAppInFront = prefs[MediaHideWhenAppInFront] ?: defaults.hideMediaWhenAppInFront,
             notificationsEnabled = prefs[NotificationsEnabled] ?: defaults.notificationsEnabled,
@@ -193,6 +216,7 @@ object SettingsMapper {
             hideNotificationTextWhenLocked = lockScreenBehavior != LockScreenBehavior.SHOW,
             removeNotificationAfterViewing = prefs[NotificationRemoveAfterViewing] ?: defaults.removeNotificationAfterViewing,
             notificationGlow = prefs[NotificationGlow] ?: defaults.notificationGlow,
+            notificationSwipeDismiss = prefs[NotificationSwipeDismiss] ?: defaults.notificationSwipeDismiss,
             chargingCardEnabled = prefs[ChargingCardEnabled] ?: defaults.chargingCardEnabled,
             enabledEvents = prefs[EnabledEvents]
                 ?.mapNotNullTo(mutableSetOf()) { name -> EventCategory.entries.firstOrNull { it.name == name } }
@@ -232,6 +256,10 @@ object SettingsMapper {
         }
         writeGeometry(Orientation.PORTRAIT, settings.portrait)
         writeGeometry(Orientation.LANDSCAPE, settings.landscape)
+        prefs[ProfilesKey] = encodeProfiles(settings.profiles)
+        prefs[PlacementModeKey] = settings.placementMode.name
+        prefs[CardWidthModeKey] = settings.cardWidthMode.name
+        prefs[CardCornerKey] = settings.cardCornerDp
         prefs[IdleOpacity] = settings.idleOpacity
         prefs[AlwaysShowPill] = settings.alwaysShowPill
         prefs[ShowCalibrationTarget] = settings.showCalibrationTarget
@@ -241,6 +269,11 @@ object SettingsMapper {
         prefs[ShapeStyleKey] = settings.shapeStyle.name
         // Absent key = "no custom color", so clearing the color must remove the key.
         settings.customBackground?.let { prefs[CustomBackground] = it } ?: prefs.remove(CustomBackground)
+        settings.customBackgroundNight?.let { prefs[CustomBackgroundNight] = it } ?: prefs.remove(CustomBackgroundNight)
+        prefs[OutlineInDark] = settings.outlineInDark
+        prefs[ShadowInLight] = settings.shadowInLight
+        prefs[ShellAlphaKey] = settings.shellAlpha
+        prefs[CutoutGradientKey] = settings.cutoutGradient
         prefs[BorderDp] = settings.borderDp
         settings.borderColor?.let { prefs[BorderColorKey] = it } ?: prefs.remove(BorderColorKey)
         prefs[ShadowDp] = settings.shadowDp
@@ -261,6 +294,8 @@ object SettingsMapper {
         prefs[Shortcuts] = Shortcut.encodeAll(settings.shortcuts)
         prefs[ThemedShortcutIcons] = settings.themedShortcutIcons
         prefs[MediaEnabled] = settings.mediaEnabled
+        prefs[MediaOnlyAllowed] = settings.mediaOnlyAllowedApps
+        prefs[MediaAllowedApps] = settings.mediaAllowedApps
         prefs[MediaCollapseDelayKey] = settings.mediaCollapseDelay.name
         prefs[MediaHideWhenAppInFront] = settings.hideMediaWhenAppInFront
         prefs[NotificationsEnabled] = settings.notificationsEnabled
@@ -272,6 +307,7 @@ object SettingsMapper {
         prefs[NotificationHideTextLocked] = settings.lockScreenBehavior != LockScreenBehavior.SHOW
         prefs[NotificationRemoveAfterViewing] = settings.removeNotificationAfterViewing
         prefs[NotificationGlow] = settings.notificationGlow
+        prefs[NotificationSwipeDismiss] = settings.notificationSwipeDismiss
         prefs[ChargingCardEnabled] = settings.chargingCardEnabled
         prefs[EnabledEvents] = settings.enabledEvents.mapTo(mutableSetOf()) { it.name }
         prefs[MiniEventDurationKey] = settings.miniEventDuration.name

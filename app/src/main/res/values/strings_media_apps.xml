@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mda_only_selected">Only selected players</string>
+    <string name="mda_only_selected_desc">Show the media card only for the apps you choose below. Other players are ignored.</string>
+    <string name="mda_allowed_title">Allowed players</string>
+    <string name="mda_allowed_desc">With none chosen, no player shows in the capsule.</string>
+    <string name="mda_pick_title">Choose a player app</string>
+</resources>

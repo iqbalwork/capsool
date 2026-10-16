@@ -60,3 +60,63 @@ class CapsuleStyleTest {
         assertTrue(red > blue)
     }
 }
+
+class AppearanceTest {
+    private fun s(
+        bg: Long? = null, night: Long? = null, border: Int = 0, shadow: Int = 0,
+        outline: Boolean = false, shadowLight: Boolean = false, alpha: Float = 1f
+    ) = com.iqbalwork.capsule.core.settings.Settings(
+        customBackground = bg, customBackgroundNight = night, borderDp = border, shadowDp = shadow,
+        outlineInDark = outline, shadowInLight = shadowLight, shellAlpha = alpha
+    )
+
+    @Test
+    fun defaultsAreTheOpaqueBlackShellInBothModes() {
+        assertEquals(0xFF000000L, com.iqbalwork.capsule.ui.theme.resolveAppearance(s(), night = false).shellArgb)
+        assertEquals(0xFF000000L, com.iqbalwork.capsule.ui.theme.resolveAppearance(s(), night = true).shellArgb)
+    }
+
+    @Test
+    fun nightBackgroundOnlyAppliesAtNightAndFallsBackToTheDayOne() {
+        val day = 0xFF1B2A41L
+        val night = 0xFF3B1F2B
+        val both = s(bg = day, night = night)
+        assertEquals(day, com.iqbalwork.capsule.ui.theme.resolveAppearance(both, night = false).shellArgb)
+        assertEquals(night, com.iqbalwork.capsule.ui.theme.resolveAppearance(both, night = true).shellArgb)
+        assertEquals(day, com.iqbalwork.capsule.ui.theme.resolveAppearance(s(bg = day), night = true).shellArgb)
+    }
+
+    @Test
+    fun transparencyOnlyChangesTheAlphaChannel() {
+        val resolved = com.iqbalwork.capsule.ui.theme.resolveAppearance(s(bg = 0xFF1B2A41L, alpha = 0.5f), night = false)
+        assertEquals(0x1B2A41L, resolved.shellArgb and 0xFFFFFFL)
+        assertEquals(127L, resolved.shellArgb ushr 24)
+    }
+
+    @Test
+    fun outlineInDarkAddsAtLeastOneDpOnlyAtNight() {
+        assertEquals(1, com.iqbalwork.capsule.ui.theme.resolveAppearance(s(outline = true), night = true).borderDp)
+        assertEquals(0, com.iqbalwork.capsule.ui.theme.resolveAppearance(s(outline = true), night = false).borderDp)
+        // It never reduces a border the user already chose.
+        assertEquals(3, com.iqbalwork.capsule.ui.theme.resolveAppearance(s(border = 3, outline = true), night = true).borderDp)
+    }
+
+    @Test
+    fun shadowInLightAddsAtLeastThreeDpOnlyInTheDay() {
+        assertEquals(3, com.iqbalwork.capsule.ui.theme.resolveAppearance(s(shadowLight = true), night = false).shadowDp)
+        assertEquals(0, com.iqbalwork.capsule.ui.theme.resolveAppearance(s(shadowLight = true), night = true).shadowDp)
+        assertEquals(6, com.iqbalwork.capsule.ui.theme.resolveAppearance(s(shadow = 6, shadowLight = true), night = false).shadowDp)
+    }
+
+    @Test
+    fun storedValuesAreClamped() {
+        val prefs = androidx.datastore.preferences.core.mutablePreferencesOf(
+            androidx.datastore.preferences.core.floatPreferencesKey("appearance.alpha") to 0f
+        )
+        assertEquals(
+            com.iqbalwork.capsule.core.settings.MIN_SHELL_ALPHA,
+            com.iqbalwork.capsule.core.settings.SettingsMapper.read(prefs).shellAlpha,
+            0f
+        )
+    }
+}

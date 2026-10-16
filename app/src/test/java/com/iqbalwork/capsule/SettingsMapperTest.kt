@@ -175,4 +175,19 @@ class SettingsMapperTest {
         assertEquals(0, read.shadowDp)
         assertEquals(MAX_ANIMATION_SPEED, read.animationSpeed, 0f)
     }
+
+    @Test
+    fun capsuleModeSettingsRoundTripAndAreClamped() {
+        val settings = Settings(
+            placementMode = com.iqbalwork.capsule.core.settings.PlacementMode.INDEPENDENT,
+            cardWidthMode = com.iqbalwork.capsule.core.settings.CardWidthMode.FULL,
+            cardCornerDp = 20
+        )
+        val prefs = mutablePreferencesOf()
+        SettingsMapper.write(prefs, settings)
+        assertEquals(settings, SettingsMapper.read(prefs))
+
+        val wild = mutablePreferencesOf(androidx.datastore.preferences.core.intPreferencesKey("capsule.cardRadius") to 500)
+        assertEquals(com.iqbalwork.capsule.core.settings.MAX_CARD_CORNER_DP, SettingsMapper.read(wild).cardCornerDp)
+    }
 }

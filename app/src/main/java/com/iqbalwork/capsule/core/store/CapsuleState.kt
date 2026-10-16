@@ -4,6 +4,8 @@ import com.iqbalwork.capsule.core.settings.GestureBinding
 import com.iqbalwork.capsule.core.settings.GestureType
 import com.iqbalwork.capsule.core.settings.LockScreenBehavior
 import com.iqbalwork.capsule.core.settings.Orientation
+import com.iqbalwork.capsule.core.settings.Geometry
+import com.iqbalwork.capsule.core.settings.ScreenProfileKey
 import com.iqbalwork.capsule.core.settings.Settings
 import com.iqbalwork.capsule.core.settings.normalizeCardPriority
 import com.iqbalwork.capsule.core.settings.StaticCardViewMode
@@ -24,9 +26,15 @@ data class VisibilityContext(
     val fullscreen: Boolean = false,
     val imeVisible: Boolean = false,
     val orientation: Orientation = Orientation.PORTRAIT,
+    /** F-08: the panel's pixel size in either rotation, 0 until the service has read it. */
+    val screenWidthPx: Int = 0,
+    val screenHeightPx: Int = 0,
     val foregroundPackage: String? = null,
     val locked: Boolean = false
-)
+) {
+    /** The calibration this screen uses; null when the size is not known yet. */
+    val profile: ScreenProfileKey? get() = ScreenProfileKey.of(screenWidthPx, screenHeightPx, orientation)
+}
 
 /** Most notifications the capsule keeps at once (spec §2.5.2). */
 const val MAX_CAPSULE_NOTIFICATIONS = 5
@@ -104,6 +112,9 @@ data class CapsuleState(
                 !current.hiddenAfterPause &&
                 !(settings.hideMediaWhenAppInFront && visibility.foregroundPackage == current.packageName)
         }
+
+    /** Capsule geometry for the screen it is on (F-08). */
+    val geometry: Geometry get() = settings.geometry(visibility.profile, visibility.orientation)
 
     val topNotification: CapsuleNotification? get() = notifications.firstOrNull()
 

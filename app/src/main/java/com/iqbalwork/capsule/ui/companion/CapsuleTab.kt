@@ -1,6 +1,13 @@
 package com.iqbalwork.capsule.ui.companion
 
 import android.Manifest
+import com.iqbalwork.capsule.core.settings.MIN_SHELL_ALPHA
+import com.iqbalwork.capsule.core.settings.MAX_CARD_CORNER_DP
+import com.iqbalwork.capsule.core.settings.MIN_CARD_CORNER_DP
+import com.iqbalwork.capsule.core.settings.CardWidthMode
+import com.iqbalwork.capsule.core.settings.PlacementMode
+import com.iqbalwork.capsule.platform.ScreenSize
+import com.iqbalwork.capsule.core.settings.ScreenProfileKey
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.foundation.selection.selectable
@@ -93,9 +100,15 @@ fun CapsuleTab(
     modifier: Modifier = Modifier
 ) {
     var editing by remember(currentOrientation) { mutableStateOf(currentOrientation) }
-    val geometry = settings.geometry(editing)
+    // F-08: the calibration belongs to this panel and the orientation being edited.
+    val context = LocalContext.current
+    val profile = remember(editing) {
+        val (width, height) = ScreenSize.of(context)
+        ScreenProfileKey.of(width, height, editing)
+    }
+    val geometry = settings.geometry(profile, editing)
     fun updateGeometry(transform: (Geometry) -> Geometry) =
-        onUpdate { it.withGeometry(editing, transform(it.geometry(editing))) }
+        onUpdate { it.withGeometry(profile, editing, transform(it.geometry(profile, editing))) }
 
     LazyColumn(
         modifier = modifier.padding(horizontal = 16.dp),
@@ -103,12 +116,15 @@ fun CapsuleTab(
     ) {
         item {
             Section(stringResource(R.string.cap_sec_size_position)) {
-                SwitchRow(
-                    title = stringResource(R.string.cap_calibration_target),
-                    description = stringResource(R.string.cap_calibration_target_desc),
-                    checked = settings.showCalibrationTarget,
-                    onChange = { show -> onUpdate { it.copy(showCalibrationTarget = show) } }
-                )
+                // The red target hides under the camera hole; independent mode is not tied to the camera.
+                if (settings.placementMode == PlacementMode.CAMERA) {
+                    SwitchRow(
+                        title = stringResource(R.string.cap_calibration_target),
+                        description = stringResource(R.string.cap_calibration_target_desc),
+                        checked = settings.showCalibrationTarget,
+                        onChange = { show -> onUpdate { it.copy(showCalibrationTarget = show) } }
+                    )
+                }
                 Options(
                     options = Orientation.entries,
                     selected = editing,
@@ -120,7 +136,53 @@ fun CapsuleTab(
                 IntSlider(stringResource(R.string.cap_width), geometry.widthDp, 60..260) { v -> updateGeometry { it.copy(widthDp = v) } }
                 IntSlider(stringResource(R.string.cap_height), geometry.heightDp, 20..64) { v -> updateGeometry { it.copy(heightDp = v) } }
                 IntSlider(stringResource(R.string.cap_corner_radius), geometry.cornerDp, 0..32) { v -> updateGeometry { it.copy(cornerDp = v) } }
+                profile?.let { key ->
+                    val calibrated = key in settings.profiles
+                    Text(
+                        stringResource(
+                            if (calibrated) R.string.prof_info_own else R.string.prof_info_template,
+                            key.shortPx, key.longPx
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 TextButton(onClick = { updateGeometry { Geometry() } }) { Text(stringResource(R.string.cap_reset_orientation)) }
+            }
+        }
+        item {
+            Section(stringResource(R.string.mode_section)) {
+                Text(stringResource(R.string.mode_placement), style = MaterialTheme.typography.bodyMedium)
+                Options(
+                    options = PlacementMode.entries,
+                    selected = settings.placementMode,
+                    label = {
+                        stringResource(if (it == PlacementMode.CAMERA) R.string.mode_camera else R.string.mode_independent)
+                    },
+                    onSelect = { mode -> onUpdate { it.copy(placementMode = mode) } }
+                )
+                Text(
+                    stringResource(
+                        if (settings.placementMode == PlacementMode.CAMERA) R.string.mode_camera_desc
+                        else R.string.mode_independent_desc
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(stringResource(R.string.mode_card_width), style = MaterialTheme.typography.bodyMedium)
+                Options(
+                    options = CardWidthMode.entries,
+                    selected = settings.cardWidthMode,
+                    label = {
+                        stringResource(if (it == CardWidthMode.CONTENT) R.string.mode_width_content else R.string.mode_width_full)
+                    },
+                    onSelect = { mode -> onUpdate { it.copy(cardWidthMode = mode) } }
+                )
+                IntSlider(
+                    stringResource(R.string.mode_card_radius),
+                    settings.cardCornerDp,
+                    MIN_CARD_CORNER_DP..MAX_CARD_CORNER_DP
+                ) { v -> onUpdate { it.copy(cardCornerDp = v) } }
             }
         }
         item {
@@ -220,6 +282,27 @@ fun CapsuleTab(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                Text(stringResource(R.string.pal_night_background), style = MaterialTheme.typography.bodyMedium)
+                SwatchRow(
+                    colors = BackgroundSwatches,
+                    selected = settings.customBackgroundNight,
+                    defaultLabel = stringResource(R.string.pal_same_as_day),
+                    onSelect = { color -> onUpdate { it.copy(customBackgroundNight = color) } }
+                )
+                val alphaLabel = stringResource(R.string.pal_transparency, ((1f - settings.shellAlpha) * 100).roundToInt())
+                Text(alphaLabel, style = MaterialTheme.typography.bodyMedium)
+                Slider(
+                    value = settings.shellAlpha,
+                    onValueChange = { v -> onUpdate { it.copy(shellAlpha = v) } },
+                    valueRange = MIN_SHELL_ALPHA..1f,
+                    modifier = Modifier.semantics { contentDescription = alphaLabel }
+                )
+                SwitchRow(
+                    title = stringResource(R.string.pal_gradient),
+                    description = stringResource(R.string.pal_gradient_desc),
+                    checked = settings.cutoutGradient,
+                    onChange = { on -> onUpdate { it.copy(cutoutGradient = on) } }
+                )
                 IntSlider(stringResource(R.string.cap_border), settings.borderDp, 0..MAX_BORDER_DP) { v -> onUpdate { it.copy(borderDp = v) } }
                 if (settings.borderDp > 0) {
                     SwatchRow(
@@ -230,11 +313,28 @@ fun CapsuleTab(
                     )
                 }
                 IntSlider(stringResource(R.string.cap_shadow), settings.shadowDp, 0..MAX_SHADOW_DP) { v -> onUpdate { it.copy(shadowDp = v) } }
+                SwitchRow(
+                    title = stringResource(R.string.pal_outline_dark),
+                    description = stringResource(R.string.pal_outline_dark_desc),
+                    checked = settings.outlineInDark,
+                    onChange = { on -> onUpdate { it.copy(outlineInDark = on) } }
+                )
+                SwitchRow(
+                    title = stringResource(R.string.pal_shadow_light),
+                    description = stringResource(R.string.pal_shadow_light_desc),
+                    checked = settings.shadowInLight,
+                    onChange = { on -> onUpdate { it.copy(shadowInLight = on) } }
+                )
                 TextButton(onClick = {
                     onUpdate {
                         it.copy(
                             shapeStyle = CapsuleShapeStyle.ROUNDED_RECT,
                             customBackground = null,
+                            customBackgroundNight = null,
+                            outlineInDark = false,
+                            shadowInLight = false,
+                            shellAlpha = 1f,
+                            cutoutGradient = false,
                             borderDp = 0,
                             borderColor = null,
                             shadowDp = 0
@@ -301,6 +401,13 @@ fun CapsuleTab(
                     checked = settings.hideMediaWhenAppInFront,
                     onChange = { on -> onUpdate { it.copy(hideMediaWhenAppInFront = on) } }
                 )
+                SwitchRow(
+                    title = stringResource(R.string.mda_only_selected),
+                    description = stringResource(R.string.mda_only_selected_desc),
+                    checked = settings.mediaOnlyAllowedApps,
+                    onChange = { on -> onUpdate { it.copy(mediaOnlyAllowedApps = on) } }
+                )
+                if (settings.mediaOnlyAllowedApps) AllowedMediaAppsList(settings = settings, onUpdate = onUpdate)
                 Text(stringResource(R.string.cap_media_keep_for), style = MaterialTheme.typography.bodyMedium)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     MediaCollapseDelay.entries.forEach { delay ->
@@ -380,6 +487,12 @@ fun CapsuleTab(
                     description = stringResource(R.string.cap_glow_desc),
                     checked = settings.notificationGlow,
                     onChange = { on -> onUpdate { it.copy(notificationGlow = on) } }
+                )
+                SwitchRow(
+                    title = stringResource(R.string.swp_title),
+                    description = stringResource(R.string.swp_desc),
+                    checked = settings.notificationSwipeDismiss,
+                    onChange = { on -> onUpdate { it.copy(notificationSwipeDismiss = on) } }
                 )
                 TextButton(onClick = onOpenNotificationApps) { Text(stringResource(R.string.cap_choose_apps)) }
             }
@@ -630,14 +743,45 @@ private fun Section(title: String, content: @Composable () -> Unit) {
 /** F-84: apps where the capsule stays out of the way. Lives inside the "Hide the capsule" section. */
 @Composable
 private fun HiddenAppsList(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit) {
+    PackageListEditor(
+        title = stringResource(R.string.cap_hidden_stay),
+        description = stringResource(R.string.cap_hidden_desc),
+        packages = settings.hiddenPackages,
+        pickerTitle = stringResource(R.string.cap_pick_app_title),
+        onChange = { packages -> onUpdate { it.copy(hiddenPackages = packages(it.hiddenPackages)) } }
+    )
+}
+
+/** F-13: the players allowed in the media card when "only selected apps" is on. */
+@Composable
+private fun AllowedMediaAppsList(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit) {
+    PackageListEditor(
+        title = stringResource(R.string.mda_allowed_title),
+        description = stringResource(R.string.mda_allowed_desc),
+        packages = settings.mediaAllowedApps,
+        pickerTitle = stringResource(R.string.mda_pick_title),
+        onChange = { packages -> onUpdate { it.copy(mediaAllowedApps = packages(it.mediaAllowedApps)) } }
+    )
+}
+
+/**
+ * A list of apps stored as package names, with add and remove. Only package names are kept (that
+ * is what the rules compare); labels are resolved for display, and a package that cannot be
+ * resolved falls back to its own name rather than vanishing from the list.
+ */
+@Composable
+private fun PackageListEditor(
+    title: String,
+    description: String,
+    packages: Set<String>,
+    pickerTitle: String,
+    onChange: ((Set<String>) -> Set<String>) -> Unit
+) {
     val context = LocalContext.current
     var pickingApp by remember { mutableStateOf(false) }
     val packageManager = context.packageManager
-    // Only package names are stored — that is what the visibility rule compares. Labels are
-    // resolved for display so the list reads like app names instead of package strings, and an
-    // unresolvable package falls back to its own name rather than vanishing.
-    val labels = remember(settings.hiddenPackages) {
-        settings.hiddenPackages.associateWith { packageName ->
+    val labels = remember(packages) {
+        packages.associateWith { packageName ->
             runCatching { packageManager.getApplicationInfo(packageName, 0) }.getOrNull()
                 ?.let { packageManager.getApplicationLabel(it).toString() }
                 ?: packageName
@@ -645,13 +789,13 @@ private fun HiddenAppsList(settings: Settings, onUpdate: ((Settings) -> Settings
     }
 
     Column {
-        Text(stringResource(R.string.cap_hidden_stay), style = MaterialTheme.typography.bodyLarge)
+        Text(title, style = MaterialTheme.typography.bodyLarge)
         Text(
-            stringResource(R.string.cap_hidden_desc),
+            description,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        settings.hiddenPackages
+        packages
             .sortedBy { labels[it] ?: it }
             .forEach { packageName ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -660,11 +804,7 @@ private fun HiddenAppsList(settings: Settings, onUpdate: ((Settings) -> Settings
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.weight(1f)
                     )
-                    TextButton(
-                        onClick = {
-                            onUpdate { it.copy(hiddenPackages = it.hiddenPackages - packageName) }
-                        }
-                    ) { Text(stringResource(R.string.cap_remove)) }
+                    TextButton(onClick = { onChange { it - packageName } }) { Text(stringResource(R.string.cap_remove)) }
                 }
             }
         TextButton(onClick = { pickingApp = true }) { Text(stringResource(R.string.cap_add_app)) }
@@ -672,9 +812,9 @@ private fun HiddenAppsList(settings: Settings, onUpdate: ((Settings) -> Settings
 
     if (pickingApp) {
         AppPickerDialog(
-            title = stringResource(R.string.cap_pick_app_title),
+            title = pickerTitle,
             onPick = { app ->
-                onUpdate { it.copy(hiddenPackages = it.hiddenPackages + app.packageName) }
+                onChange { it + app.packageName }
                 pickingApp = false
             },
             onDismiss = { pickingApp = false }
