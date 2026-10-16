@@ -1,5 +1,6 @@
 package com.iqbalwork.capsule.platform.accessibility
 
+import com.iqbalwork.capsule.core.settings.EventDisplay
 import com.iqbalwork.capsule.core.settings.Geometry
 import com.iqbalwork.capsule.core.settings.PlacementMode
 import kotlin.math.ceil
@@ -33,7 +34,12 @@ data class WindowPlacement(
      * Width in dp of the strip at the middle of the pill that sits over the camera hole (the hole
      * plus a little room each side); 0 when there is no hole to avoid. Content must stay out of it.
      */
-    val cameraGapDp: Int = 0
+    val cameraGapDp: Int = 0,
+    /**
+     * Height in dp added under the pill for a pop-up event's own row, so its text sits below the
+     * camera hole; 0 when the event is not shown that way.
+     */
+    val eventRowDp: Int = 0
 )
 
 /** A rectangle in window pixels (a plain stand-in for android.graphics.Rect, for unit tests). */
@@ -71,6 +77,9 @@ object OverlayPlacement {
 
     /** Room kept clear on each side of the camera hole. */
     const val CAMERA_GAP_PADDING_DP = 4
+
+    /** Height of the row under the camera hole that a pop-up event's text is drawn in. */
+    const val EVENT_ROW_DP = 30
 
     /** A pill split around the hole needs more room, or its two halves cannot hold a title and a value. */
     const val SPLIT_EXTRA_WIDTH_DP = 40
@@ -111,7 +120,7 @@ object OverlayPlacement {
         val width = if (expanded) window.width - 2 * margin else pillWidthDp(geometry, miniEvent, window.cameraGapDp) * density
         // Expanded: the whole window less its margins, so a taller card (list rows, the camera-mode
         // top inset) is touchable all the way down.
-        val height = if (expanded) window.height - 2 * margin else geometry.heightDp * density
+        val height = if (expanded) window.height - 2 * margin else (geometry.heightDp + if (miniEvent) window.eventRowDp else 0) * density
         val centerX = window.width / 2f + window.contentOffsetXPx
         val top = margin + window.contentOffsetYPx
         return PxRect(
@@ -132,7 +141,8 @@ object OverlayPlacement {
         listRows: Int = 0,
         mode: PlacementMode = PlacementMode.CAMERA,
         statusBarHeightPx: Int = 0,
-        fullWidthCard: Boolean = false
+        fullWidthCard: Boolean = false,
+        eventDisplay: EventDisplay = EventDisplay.BELOW_CAMERA
     ): WindowPlacement {
         fun px(dp: Float) = dp * density
         val capsuleHeight = px(geometry.heightDp.toFloat())
@@ -147,13 +157,17 @@ object OverlayPlacement {
         val capsuleTop = defaultCenterY - capsuleHeight / 2f + px(geometry.offsetYDp.toFloat())
 
         // Independent mode is not over the camera, so there is nothing to keep clear.
-        val cameraGap = if (independent || cutout == null) 0 else cameraGapDp(cutout.right - cutout.left, density)
+        val overHole = !independent && cutout != null
+        val cameraGap =
+            if (overHole && eventDisplay == EventDisplay.SPLIT) cameraGapDp(cutout!!.right - cutout.left, density) else 0
+        // Below the camera: the pill gets a row of its own under the hole instead of being split.
+        val eventRow = if (overHole && miniEvent && eventDisplay == EventDisplay.BELOW_CAMERA) EVENT_ROW_DP else 0
         val pillWidth = px(pillWidthDp(geometry, miniEvent, cameraGap).toFloat())
         val contentWidth =
             if (expanded) maxOf(px(expandedWidthDp(screenWidthPx / density, fullWidthCard)), pillWidth) else pillWidth
         // The part of the status bar the capsule's top edge does not already clear (spec §2.4.3 point 6).
         val deadZone = if (expanded && !independent) (statusBarHeightPx - capsuleTop).coerceAtLeast(0f) else 0f
-        val contentHeight = if (expanded) px(expandedContentHeightDp(listRows)) + deadZone else capsuleHeight
+        val contentHeight = if (expanded) px(expandedContentHeightDp(listRows)) + deadZone else capsuleHeight + px(eventRow.toFloat())
         val margin = px(MARGIN_DP.toFloat())
 
         val width = (contentWidth + 2 * margin).roundToInt()
@@ -171,7 +185,8 @@ object OverlayPlacement {
             contentOffsetXPx = idealX - x,
             contentOffsetYPx = idealY - y,
             contentTopInsetPx = deadZone.roundToInt(),
-            cameraGapDp = cameraGap
+            cameraGapDp = cameraGap,
+            eventRowDp = eventRow
         )
     }
 }

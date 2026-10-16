@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="evd_position">Posisi pop-up</string>
+    <string name="evd_below">Di bawah kamera</string>
+    <string name="evd_split">Di sekitar kamera</string>
+    <string name="evd_below_desc">Pil memanjang ke bawah dan teks berada di baris di bawah lubang kamera, jadi tidak ada yang tertutup.</string>
+    <string name="evd_split_desc">Pil tetap pendek dan teksnya dibelah dua di kiri dan kanan lubang kamera. Judul panjang bisa terpotong.</string>
+</resources>

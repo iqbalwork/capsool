@@ -64,13 +64,17 @@ private val WifiBlue = Color(0xFF8AB4F8)
  * The pill is centered on the camera hole, which hides whatever is drawn over it. With a
  * [cameraGapDp] the content is therefore split in two equal halves with that strip left empty
  * between them: icon and title on the left, value and ring on the right.
+ *
+ * With [belowCameraTopDp] the pill is taller instead: the top [belowCameraTopDp] is left empty (the
+ * hole is in it) and one full-width row of icon, title and value is drawn underneath.
  */
 @Composable
 fun MiniEventView(
     event: MiniEvent,
     modifier: Modifier = Modifier,
     style: EventStyle = EventStyle.Default,
-    cameraGapDp: Int = 0
+    cameraGapDp: Int = 0,
+    belowCameraTopDp: Int = 0
 ) {
     val color = style.color?.let { Color(it) } ?: event.type.accent()
     val split = cameraGapDp > 0
@@ -129,7 +133,7 @@ fun MiniEventView(
     Row(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 7.dp),
+            .padding(start = 7.dp, end = 7.dp, top = belowCameraTopDp.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (split) {

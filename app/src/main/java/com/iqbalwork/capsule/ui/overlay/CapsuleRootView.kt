@@ -87,7 +87,9 @@ fun CapsuleRootView(
     /** Space kept free at the top of an opened card, below the status bar (camera mode). */
     contentTopInset: Dp = 0.dp,
     /** Strip over the camera hole that pill content must stay out of (see WindowPlacement.cameraGapDp). */
-    cameraGapDp: Int = 0
+    cameraGapDp: Int = 0,
+    /** Height added under the pill while a pop-up event is shown, for its row under the camera hole. */
+    eventRowDp: Int = 0
 ) {
     val settings = state.settings
     val geometry = state.geometry
@@ -106,7 +108,11 @@ fun CapsuleRootView(
         label = "capsule_width"
     )
     val height by animateDpAsState(
-        targetValue = if (expanded) expandedHeight else geometry.heightDp.dp,
+        targetValue = when {
+            expanded -> expandedHeight
+            mode == CapsuleMode.MINI_EVENT -> (geometry.heightDp + eventRowDp).dp
+            else -> geometry.heightDp.dp
+        },
         animationSpec = sizeSpring,
         label = "capsule_height"
     )
@@ -193,7 +199,11 @@ fun CapsuleRootView(
                         }
                     }
                 } else {
-                    MiniCapsuleView(state = frame.state, cameraGapDp = cameraGapDp)
+                    MiniCapsuleView(
+                        state = frame.state,
+                        cameraGapDp = cameraGapDp,
+                        belowCameraTopDp = if (eventRowDp > 0) geometry.heightDp else 0
+                    )
                 }
             }
         }

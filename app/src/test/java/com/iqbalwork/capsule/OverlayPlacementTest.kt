@@ -1,5 +1,6 @@
 package com.iqbalwork.capsule
 
+import com.iqbalwork.capsule.core.settings.EventDisplay
 import com.iqbalwork.capsule.core.settings.Geometry
 import com.iqbalwork.capsule.core.settings.PlacementMode
 import com.iqbalwork.capsule.platform.accessibility.CutoutBounds
@@ -247,7 +248,7 @@ class CameraGapTest {
 
     @Test
     fun placementReportsTheGapForTheHoleItSitsOver() {
-        val p = OverlayPlacement.compute(1080, density, cutout, geometry, expanded = false, miniEvent = true)
+        val p = OverlayPlacement.compute(1080, density, cutout, geometry, expanded = false, miniEvent = true, eventDisplay = EventDisplay.SPLIT)
         assertEquals(OverlayPlacement.cameraGapDp(60, density), p.cameraGapDp)
         val margin = OverlayPlacement.MARGIN_DP * density
         assertEquals((OverlayPlacement.pillWidthDp(geometry, true, p.cameraGapDp) * density + 2 * margin).toInt(), p.width)
@@ -255,21 +256,75 @@ class CameraGapTest {
 
     @Test
     fun noGapWithoutAHoleOrInIndependentMode() {
-        assertEquals(0, OverlayPlacement.compute(1080, density, null, geometry, expanded = false, miniEvent = true).cameraGapDp)
+        assertEquals(0, OverlayPlacement.compute(1080, density, null, geometry, expanded = false, miniEvent = true, eventDisplay = EventDisplay.SPLIT).cameraGapDp)
         assertEquals(
             0,
             OverlayPlacement.compute(
                 1080, density, cutout, geometry, expanded = false, miniEvent = true,
-                mode = com.iqbalwork.capsule.core.settings.PlacementMode.INDEPENDENT, statusBarHeightPx = 90
+                mode = com.iqbalwork.capsule.core.settings.PlacementMode.INDEPENDENT, statusBarHeightPx = 90,
+                eventDisplay = EventDisplay.SPLIT
             ).cameraGapDp
         )
     }
 
     @Test
     fun theTouchableRegionMatchesTheWiderPill() {
-        val window = OverlayPlacement.compute(1080, density, cutout, geometry, expanded = true, miniEvent = true)
+        val window = OverlayPlacement.compute(1080, density, cutout, geometry, expanded = true, miniEvent = true, eventDisplay = EventDisplay.SPLIT)
         val rect = OverlayPlacement.capsuleRect(window, density, geometry, expanded = false, miniEvent = true)
         val expected = OverlayPlacement.pillWidthDp(geometry, true, window.cameraGapDp) * density
         assertEquals(expected, (rect.right - rect.left).toFloat(), 1f)
+    }
+}
+
+class BelowCameraTest {
+    private val density = 3f
+    private val cutout = CutoutBounds(left = 510, top = 60, right = 570, bottom = 120)
+    private val geometry = Geometry(widthDp = 120, heightDp = 36)
+    private val margin = OverlayPlacement.MARGIN_DP * density
+
+    @Test
+    fun belowCameraIsTheDefaultAndAddsARowUnderTheHole() {
+        val plain = OverlayPlacement.compute(1080, density, cutout, geometry, expanded = false)
+        val event = OverlayPlacement.compute(1080, density, cutout, geometry, expanded = false, miniEvent = true)
+        assertEquals(OverlayPlacement.EVENT_ROW_DP, event.eventRowDp)
+        assertEquals(0, event.cameraGapDp)
+        assertEquals(plain.height + (OverlayPlacement.EVENT_ROW_DP * density).toInt(), event.height)
+        // The top edge does not move: the pill only grows downward, so the hole stays inside it.
+        assertEquals(plain.y, event.y)
+    }
+
+    @Test
+    fun noExtraRowWithoutAnEventOrWithoutAHoleOrInIndependentMode() {
+        assertEquals(0, OverlayPlacement.compute(1080, density, cutout, geometry, expanded = false).eventRowDp)
+        assertEquals(0, OverlayPlacement.compute(1080, density, null, geometry, expanded = false, miniEvent = true).eventRowDp)
+        assertEquals(
+            0,
+            OverlayPlacement.compute(
+                1080, density, cutout, geometry, expanded = false, miniEvent = true,
+                mode = com.iqbalwork.capsule.core.settings.PlacementMode.INDEPENDENT, statusBarHeightPx = 90
+            ).eventRowDp
+        )
+    }
+
+    @Test
+    fun splitModeKeepsTheHeightAndTheRowIsNotAdded() {
+        val p = OverlayPlacement.compute(1080, density, cutout, geometry, expanded = false, miniEvent = true, eventDisplay = EventDisplay.SPLIT)
+        assertEquals(0, p.eventRowDp)
+        assertEquals((36 * density + 2 * margin).toInt(), p.height)
+    }
+
+    @Test
+    fun belowCameraKeepsTheNormalEventWidth() {
+        val p = OverlayPlacement.compute(1080, density, cutout, geometry, expanded = false, miniEvent = true)
+        assertEquals(((120 + OverlayPlacement.MINI_EVENT_EXTRA_WIDTH_DP) * density + 2 * margin).toInt(), p.width)
+    }
+
+    @Test
+    fun theTouchableRegionCoversTheTallerPill() {
+        val window = OverlayPlacement.compute(1080, density, cutout, geometry, expanded = true, miniEvent = true)
+        val rect = OverlayPlacement.capsuleRect(window, density, geometry, expanded = false, miniEvent = true)
+        assertEquals(((36 + OverlayPlacement.EVENT_ROW_DP) * density), (rect.bottom - rect.top).toFloat(), 1f)
+        val idle = OverlayPlacement.capsuleRect(window, density, geometry, expanded = false, miniEvent = false)
+        assertEquals(36 * density, (idle.bottom - idle.top).toFloat(), 1f)
     }
 }

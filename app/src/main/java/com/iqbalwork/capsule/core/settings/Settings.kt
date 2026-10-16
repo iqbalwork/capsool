@@ -176,6 +176,13 @@ enum class MiniEventDuration(val millis: Long) {
     SECONDS_6(6_000L)
 }
 
+/**
+ * Where a pop-up event (charger, Wi-Fi, ...) puts its text when the capsule sits over the camera hole.
+ * BELOW_CAMERA grows the pill downward and draws the text in a row under the hole; SPLIT keeps the
+ * pill's height and splits the text into two halves either side of the hole.
+ */
+enum class EventDisplay { BELOW_CAMERA, SPLIT }
+
 /** F-43: the posting app's own icon, or a generic download badge. */
 enum class ProgressIconStyle { APP, SHAPE }
 
@@ -378,6 +385,7 @@ data class Settings(
     val progressColor: Long? = null,
     /** ARGB of the bar's track; null = a faint white. */
     val progressTrackColor: Long? = null,
+    val eventDisplay: EventDisplay = EventDisplay.BELOW_CAMERA,
     /** F-68: look of each kind of mini event; a category not listed is shown as designed. */
     val eventStyles: Map<EventCategory, EventStyle> = emptyMap(),
     val timerEnabled: Boolean = true,

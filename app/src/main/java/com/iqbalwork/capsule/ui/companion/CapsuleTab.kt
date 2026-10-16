@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule.ui.companion
 
 import android.Manifest
+import com.iqbalwork.capsule.core.settings.EventDisplay
 import androidx.compose.material3.Icon
 import com.iqbalwork.capsule.ui.components.customIntentIcon
 import com.iqbalwork.capsule.ui.components.AvailableIntentIcons
@@ -979,6 +980,18 @@ private fun EventStylesEditor(settings: Settings, onUpdate: ((Settings) -> Setti
         it.copy(eventStyles = if (updated.isDefault) it.eventStyles - category else it.eventStyles + (category to updated))
     }
 
+    Text(stringResource(R.string.evd_position), style = MaterialTheme.typography.bodyMedium)
+    Options(
+        options = EventDisplay.entries,
+        selected = settings.eventDisplay,
+        label = { stringResource(if (it == EventDisplay.BELOW_CAMERA) R.string.evd_below else R.string.evd_split) },
+        onSelect = { display -> onUpdate { it.copy(eventDisplay = display) } }
+    )
+    Text(
+        stringResource(if (settings.eventDisplay == EventDisplay.BELOW_CAMERA) R.string.evd_below_desc else R.string.evd_split_desc),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
         EventCategory.entries.forEach { entry ->
             FilterChip(selected = entry == category, onClick = { category = entry }, label = { Text(entry.label) })

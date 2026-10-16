@@ -125,6 +125,7 @@ object SettingsMapper {
     private val ProgressIconStyleKey = stringPreferencesKey("progress.iconStyle")
     private val ProgressColorKey = longPreferencesKey("progress.color")
     private val ProgressTrackColorKey = longPreferencesKey("progress.trackColor")
+    private val EventDisplayKey = stringPreferencesKey("events.display")
     private val EventStylesKey = stringPreferencesKey("events.styles")
     private val TimerEnabled = booleanPreferencesKey("cards.timer.enabled")
     private val DisclosureAccepted = booleanPreferencesKey("onboarding.disclosureAccepted")
@@ -238,6 +239,7 @@ object SettingsMapper {
             progressIconStyle = enumOrDefault(prefs[ProgressIconStyleKey], defaults.progressIconStyle),
             progressColor = prefs[ProgressColorKey],
             progressTrackColor = prefs[ProgressTrackColorKey],
+            eventDisplay = enumOrDefault(prefs[EventDisplayKey], defaults.eventDisplay),
             eventStyles = decodeEventStyles(prefs[EventStylesKey]),
             timerEnabled = prefs[TimerEnabled] ?: defaults.timerEnabled,
             barcode = BarcodeContent(
@@ -333,6 +335,7 @@ object SettingsMapper {
         prefs[ProgressIconStyleKey] = settings.progressIconStyle.name
         settings.progressColor?.let { prefs[ProgressColorKey] = it } ?: prefs.remove(ProgressColorKey)
         settings.progressTrackColor?.let { prefs[ProgressTrackColorKey] = it } ?: prefs.remove(ProgressTrackColorKey)
+        prefs[EventDisplayKey] = settings.eventDisplay.name
         prefs[EventStylesKey] = encodeEventStyles(settings.eventStyles)
         prefs[TimerEnabled] = settings.timerEnabled
         prefs[BarcodeCardEnabled] = settings.barcodeCardEnabled

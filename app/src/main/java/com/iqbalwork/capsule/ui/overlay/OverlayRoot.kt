@@ -52,6 +52,7 @@ fun OverlayRoot(
                     expandedHeight = (OverlayPlacement.expandedContentHeightDp(state.listRows) + topInsetDp).dp,
                 contentTopInset = topInsetDp.dp,
                 cameraGapDp = placement.cameraGapDp,
+                eventRowDp = placement.eventRowDp,
                     modifier = Modifier
                         .offset { IntOffset(placement.contentOffsetXPx, placement.contentOffsetYPx) }
                         .padding(top = OverlayPlacement.MARGIN_DP.dp)

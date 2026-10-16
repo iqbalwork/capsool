@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule.platform.accessibility
 
 import android.annotation.SuppressLint
+import com.iqbalwork.capsule.core.settings.EventDisplay
 import android.view.WindowInsets
 import com.iqbalwork.capsule.core.settings.CardWidthMode
 import com.iqbalwork.capsule.core.settings.PlacementMode
@@ -75,7 +76,8 @@ class OverlayWindowController(
         /** Rows the LIST panel would show; 0 when the carousel is used. */
         val listRows: Int = 0,
         val placementMode: PlacementMode = PlacementMode.CAMERA,
-        val fullWidthCard: Boolean = false
+        val fullWidthCard: Boolean = false,
+        val eventDisplay: EventDisplay = EventDisplay.BELOW_CAMERA
     )
 
     fun attach() {
@@ -142,7 +144,8 @@ class OverlayWindowController(
                         barcodeShowing = barcodeShowing,
                         listRows = it.listRows,
                         placementMode = it.settings.placementMode,
-                        fullWidthCard = it.settings.cardWidthMode == CardWidthMode.FULL
+                        fullWidthCard = it.settings.cardWidthMode == CardWidthMode.FULL,
+                        eventDisplay = it.settings.eventDisplay
                     )
                 }
                 .distinctUntilChanged()
@@ -200,7 +203,8 @@ class OverlayWindowController(
             listRows = key.listRows,
             mode = key.placementMode,
             statusBarHeightPx = metrics.windowInsets.getInsets(WindowInsets.Type.statusBars()).top,
-            fullWidthCard = key.fullWidthCard
+            fullWidthCard = key.fullWidthCard,
+            eventDisplay = key.eventDisplay
         )
         windowExpanded = expanded
         placement.value = newPlacement
