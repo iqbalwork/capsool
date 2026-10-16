@@ -1,6 +1,8 @@
 package com.iqbalwork.capsule.ui.companion
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -64,7 +66,7 @@ fun GesturesTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit, 
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.gx_automation), style = MaterialTheme.typography.titleMedium)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().toggleable(value = settings.automationBroadcast, role = Role.Switch, onValueChange = { on -> onUpdate { it.copy(automationBroadcast = on) } })) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(stringResource(R.string.gx_broadcast_gestures), style = MaterialTheme.typography.bodyLarge)
                             Text(
@@ -73,7 +75,7 @@ fun GesturesTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit, 
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Switch(checked = settings.automationBroadcast, onCheckedChange = { on -> onUpdate { it.copy(automationBroadcast = on) } })
+                        Switch(checked = settings.automationBroadcast, onCheckedChange = null)
                     }
                     TextButton(onClick = { Automation.sendGesture(context, gesture = "test", action = "none", card = null) }) {
                         Text(stringResource(R.string.gx_send_test_broadcast))
@@ -200,7 +202,7 @@ private fun CustomIntentPickerDialog(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onPick(intent) }
+                                .clickable(role = Role.Button) { onPick(intent) }
                                 .padding(vertical = 12.dp, horizontal = 8.dp)
                         ) {
                             Column(modifier = Modifier.weight(1f)) {

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="a11y_summary_idle">Capsool capsule</string>
+    <string name="a11y_summary_event">Capsool: %1$s</string>
+    <string name="a11y_summary_event_detail">Capsool: %1$s, %2$s</string>
+    <string name="a11y_summary_collapsed">Capsool: %1$s</string>
+    <string name="a11y_summary_expanded">Capsool, open: %1$s</string>
+    <string name="a11y_card_generic">%1$s</string>
+    <string name="a11y_card_static">%1$s card</string>
+    <string name="a11y_card_notification">Notification from %1$s</string>
+    <string name="a11y_card_notification_text">Notification from %1$s. %2$s: %3$s</string>
+    <string name="a11y_card_media_playing">Playing %1$s, %2$s</string>
+    <string name="a11y_card_media_paused">Paused: %1$s, %2$s</string>
+    <string name="a11y_card_charging">Charging, %1$d%%</string>
+    <string name="a11y_card_timer">Timer: %1$s</string>
+    <string name="a11y_action_expand">Open</string>
+    <string name="a11y_action_collapse">Close</string>
+    <string name="a11y_action_next_card">Next card</string>
+    <string name="a11y_action_previous_card">Previous card</string>
+    <string name="a11y_action_play_pause">Play or pause</string>
+    <string name="a11y_swatch">Color %1$d</string>
+    <string name="a11y_slider_volume">Volume</string>
+    <string name="a11y_slider_brightness">Brightness</string>
+    <string name="a11y_slider_torch">Flashlight brightness</string>
+</resources>

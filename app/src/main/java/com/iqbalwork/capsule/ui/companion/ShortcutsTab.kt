@@ -1,6 +1,8 @@
 package com.iqbalwork.capsule.ui.companion
 
 import android.app.Activity
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
 import android.content.Intent
 import android.provider.ContactsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -170,13 +172,13 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
                         ) { Text(stringResource(R.string.sc_add_contact)) }
                         FilledTonalButton(onClick = { pickingSystem = true }, enabled = !full) { Text(stringResource(R.string.sc_add_system)) }
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().toggleable(value = settings.themedShortcutIcons, role = Role.Switch, onValueChange = { on -> onUpdate { it.copy(themedShortcutIcons = on) } })) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(stringResource(R.string.sc_themed_icons_title), style = MaterialTheme.typography.bodyLarge)
                             Text(stringResource(R.string.sc_themed_icons_desc),
                                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        Switch(checked = settings.themedShortcutIcons, onCheckedChange = { on -> onUpdate { it.copy(themedShortcutIcons = on) } })
+                        Switch(checked = settings.themedShortcutIcons, onCheckedChange = null)
                     }
                 }
             }
@@ -184,7 +186,7 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
         item {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().toggleable(value = settings.barcode.enabled, role = Role.Switch, onValueChange = { on -> onUpdate { it.copy(barcode = it.barcode.copy(enabled = on)) } })) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(stringResource(R.string.sc_barcode_card_title), style = MaterialTheme.typography.titleMedium)
                             Text(
@@ -193,12 +195,7 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Switch(
-                            checked = settings.barcode.enabled,
-                            onCheckedChange = { on ->
-                                onUpdate { it.copy(barcode = it.barcode.copy(enabled = on)) }
-                            }
-                        )
+                        Switch(checked = settings.barcode.enabled, onCheckedChange = null)
                     }
 
                     var formatMenuExpanded by remember { mutableStateOf(false) }
@@ -344,7 +341,7 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
                                             if (isSelected) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
                                             else Modifier.border(1.dp, Color.Gray.copy(alpha = 0.5f), CircleShape)
                                         )
-                                        .clickable {
+                                        .clickable(role = Role.Button) {
                                             onUpdate { it.copy(barcode = it.barcode.copy(color = colorLong)) }
                                         }
                                 )
@@ -352,7 +349,7 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
                         }
                     }
 
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().toggleable(value = settings.barcode.flipped, role = Role.Switch, onValueChange = { on -> onUpdate { it.copy(barcode = it.barcode.copy(flipped = on)) } })) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(stringResource(R.string.sc_flip_title), style = MaterialTheme.typography.bodyLarge)
                             Text(
@@ -361,12 +358,7 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Switch(
-                            checked = settings.barcode.flipped,
-                            onCheckedChange = { flipped ->
-                                onUpdate { it.copy(barcode = it.barcode.copy(flipped = flipped)) }
-                            }
-                        )
+                        Switch(checked = settings.barcode.flipped, onCheckedChange = null)
                     }
 
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {

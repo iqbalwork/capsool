@@ -1,6 +1,8 @@
 package com.iqbalwork.capsule.ui.companion
 
 import android.content.Intent
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import android.provider.Settings as AndroidSettings
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
@@ -85,6 +87,7 @@ fun NotificationAppsScreen(
                         Text(app.label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
                         TextButton(onClick = { context.startActivity(popUpSettings(app.packageName)) }) { Text(stringResource(R.string.gx_popup)) }
                         Switch(
+                            modifier = Modifier.semantics { contentDescription = app.label },
                             checked = allowed,
                             onCheckedChange = { allow ->
                                 onUpdate {

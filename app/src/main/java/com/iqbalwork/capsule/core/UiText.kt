@@ -17,14 +17,15 @@ sealed interface UiText {
     /** Text that is not ours to translate, such as a system error message. */
     data class Raw(val value: String) : UiText
 
+    /** An argument that is itself a [UiText] is translated first, so messages can be nested. */
     fun resolve(context: Context): String = when (this) {
-        is Res -> context.getString(id, *args.toTypedArray())
+        is Res -> context.getString(id, *args.map { if (it is UiText) it.resolve(context) else it }.toTypedArray())
         is Raw -> value
     }
 
     @Composable
     fun asString(): String = when (this) {
-        is Res -> stringResource(id, *args.toTypedArray())
+        is Res -> stringResource(id, *args.map { if (it is UiText) it.asString() else it }.toTypedArray())
         is Raw -> value
     }
 

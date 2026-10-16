@@ -1,6 +1,14 @@
 package com.iqbalwork.capsule.ui.components
 
 import com.iqbalwork.capsule.R
+import kotlin.math.roundToInt
+import androidx.compose.ui.semantics.setProgress
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -81,7 +89,7 @@ fun ExpandedSliderCard(
             active = sliders.ringerMode != RingerMode.NORMAL,
             onIcon = { onAction(UserIntent.CycleRinger) }
         ) {
-            StyledSlider(sliders.volumeLevel, style, onValueChange = { onAction(UserIntent.SetVolume(it)) })
+            StyledSlider(sliders.volumeLevel, style, stringResource(R.string.a11y_slider_volume), onValueChange = { onAction(UserIntent.SetVolume(it)) })
         }
 
         ControlRow(
@@ -91,7 +99,7 @@ fun ExpandedSliderCard(
             onIcon = { onAction(UserIntent.ToggleAdaptiveBrightness) }
         ) {
             if (sliders.canWriteBrightness) {
-                StyledSlider(sliders.brightnessLevel, style, onValueChange = { onAction(UserIntent.SetBrightness(it)) })
+                StyledSlider(sliders.brightnessLevel, style, stringResource(R.string.a11y_slider_brightness), onValueChange = { onAction(UserIntent.SetBrightness(it)) })
             } else {
                 Hint(stringResource(R.string.st_brightness_allow)) { onAction(UserIntent.SetBrightness(sliders.brightnessLevel)) }
             }
@@ -111,6 +119,7 @@ fun ExpandedSliderCard(
                 sliders.torchStrengthSupported -> StyledSlider(
                     value = if (sliders.isTorchOn) sliders.torchStrengthLevel else 0f,
                     style = style,
+                    label = stringResource(R.string.a11y_slider_torch),
                     onValueChange = { onAction(UserIntent.SetTorchLevel(it)) }
                 )
                 else -> Hint(stringResource(if (sliders.isTorchOn) R.string.st_on else R.string.st_off))
@@ -135,7 +144,7 @@ private fun ControlRow(
                 .size(44.dp)
                 .clip(CircleShape)
                 .background(if (active) accent else Color.White.copy(alpha = if (enabled) 0.12f else 0.05f))
-                .clickable(enabled = enabled, onClick = onIcon),
+                .clickable(role = Role.Button, enabled = enabled, onClick = onIcon),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -162,13 +171,13 @@ private fun RowScope.Hint(text: String, onClick: (() -> Unit)? = null) {
         style = MaterialTheme.typography.bodyMedium,
         modifier = Modifier
             .weight(1f)
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
     )
 }
 
 /** F-51: three looks for the same 0..1 control. */
 @Composable
-private fun RowScope.StyledSlider(value: Float, style: SliderStyle, onValueChange: (Float) -> Unit) {
+private fun RowScope.StyledSlider(value: Float, style: SliderStyle, label: String, onValueChange: (Float) -> Unit) {
     val accent = MaterialTheme.colorScheme.primary
     when (style) {
         SliderStyle.SPLIT -> {
@@ -185,16 +194,16 @@ private fun RowScope.StyledSlider(value: Float, style: SliderStyle, onValueChang
                     activeTrackColor = accent,
                     inactiveTrackColor = Color.White.copy(alpha = 0.18f)
                 ),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).semantics { contentDescription = label }
             )
         }
-        SliderStyle.PILL -> DragSlider(value, onValueChange, Modifier.weight(1f)) { shown ->
+        SliderStyle.PILL -> DragSlider(value, label, onValueChange, Modifier.weight(1f)) { shown ->
             val radius = CornerRadius(size.height / 2, size.height / 2)
             drawRoundRect(Color.White.copy(alpha = 0.14f), cornerRadius = radius)
             val fill = (size.width * shown).coerceAtLeast(size.height)
             drawRoundRect(accent, size = Size(fill, size.height), cornerRadius = radius)
         }
-        SliderStyle.ROUNDED -> DragSlider(value, onValueChange, Modifier.weight(1f)) { shown ->
+        SliderStyle.ROUNDED -> DragSlider(value, label, onValueChange, Modifier.weight(1f)) { shown ->
             val track = 8.dp.toPx()
             val thumb = 11.dp.toPx()
             val top = (size.height - track) / 2
@@ -214,6 +223,7 @@ private fun RowScope.StyledSlider(value: Float, style: SliderStyle, onValueChang
 @Composable
 private fun DragSlider(
     value: Float,
+    label: String,
     onValueChange: (Float) -> Unit,
     modifier: Modifier,
     draw: DrawScope.(Float) -> Unit
@@ -223,6 +233,16 @@ private fun DragSlider(
     Canvas(
         modifier = modifier
             .height(40.dp)
+            // Dragging is not possible with a screen reader, so expose the value and let it be set.
+            .semantics {
+                contentDescription = label
+                stateDescription = "${(shown * 100).roundToInt()}%"
+                progressBarRangeInfo = ProgressBarRangeInfo(shown, 0f..1f, steps = SLIDER_A11Y_STEPS)
+                setProgress { target ->
+                    onValueChange(target.coerceIn(0f, 1f))
+                    true
+                }
+            }
             .pointerInput(Unit) {
                 awaitEachGesture {
                     val down = awaitFirstDown()
@@ -244,3 +264,6 @@ private fun DragSlider(
             }
     ) { draw(shown) }
 }
+
+/** TalkBack volume-key adjustments move the slider by 5%. */
+private const val SLIDER_A11Y_STEPS = 19

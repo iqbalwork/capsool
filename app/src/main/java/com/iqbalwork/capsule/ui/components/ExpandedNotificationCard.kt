@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule.ui.components
 
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -84,7 +85,7 @@ fun ExpandedNotificationCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(enabled = !replying) { onAction(UserIntent.NotificationOpen(notification.key)) },
+                .clickable(role = Role.Button, enabled = !replying) { onAction(UserIntent.NotificationOpen(notification.key)) },
             verticalAlignment = Alignment.Top
         ) {
             AvatarWithBadge(notification, size = 48.dp, accent = accent)

@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule.ui.companion
 
 import androidx.compose.foundation.Image
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -62,7 +63,7 @@ fun AppPickerDialog(title: String, onPick: (LaunchableApp) -> Unit, onDismiss: (
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable { onPick(app) }
+                                    .clickable(role = Role.Button) { onPick(app) }
                                     .padding(vertical = 8.dp)
                             ) {
                                 Image(app.icon.asImageBitmap(), contentDescription = null, modifier = Modifier.size(32.dp))

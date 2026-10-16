@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule.ui.components
 
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import android.os.SystemClock
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Image
@@ -81,7 +82,7 @@ fun ExpandedMediaCard(
             Cover(
                 mediaState = mediaState,
                 palette = palette,
-                modifier = Modifier.clickable { onAction(UserIntent.MediaOpenApp) }
+                modifier = Modifier.clickable(role = Role.Button) { onAction(UserIntent.MediaOpenApp) }
             )
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -203,7 +204,7 @@ private fun PlayPauseButton(isPlaying: Boolean, palette: MediaPalette, onClick: 
             .size(width = 72.dp, height = 52.dp)
             .clip(RoundedCornerShape(corner))
             .background(palette.accent)
-            .clickable(onClick = onClick),
+            .clickable(role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Icon(
@@ -222,7 +223,7 @@ private fun ControlButton(icon: Int, description: String, tint: Color, onClick: 
             .size(48.dp)
             .clip(CircleShape)
             .background(Color.White.copy(alpha = 0.1f))
-            .clickable(onClick = onClick),
+            .clickable(role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Icon(painterResource(icon), contentDescription = description, tint = tint, modifier = Modifier.size(24.dp))

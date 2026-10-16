@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule.ui.components
 
 import com.iqbalwork.capsule.R
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -130,7 +131,7 @@ private fun ShortcutTile(shortcut: Shortcut, themedIcons: Boolean, onClick: () -
     Column(
         modifier = modifier
             .clip(MaterialTheme.shapes.medium)
-            .clickable(onClick = onClick)
+            .clickable(role = Role.Button, onClick = onClick)
             .padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

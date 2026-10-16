@@ -32,6 +32,7 @@ object CapsuleReducer {
 
     private fun reduceIntent(state: CapsuleState, intent: UserIntent): Reduction = when (intent) {
         is UserIntent.Gesture -> withAutomationBroadcast(state, intent.type, reduceGesture(state, state.gesture(intent.type)))
+        is UserIntent.Perform -> reduceGesture(state, GestureBinding(intent.action))
         UserIntent.SwipeUp, UserIntent.Collapse -> collapse(state)
         is UserIntent.SelectCard -> Reduction(state.copy(focusedPageKey = CardPage.Dynamic(intent.card).key))
 

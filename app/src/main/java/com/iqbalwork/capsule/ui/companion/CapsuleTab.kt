@@ -1,6 +1,14 @@
 package com.iqbalwork.capsule.ui.companion
 
 import android.Manifest
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
 import android.app.NotificationManager
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -123,10 +131,14 @@ fun CapsuleTab(
                     checked = settings.alwaysShowPill,
                     onChange = { show -> onUpdate { it.copy(alwaysShowPill = show) } }
                 )
-                Text(stringResource(R.string.cap_idle_opacity, (settings.idleOpacity * 100).roundToInt()), style = MaterialTheme.typography.bodyMedium)
+                val idleOpacityLabel = stringResource(R.string.cap_idle_opacity, (settings.idleOpacity * 100).roundToInt())
+                Text(idleOpacityLabel, style = MaterialTheme.typography.bodyMedium)
                 Slider(
                     value = settings.idleOpacity,
                     onValueChange = { v -> onUpdate { it.copy(idleOpacity = v) } },
+                    modifier = Modifier.semantics {
+                        contentDescription = idleOpacityLabel
+                    },
                     steps = 4
                 )
                 Text(stringResource(R.string.cap_accent_colors), style = MaterialTheme.typography.bodyMedium)
@@ -233,14 +245,13 @@ fun CapsuleTab(
         }
         item {
             Section(stringResource(R.string.cap_sec_animation)) {
-                Text(
-                    stringResource(R.string.cap_speed, "%.1f".format(settings.animationSpeed)),
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                val speedLabel = stringResource(R.string.cap_speed, "%.1f".format(settings.animationSpeed))
+                Text(speedLabel, style = MaterialTheme.typography.bodyMedium)
                 Slider(
                     value = settings.animationSpeed,
                     onValueChange = { v -> onUpdate { it.copy(animationSpeed = (v * 10).roundToInt() / 10f) } },
                     valueRange = MIN_ANIMATION_SPEED..MAX_ANIMATION_SPEED,
+                    modifier = Modifier.semantics { contentDescription = speedLabel },
                     steps = 14,
                     enabled = !settings.reduceAnimations
                 )
@@ -688,10 +699,12 @@ private fun SwatchRow(colors: List<Long>, selected: Long?, defaultLabel: String,
         modifier = Modifier.fillMaxWidth()
     ) {
         FilterChip(selected = selected == null, onClick = { onSelect(null) }, label = { Text(defaultLabel) })
-        colors.forEach { argb ->
+        colors.forEachIndexed { index, argb ->
             val isSelected = selected == argb
+            val swatchName = stringResource(R.string.a11y_swatch, index + 1)
             Box(
                 modifier = Modifier
+                    .minimumInteractiveComponentSize()
                     .size(36.dp)
                     .clip(CircleShape)
                     .background(Color(argb))
@@ -700,7 +713,8 @@ private fun SwatchRow(colors: List<Long>, selected: Long?, defaultLabel: String,
                         color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                         shape = CircleShape
                     )
-                    .clickable { onSelect(argb) }
+                    .selectable(selected = isSelected, role = Role.RadioButton, onClick = { onSelect(argb) })
+                    .semantics { contentDescription = swatchName }
             )
         }
     }
@@ -708,14 +722,18 @@ private fun SwatchRow(colors: List<Long>, selected: Long?, defaultLabel: String,
 
 @Composable
 private fun SwitchRow(title: String, description: String?, checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    // One element for TalkBack ("<title>, switch, on") and a tap target as wide as the row.
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().toggleable(value = checked, role = Role.Switch, onValueChange = onChange)
+    ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.bodyLarge)
             description?.let {
                 Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        Switch(checked = checked, onCheckedChange = onChange)
+        Switch(checked = checked, onCheckedChange = null)
     }
 }
 
@@ -725,12 +743,29 @@ private fun IntSlider(label: String, value: Int, range: IntRange, unit: String =
     Slider(
         value = value.toFloat(),
         onValueChange = { onChange(it.roundToInt()) },
-        valueRange = range.first.toFloat()..range.last.toFloat()
+        valueRange = range.first.toFloat()..range.last.toFloat(),
+        // The visible label is a separate Text, so name the slider and say its value with the unit.
+        modifier = Modifier.semantics {
+            contentDescription = label
+            stateDescription = "$value $unit"
+        }
     )
 }
 
+/** From this system font scale on, segmented rows give way to wrapping chips. */
+private const val LARGE_FONT_SCALE = 1.3f
+
 @Composable
 private fun <T> Options(options: List<T>, selected: T, label: @Composable (T) -> String, onSelect: (T) -> Unit) {
+    // Segments share one row, so at large font sizes their labels would be cut off: wrap chips instead.
+    if (LocalDensity.current.fontScale > LARGE_FONT_SCALE) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            options.forEach { option ->
+                FilterChip(selected = option == selected, onClick = { onSelect(option) }, label = { Text(label(option)) })
+            }
+        }
+        return
+    }
     SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
         options.forEachIndexed { index, option ->
             SegmentedButton(

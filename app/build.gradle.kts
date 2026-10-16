@@ -20,6 +20,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Adds the en-XA (long, accented) and ar-XB (right-to-left) pseudo-locales to the
+            // language picker, to check text length and mirroring without translated text.
+            isPseudoLocalesEnabled = true
+        }
         release {
             optimization {
                 enable = true
