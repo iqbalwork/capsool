@@ -117,6 +117,8 @@ object SettingsMapper {
     private val StaticCards = stringPreferencesKey("cards.static")
     private val StaticStart = stringPreferencesKey("cards.staticStart")
     private val StaticViewMode = stringPreferencesKey("cards.staticViewMode")
+    private val HiddenPackages = stringSetPreferencesKey("visibility.hiddenPackages")
+    private val LockScreenBehaviorKey = stringPreferencesKey("visibility.lockScreenBehavior")
 
     fun read(prefs: Preferences): Settings {
         val defaults = Settings()
@@ -130,6 +132,10 @@ object SettingsMapper {
                 cornerDp = prefs[keys.corner] ?: fallback.cornerDp
             )
         }
+        val lockScreenBehavior = enumOrDefault(
+            prefs[LockScreenBehaviorKey],
+            legacyLockScreenBehavior(prefs, defaults)
+        )
         return Settings(
             portrait = readGeometry(Orientation.PORTRAIT, defaults.portrait),
             landscape = readGeometry(Orientation.LANDSCAPE, defaults.landscape),
@@ -141,6 +147,7 @@ object SettingsMapper {
             hideInFullscreen = prefs[HideFullscreen] ?: defaults.hideInFullscreen,
             hideWithKeyboard = prefs[HideKeyboard] ?: defaults.hideWithKeyboard,
             hideInLandscape = prefs[HideLandscape] ?: defaults.hideInLandscape,
+            hiddenPackages = prefs[HiddenPackages] ?: defaults.hiddenPackages,
             gesturesActive = GestureType.entries.associateWith { type ->
                 GestureBinding.decode(prefs[gestureKey(type, active = true)])
                     ?: GestureBinding.decode(prefs[legacyGestureKey(type)])
@@ -159,7 +166,9 @@ object SettingsMapper {
             notificationDisplay = enumOrDefault(prefs[NotificationDisplayKey], defaults.notificationDisplay),
             notificationDelay = enumOrDefault(prefs[NotificationDelayKey], defaults.notificationDelay),
             notificationBlockedApps = prefs[NotificationBlockedApps] ?: defaults.notificationBlockedApps,
-            hideNotificationTextWhenLocked = prefs[NotificationHideTextLocked] ?: defaults.hideNotificationTextWhenLocked,
+            lockScreenBehavior = lockScreenBehavior,
+            // Derived, not read: the legacy key is consulted only by legacyLockScreenBehavior().
+            hideNotificationTextWhenLocked = lockScreenBehavior != LockScreenBehavior.SHOW,
             removeNotificationAfterViewing = prefs[NotificationRemoveAfterViewing] ?: defaults.removeNotificationAfterViewing,
             notificationGlow = prefs[NotificationGlow] ?: defaults.notificationGlow,
             chargingCardEnabled = prefs[ChargingCardEnabled] ?: defaults.chargingCardEnabled,
@@ -209,6 +218,7 @@ object SettingsMapper {
         prefs[HideFullscreen] = settings.hideInFullscreen
         prefs[HideKeyboard] = settings.hideWithKeyboard
         prefs[HideLandscape] = settings.hideInLandscape
+        prefs[HiddenPackages] = settings.hiddenPackages
         GestureType.entries.forEach { type ->
             prefs[gestureKey(type, active = true)] = settings.gesture(type, active = true).encode()
             prefs[gestureKey(type, active = false)] = settings.gesture(type, active = false).encode()
@@ -224,7 +234,9 @@ object SettingsMapper {
         prefs[NotificationDisplayKey] = settings.notificationDisplay.name
         prefs[NotificationDelayKey] = settings.notificationDelay.name
         prefs[NotificationBlockedApps] = settings.notificationBlockedApps
-        prefs[NotificationHideTextLocked] = settings.hideNotificationTextWhenLocked
+        prefs[LockScreenBehaviorKey] = settings.lockScreenBehavior.name
+        // Dual write while the old key is retired, so an older build still reads what it expects.
+        prefs[NotificationHideTextLocked] = settings.lockScreenBehavior != LockScreenBehavior.SHOW
         prefs[NotificationRemoveAfterViewing] = settings.removeNotificationAfterViewing
         prefs[NotificationGlow] = settings.notificationGlow
         prefs[ChargingCardEnabled] = settings.chargingCardEnabled
@@ -249,6 +261,18 @@ object SettingsMapper {
         prefs[StaticViewMode] = settings.staticCardViewMode.name
         prefs[DisclosureAccepted] = settings.disclosureAccepted
     }
+
+    /**
+     * F-85 expand phase. A device that has never seen the new key keeps the behaviour it already
+     * had, so nobody's saved choice is silently reset; the old key is only dropped once it is
+     * contracted, and until then both keys are written.
+     */
+    private fun legacyLockScreenBehavior(prefs: Preferences, defaults: Settings): LockScreenBehavior =
+        when (prefs[NotificationHideTextLocked]) {
+            true -> LockScreenBehavior.SHOW_WITHOUT_CONTENT
+            false -> LockScreenBehavior.SHOW
+            null -> defaults.lockScreenBehavior
+        }
 
     private inline fun <reified E : Enum<E>> enumOrDefault(name: String?, default: E): E =
         name?.let { runCatching { enumValueOf<E>(it) }.getOrNull() } ?: default

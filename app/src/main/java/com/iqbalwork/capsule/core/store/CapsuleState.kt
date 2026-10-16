@@ -2,6 +2,7 @@ package com.iqbalwork.capsule.core.store
 
 import com.iqbalwork.capsule.core.settings.GestureBinding
 import com.iqbalwork.capsule.core.settings.GestureType
+import com.iqbalwork.capsule.core.settings.LockScreenBehavior
 import com.iqbalwork.capsule.core.settings.Orientation
 import com.iqbalwork.capsule.core.settings.Settings
 import com.iqbalwork.capsule.core.settings.StaticCardViewMode
@@ -144,7 +145,9 @@ data class CapsuleState(
 
     /** F-22: on the lock screen only public notifications show their text, if the user asks for that. */
     fun showsText(notification: CapsuleNotification): Boolean =
-        !(visibility.locked && settings.hideNotificationTextWhenLocked && !notification.isPublic)
+        !(visibility.locked &&
+            settings.lockScreenBehavior == LockScreenBehavior.SHOW_WITHOUT_CONTENT &&
+            !notification.isPublic)
 
     /**
      * The dynamic card the carousel shows (derived from [activePage] for backward compatibility).
@@ -161,6 +164,10 @@ data class CapsuleState(
         get() = settingsLoaded &&
             !screenshotPending &&
             visibility.screenOn &&
+            // F-84: the user hid the capsule in this app.
+            !(visibility.foregroundPackage != null && visibility.foregroundPackage in settings.hiddenPackages) &&
+            // F-85: "Hide" means the capsule stays away entirely while the device is locked.
+            !(visibility.locked && settings.lockScreenBehavior == LockScreenBehavior.HIDE) &&
             !(settings.hideInFullscreen && visibility.fullscreen) &&
             // Our own reply field opens the keyboard; that must not hide the capsule.
             !(settings.hideWithKeyboard && visibility.imeVisible && replyingTo == null) &&

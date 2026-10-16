@@ -3,6 +3,7 @@ package com.iqbalwork.capsule
 import android.app.Notification
 import android.app.NotificationManager
 import com.iqbalwork.capsule.NotificationFixtures.notification
+import com.iqbalwork.capsule.core.settings.LockScreenBehavior
 import com.iqbalwork.capsule.core.settings.NotificationDisplay
 import com.iqbalwork.capsule.core.settings.Settings
 import com.iqbalwork.capsule.core.store.Action
@@ -198,7 +199,7 @@ class NotificationRulesTest {
         val locked = loaded.copy(visibility = VisibilityContext(locked = true))
         assertFalse(locked.showsText(private))
         assertTrue(locked.showsText(public))
-        assertTrue(locked.copy(settings = Settings(hideNotificationTextWhenLocked = false)).showsText(private))
+        assertTrue(locked.copy(settings = Settings(lockScreenBehavior = LockScreenBehavior.SHOW)).showsText(private))
         assertTrue(loaded.showsText(private))
     }
 }

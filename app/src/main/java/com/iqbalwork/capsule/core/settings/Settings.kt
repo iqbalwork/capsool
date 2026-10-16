@@ -129,6 +129,8 @@ data class Settings(
     val hideInFullscreen: Boolean = true,
     val hideWithKeyboard: Boolean = true,
     val hideInLandscape: Boolean = true,
+    /** F-84: apps where the capsule stays hidden while they are in front. */
+    val hiddenPackages: Set<String> = emptySet(),
     val gesturesActive: Map<GestureType, GestureBinding> = DefaultActiveGestures,
     val gesturesIdle: Map<GestureType, GestureBinding> = DefaultIdleGestures,
     /** F-73: send a broadcast for every gesture so Tasker/MacroDroid can react. */
@@ -142,6 +144,12 @@ data class Settings(
     val notificationDisplay: NotificationDisplay = NotificationDisplay.COMPACT,
     val notificationDelay: NotificationDelay = NotificationDelay.SECONDS_5,
     val notificationBlockedApps: Set<String> = emptySet(),
+    /**
+     * F-85. Source of truth for lock-screen behaviour. [hideNotificationTextWhenLocked] is kept in
+     * sync with it while the old key is being retired, and new code must not read that field.
+     */
+    val lockScreenBehavior: LockScreenBehavior = LockScreenBehavior.SHOW_WITHOUT_CONTENT,
+    /** Legacy mirror of [lockScreenBehavior]; read only by the settings migration. */
     val hideNotificationTextWhenLocked: Boolean = true,
     val removeNotificationAfterViewing: Boolean = false,
     val notificationGlow: Boolean = true,
