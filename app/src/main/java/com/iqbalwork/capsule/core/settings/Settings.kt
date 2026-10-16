@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule.core.settings
 
 import com.iqbalwork.capsule.model.BarcodeContent
+import com.iqbalwork.capsule.model.CapsuleCardType
 import com.iqbalwork.capsule.model.EventCategory
 
 /**
@@ -18,6 +19,44 @@ data class Geometry(
 enum class Orientation { PORTRAIT, LANDSCAPE }
 
 enum class ColorSource { DYNAMIC, BRAND }
+
+/** Activity cards, highest priority first (spec §2.3). The order the user starts with (F-06). */
+val DefaultCardPriority: List<CapsuleCardType> = listOf(
+    CapsuleCardType.NOTIFICATION,
+    CapsuleCardType.TIMER,
+    CapsuleCardType.MEDIA,
+    CapsuleCardType.PROGRESS,
+    CapsuleCardType.CHARGING,
+    CapsuleCardType.SLIDERS,
+    CapsuleCardType.SHORTCUTS
+)
+
+/**
+ * Moves [card] by [delta] places among the reorderable cards only, so Controls and Shortcuts stay
+ * behind them. A move past either end, or of a card that cannot be moved, changes nothing.
+ */
+fun moveCard(order: List<CapsuleCardType>, card: CapsuleCardType, delta: Int): List<CapsuleCardType> {
+    val full = normalizeCardPriority(order)
+    val movable = full.filter { it in ReorderableCards }.toMutableList()
+    val from = movable.indexOf(card)
+    val to = from + delta
+    if (from == -1 || to !in movable.indices) return full
+    movable.add(to, movable.removeAt(from))
+    return movable + full.filterNot { it in ReorderableCards }
+}
+
+/** The cards whose position the user can change; Controls and Shortcuts are opened on request. */
+val ReorderableCards: List<CapsuleCardType> = DefaultCardPriority.take(5)
+
+/**
+ * Makes any stored order usable: duplicates are dropped and a card that is missing (stored by an
+ * older build, or added later) keeps its default position relative to the others by being appended
+ * in default order. The result always contains every card exactly once.
+ */
+fun normalizeCardPriority(order: List<CapsuleCardType>): List<CapsuleCardType> {
+    val seen = order.distinct()
+    return seen + DefaultCardPriority.filterNot { it in seen }
+}
 
 /**
  * F-81: outline of the capsule. ROUNDED_RECT uses the geometry's corner radius (what the capsule
@@ -145,6 +184,8 @@ data class Settings(
     val showCalibrationTarget: Boolean = false,
     val colorSource: ColorSource = ColorSource.DYNAMIC,
     val hapticsEnabled: Boolean = true,
+    /** F-06: which activity card comes first when several are active. Always a full permutation. */
+    val cardPriority: List<CapsuleCardType> = DefaultCardPriority,
     val shapeStyle: CapsuleShapeStyle = CapsuleShapeStyle.ROUNDED_RECT,
     /** F-81: ARGB of the capsule background; null = the black shell that blends with the camera. */
     val customBackground: Long? = null,

@@ -5,6 +5,7 @@ import com.iqbalwork.capsule.core.settings.GestureType
 import com.iqbalwork.capsule.core.settings.LockScreenBehavior
 import com.iqbalwork.capsule.core.settings.Orientation
 import com.iqbalwork.capsule.core.settings.Settings
+import com.iqbalwork.capsule.core.settings.normalizeCardPriority
 import com.iqbalwork.capsule.core.settings.StaticCardViewMode
 import com.iqbalwork.capsule.model.CapsuleCardType
 import com.iqbalwork.capsule.model.ChargingState
@@ -29,17 +30,6 @@ data class VisibilityContext(
 
 /** Most notifications the capsule keeps at once (spec §2.5.2). */
 const val MAX_CAPSULE_NOTIFICATIONS = 5
-
-/** Activity cards, highest priority first (spec §2.3). */
-private val CardPriority = listOf(
-    CapsuleCardType.NOTIFICATION,
-    CapsuleCardType.TIMER,
-    CapsuleCardType.MEDIA,
-    CapsuleCardType.PROGRESS,
-    CapsuleCardType.CHARGING,
-    CapsuleCardType.SLIDERS,
-    CapsuleCardType.SHORTCUTS
-)
 
 data class CapsuleState(
     val settingsLoaded: Boolean = false,
@@ -75,7 +65,7 @@ data class CapsuleState(
      */
     val pages: List<CardPage>
         get() {
-            val dynamic = CardPriority.filter { card ->
+            val dynamic = normalizeCardPriority(settings.cardPriority).filter { card ->
                 when (card) {
                     CapsuleCardType.NOTIFICATION -> settings.notificationsEnabled && notifications.isNotEmpty()
                     CapsuleCardType.TIMER -> settings.timerEnabled && timer != null

@@ -49,6 +49,10 @@ import androidx.compose.ui.unit.dp
 import com.iqbalwork.capsule.core.settings.BounceLevel
 import com.iqbalwork.capsule.core.settings.CapsuleShapeStyle
 import com.iqbalwork.capsule.core.settings.ColorSource
+import com.iqbalwork.capsule.core.settings.DefaultCardPriority
+import com.iqbalwork.capsule.core.settings.ReorderableCards
+import com.iqbalwork.capsule.core.settings.moveCard
+import com.iqbalwork.capsule.core.settings.normalizeCardPriority
 import com.iqbalwork.capsule.core.settings.ExpandStyle
 import com.iqbalwork.capsule.core.settings.MAX_ANIMATION_SPEED
 import com.iqbalwork.capsule.core.settings.MAX_BORDER_DP
@@ -136,6 +140,36 @@ fun CapsuleTab(
                     checked = settings.hapticsEnabled,
                     onChange = { on -> onUpdate { it.copy(hapticsEnabled = on) } }
                 )
+            }
+        }
+        item {
+            Section("Card priority") {
+                Text(
+                    "When several things are active at once, the card higher in this list comes first.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                val order = normalizeCardPriority(settings.cardPriority).filter { it in ReorderableCards }
+                order.forEachIndexed { index, card ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "${index + 1}. ${card.displayName}",
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TextButton(
+                            enabled = index > 0,
+                            onClick = { onUpdate { it.copy(cardPriority = moveCard(it.cardPriority, card, -1)) } }
+                        ) { Text("Up") }
+                        TextButton(
+                            enabled = index < order.lastIndex,
+                            onClick = { onUpdate { it.copy(cardPriority = moveCard(it.cardPriority, card, 1)) } }
+                        ) { Text("Down") }
+                    }
+                }
+                TextButton(onClick = { onUpdate { it.copy(cardPriority = DefaultCardPriority) } }) {
+                    Text("Reset order")
+                }
             }
         }
         item {
