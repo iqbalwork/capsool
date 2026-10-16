@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mda_only_selected">Hanya pemutar terpilih</string>
+    <string name="mda_only_selected_desc">Tampilkan kartu media hanya untuk app yang Anda pilih di bawah. Pemutar lain diabaikan.</string>
+    <string name="mda_allowed_title">Pemutar yang diizinkan</string>
+    <string name="mda_allowed_desc">Bila tidak ada yang dipilih, tidak ada pemutar yang tampil di kapsul.</string>
+    <string name="mda_pick_title">Pilih app pemutar</string>
+</resources>

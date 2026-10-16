@@ -71,13 +71,20 @@ fun ExpandedNotificationCard(
     replying: Boolean,
     queuedCount: Int,
     onAction: (UserIntent) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** F-23: drag the card sideways to dismiss it. Only for notifications the user may clear. */
+    swipeToDismiss: Boolean = false
 ) {
     val accent = remember(notification.glowColor) { mediaPalette(Color(notification.glowColor)).accent }
 
     Column(
         modifier = modifier
             .fillMaxSize()
+            .swipeToDismiss(
+                enabled = swipeToDismiss && notification.clearable && !replying,
+                key = notification.key,
+                onDismiss = { onAction(UserIntent.NotificationDismiss(notification.key)) }
+            )
             .background(Brush.verticalGradient(listOf(lerp(Color.Black, Color(notification.glowColor), 0.22f), Color.Black)))
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalArrangement = Arrangement.SpaceBetween

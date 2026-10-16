@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="swp_title">Swipe to dismiss</string>
+    <string name="swp_desc">Drag a notification card left or right to dismiss it. While this is on, swiping on that card no longer switches cards; swipe on the dots below it instead.</string>
+</resources>

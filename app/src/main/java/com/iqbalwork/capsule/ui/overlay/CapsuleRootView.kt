@@ -262,9 +262,11 @@ private fun ExpandedCarousel(
         }
 
         if (pages.size > 1) {
+            // Full width, so a swipe anywhere along this strip switches cards even where the card
+            // above consumes sideways drags (swipe to dismiss).
             Row(
-                modifier = Modifier.padding(bottom = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 pages.forEach { page ->
@@ -348,7 +350,8 @@ private fun DynamicCardContent(card: CapsuleCardType, state: CapsuleState, dispa
                 showText = state.showsText(notification),
                 replying = state.replyingTo == notification.key,
                 queuedCount = state.notifications.size,
-                onAction = dispatch
+                onAction = dispatch,
+                swipeToDismiss = state.settings.notificationSwipeDismiss
             )
         }
         CapsuleCardType.TIMER -> state.timer?.let { ExpandedTimerCard(timer = it, onAction = dispatch) }

@@ -100,6 +100,8 @@ object SettingsMapper {
     private val HideKeyboard = booleanPreferencesKey("visibility.hideIme")
     private val HideLandscape = booleanPreferencesKey("visibility.hideLandscape")
     private val MediaEnabled = booleanPreferencesKey("cards.media.enabled")
+    private val MediaOnlyAllowed = booleanPreferencesKey("media.onlyAllowedApps")
+    private val MediaAllowedApps = stringSetPreferencesKey("media.appWhitelist")
     private val MediaCollapseDelayKey = stringPreferencesKey("media.collapseDelay")
     private val MediaHideWhenAppInFront = booleanPreferencesKey("media.hideWhenAppForeground")
     private val NotificationsEnabled = booleanPreferencesKey("cards.notification.enabled")
@@ -108,6 +110,7 @@ object SettingsMapper {
     private val NotificationBlockedApps = stringSetPreferencesKey("notification.blockedPackages")
     private val NotificationHideTextLocked = booleanPreferencesKey("notification.hideContentWhenLocked")
     private val NotificationRemoveAfterViewing = booleanPreferencesKey("notification.removeAfterViewing")
+    private val NotificationSwipeDismiss = booleanPreferencesKey("notification.swipeDismiss")
     private val NotificationGlow = booleanPreferencesKey("notification.glow")
     private val ChargingCardEnabled = booleanPreferencesKey("cards.charging.enabled")
     private val EnabledEvents = stringSetPreferencesKey("events.enabled")
@@ -200,6 +203,8 @@ object SettingsMapper {
             shortcuts = Shortcut.decodeAll(prefs[Shortcuts]),
             themedShortcutIcons = prefs[ThemedShortcutIcons] ?: defaults.themedShortcutIcons,
             mediaEnabled = prefs[MediaEnabled] ?: defaults.mediaEnabled,
+            mediaOnlyAllowedApps = prefs[MediaOnlyAllowed] ?: defaults.mediaOnlyAllowedApps,
+            mediaAllowedApps = prefs[MediaAllowedApps] ?: defaults.mediaAllowedApps,
             mediaCollapseDelay = enumOrDefault(prefs[MediaCollapseDelayKey], defaults.mediaCollapseDelay),
             hideMediaWhenAppInFront = prefs[MediaHideWhenAppInFront] ?: defaults.hideMediaWhenAppInFront,
             notificationsEnabled = prefs[NotificationsEnabled] ?: defaults.notificationsEnabled,
@@ -211,6 +216,7 @@ object SettingsMapper {
             hideNotificationTextWhenLocked = lockScreenBehavior != LockScreenBehavior.SHOW,
             removeNotificationAfterViewing = prefs[NotificationRemoveAfterViewing] ?: defaults.removeNotificationAfterViewing,
             notificationGlow = prefs[NotificationGlow] ?: defaults.notificationGlow,
+            notificationSwipeDismiss = prefs[NotificationSwipeDismiss] ?: defaults.notificationSwipeDismiss,
             chargingCardEnabled = prefs[ChargingCardEnabled] ?: defaults.chargingCardEnabled,
             enabledEvents = prefs[EnabledEvents]
                 ?.mapNotNullTo(mutableSetOf()) { name -> EventCategory.entries.firstOrNull { it.name == name } }
@@ -288,6 +294,8 @@ object SettingsMapper {
         prefs[Shortcuts] = Shortcut.encodeAll(settings.shortcuts)
         prefs[ThemedShortcutIcons] = settings.themedShortcutIcons
         prefs[MediaEnabled] = settings.mediaEnabled
+        prefs[MediaOnlyAllowed] = settings.mediaOnlyAllowedApps
+        prefs[MediaAllowedApps] = settings.mediaAllowedApps
         prefs[MediaCollapseDelayKey] = settings.mediaCollapseDelay.name
         prefs[MediaHideWhenAppInFront] = settings.hideMediaWhenAppInFront
         prefs[NotificationsEnabled] = settings.notificationsEnabled
@@ -299,6 +307,7 @@ object SettingsMapper {
         prefs[NotificationHideTextLocked] = settings.lockScreenBehavior != LockScreenBehavior.SHOW
         prefs[NotificationRemoveAfterViewing] = settings.removeNotificationAfterViewing
         prefs[NotificationGlow] = settings.notificationGlow
+        prefs[NotificationSwipeDismiss] = settings.notificationSwipeDismiss
         prefs[ChargingCardEnabled] = settings.chargingCardEnabled
         prefs[EnabledEvents] = settings.enabledEvents.mapTo(mutableSetOf()) { it.name }
         prefs[MiniEventDurationKey] = settings.miniEventDuration.name

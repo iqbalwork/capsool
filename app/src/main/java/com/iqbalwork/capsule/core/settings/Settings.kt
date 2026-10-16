@@ -297,6 +297,9 @@ data class Settings(
     val mediaEnabled: Boolean = true,
     val mediaCollapseDelay: MediaCollapseDelay = MediaCollapseDelay.SECONDS_30,
     val hideMediaWhenAppInFront: Boolean = true,
+    /** F-13: when true, only players in [mediaAllowedApps] may show in the capsule. */
+    val mediaOnlyAllowedApps: Boolean = false,
+    val mediaAllowedApps: Set<String> = emptySet(),
     val notificationsEnabled: Boolean = true,
     val notificationDisplay: NotificationDisplay = NotificationDisplay.COMPACT,
     val notificationDelay: NotificationDelay = NotificationDelay.SECONDS_5,
@@ -310,6 +313,8 @@ data class Settings(
     val hideNotificationTextWhenLocked: Boolean = true,
     val removeNotificationAfterViewing: Boolean = false,
     val notificationGlow: Boolean = true,
+    /** F-23: drag a notification card sideways to dismiss it. Off by default: swipes change cards. */
+    val notificationSwipeDismiss: Boolean = false,
     val chargingCardEnabled: Boolean = true,
     val enabledEvents: Set<EventCategory> = DefaultEventCategories,
     val miniEventDuration: MiniEventDuration = MiniEventDuration.SECONDS_3,
@@ -351,6 +356,9 @@ data class Settings(
         get() = if (effectiveStaticCards.any { it.id == startCardId }) startCardId else null
 
     /** The orientation's template, used when [profile] is unknown or has no calibration yet. */
+    /** F-13: may the player from [packageName] show in the capsule? */
+    fun allowsMedia(packageName: String): Boolean = !mediaOnlyAllowedApps || packageName in mediaAllowedApps
+
     fun geometry(orientation: Orientation): Geometry =
         if (orientation == Orientation.LANDSCAPE) landscape else portrait
 

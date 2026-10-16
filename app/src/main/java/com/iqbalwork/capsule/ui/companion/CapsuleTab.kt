@@ -401,6 +401,13 @@ fun CapsuleTab(
                     checked = settings.hideMediaWhenAppInFront,
                     onChange = { on -> onUpdate { it.copy(hideMediaWhenAppInFront = on) } }
                 )
+                SwitchRow(
+                    title = stringResource(R.string.mda_only_selected),
+                    description = stringResource(R.string.mda_only_selected_desc),
+                    checked = settings.mediaOnlyAllowedApps,
+                    onChange = { on -> onUpdate { it.copy(mediaOnlyAllowedApps = on) } }
+                )
+                if (settings.mediaOnlyAllowedApps) AllowedMediaAppsList(settings = settings, onUpdate = onUpdate)
                 Text(stringResource(R.string.cap_media_keep_for), style = MaterialTheme.typography.bodyMedium)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     MediaCollapseDelay.entries.forEach { delay ->
@@ -480,6 +487,12 @@ fun CapsuleTab(
                     description = stringResource(R.string.cap_glow_desc),
                     checked = settings.notificationGlow,
                     onChange = { on -> onUpdate { it.copy(notificationGlow = on) } }
+                )
+                SwitchRow(
+                    title = stringResource(R.string.swp_title),
+                    description = stringResource(R.string.swp_desc),
+                    checked = settings.notificationSwipeDismiss,
+                    onChange = { on -> onUpdate { it.copy(notificationSwipeDismiss = on) } }
                 )
                 TextButton(onClick = onOpenNotificationApps) { Text(stringResource(R.string.cap_choose_apps)) }
             }
@@ -730,14 +743,45 @@ private fun Section(title: String, content: @Composable () -> Unit) {
 /** F-84: apps where the capsule stays out of the way. Lives inside the "Hide the capsule" section. */
 @Composable
 private fun HiddenAppsList(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit) {
+    PackageListEditor(
+        title = stringResource(R.string.cap_hidden_stay),
+        description = stringResource(R.string.cap_hidden_desc),
+        packages = settings.hiddenPackages,
+        pickerTitle = stringResource(R.string.cap_pick_app_title),
+        onChange = { packages -> onUpdate { it.copy(hiddenPackages = packages(it.hiddenPackages)) } }
+    )
+}
+
+/** F-13: the players allowed in the media card when "only selected apps" is on. */
+@Composable
+private fun AllowedMediaAppsList(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit) {
+    PackageListEditor(
+        title = stringResource(R.string.mda_allowed_title),
+        description = stringResource(R.string.mda_allowed_desc),
+        packages = settings.mediaAllowedApps,
+        pickerTitle = stringResource(R.string.mda_pick_title),
+        onChange = { packages -> onUpdate { it.copy(mediaAllowedApps = packages(it.mediaAllowedApps)) } }
+    )
+}
+
+/**
+ * A list of apps stored as package names, with add and remove. Only package names are kept (that
+ * is what the rules compare); labels are resolved for display, and a package that cannot be
+ * resolved falls back to its own name rather than vanishing from the list.
+ */
+@Composable
+private fun PackageListEditor(
+    title: String,
+    description: String,
+    packages: Set<String>,
+    pickerTitle: String,
+    onChange: ((Set<String>) -> Set<String>) -> Unit
+) {
     val context = LocalContext.current
     var pickingApp by remember { mutableStateOf(false) }
     val packageManager = context.packageManager
-    // Only package names are stored — that is what the visibility rule compares. Labels are
-    // resolved for display so the list reads like app names instead of package strings, and an
-    // unresolvable package falls back to its own name rather than vanishing.
-    val labels = remember(settings.hiddenPackages) {
-        settings.hiddenPackages.associateWith { packageName ->
+    val labels = remember(packages) {
+        packages.associateWith { packageName ->
             runCatching { packageManager.getApplicationInfo(packageName, 0) }.getOrNull()
                 ?.let { packageManager.getApplicationLabel(it).toString() }
                 ?: packageName
@@ -745,13 +789,13 @@ private fun HiddenAppsList(settings: Settings, onUpdate: ((Settings) -> Settings
     }
 
     Column {
-        Text(stringResource(R.string.cap_hidden_stay), style = MaterialTheme.typography.bodyLarge)
+        Text(title, style = MaterialTheme.typography.bodyLarge)
         Text(
-            stringResource(R.string.cap_hidden_desc),
+            description,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        settings.hiddenPackages
+        packages
             .sortedBy { labels[it] ?: it }
             .forEach { packageName ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -760,11 +804,7 @@ private fun HiddenAppsList(settings: Settings, onUpdate: ((Settings) -> Settings
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.weight(1f)
                     )
-                    TextButton(
-                        onClick = {
-                            onUpdate { it.copy(hiddenPackages = it.hiddenPackages - packageName) }
-                        }
-                    ) { Text(stringResource(R.string.cap_remove)) }
+                    TextButton(onClick = { onChange { it - packageName } }) { Text(stringResource(R.string.cap_remove)) }
                 }
             }
         TextButton(onClick = { pickingApp = true }) { Text(stringResource(R.string.cap_add_app)) }
@@ -772,9 +812,9 @@ private fun HiddenAppsList(settings: Settings, onUpdate: ((Settings) -> Settings
 
     if (pickingApp) {
         AppPickerDialog(
-            title = stringResource(R.string.cap_pick_app_title),
+            title = pickerTitle,
             onPick = { app ->
-                onUpdate { it.copy(hiddenPackages = it.hiddenPackages + app.packageName) }
+                onChange { it + app.packageName }
                 pickingApp = false
             },
             onDismiss = { pickingApp = false }

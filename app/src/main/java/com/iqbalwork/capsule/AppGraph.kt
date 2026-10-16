@@ -26,7 +26,12 @@ class AppGraph(context: Context) {
     val settingsRepository = SettingsRepository(context)
     // The lambda reads `effects` lazily, which breaks the store → effects → media → store cycle.
     val store: CapsuleStore = CapsuleStore(appScope) { effects.handle(it) }
-    val mediaSource: MediaSource = MediaSource(context.applicationContext, appScope, store::dispatch)
+    val mediaSource: MediaSource = MediaSource(
+        context = context.applicationContext,
+        scope = appScope,
+        isAllowed = { packageName -> store.state.value.settings.allowsMedia(packageName) },
+        dispatch = store::dispatch
+    )
     val notificationSource: NotificationSource = NotificationSource(
         context = context.applicationContext,
         scope = appScope,
@@ -53,8 +58,13 @@ class AppGraph(context: Context) {
 
     init {
         appScope.launch {
+            var mediaFilter: Pair<Boolean, Set<String>>? = null
             settingsRepository.settings.collect {
                 store.dispatch(SystemEvent.SettingsChanged(it))
+                // The allowed players decide which session is followed, so changing them re-selects.
+                val filter = it.mediaOnlyAllowedApps to it.mediaAllowedApps
+                if (mediaFilter != null && mediaFilter != filter) mediaSource.refreshSelection()
+                mediaFilter = filter
                 controls.refresh() // brightness position depends on the calibrated maximum
             }
         }

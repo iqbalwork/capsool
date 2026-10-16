@@ -621,7 +621,7 @@ Pekerjaan:
 - [x] Langkah izin notification access di halaman Status (+ fallback ke daftar listener).
 - [x] Gesture saat kartu expanded: hanya swipe yang ditangani kapsul; tap/long press diserahkan ke tombol kartu, dan drag slider tidak lagi dianggap swipe ganti kartu.
 - [x] Debug-only: `MediaSession` asli tanpa audio untuk tes end-to-end di device tanpa app musik.
-- [ ] F-13 whitelist app media — belum (P1, ditunda; toggle on/off media sudah ada).
+- [x] F-13 whitelist app media (P1): `mediaOnlyAllowedApps` + `mediaAllowedApps` (kunci `media.onlyAllowedApps`, `media.appWhitelist`). Disaring **di pemilihan sesi** (`MediaSource.isAllowed`), bukan di tampilan, sehingga pemutar yang tidak diizinkan tidak bisa menutupi pemutar lain yang diizinkan; mengubah daftar langsung memilih ulang sesi. Daftar kosong + saklar aktif = tidak ada pemutar. Belum dicoba dengan dua pemutar nyata.
 
 Acceptance di device (✅ = emulator Pixel 10 Pro / API 37 dengan `MediaSession` debug asli, 2026-10-15; user melaporkan M0+M1 berjalan di HP-nya — Pixel 8 Pro terhubung, detail per item belum dicatat):
 - [~] Spotify, YouTube Music, player lokal: judul, artis, cover sesuai. ✅ untuk sesi debug (lewat `MediaSessionManager` sungguhan). ❌ belum dites dengan Spotify/YouTube Music/player lokal (butuh login atau app tidak ada di emulator).
@@ -643,7 +643,7 @@ Pekerjaan:
 - [x] Halaman "Apps in the capsule" (F-22 + F-26): blokir per app + tombol "Pop-up" ke pengaturan notifikasi app (`ACTION_APP_NOTIFICATION_SETTINGS`). Daftar app lewat `LauncherApps`; `<queries>` launcher untuk nama/ikon (bukan `QUERY_ALL_PACKAGES`).
 - [x] Hapus dari shade setelah dilihat (F-25, opsional, default mati) dan glow berdenyut di pill (F-20).
 - [x] Debug-only: notifikasi chat asli (MessagingStyle + RemoteInput + mark-as-read) untuk tes end-to-end.
-- [ ] F-23 swipe samping untuk dismiss — belum (swipe kiri/kanan sudah dipakai ganti kartu; perlu desain gesture dulu).
+- [x] F-23 swipe samping untuk dismiss (P1). Desain: **opt-in** (`notificationSwipeDismiss`, default mati) karena swipe kiri/kanan di kartu notifikasi sebelumnya berarti ganti kartu. Saat aktif, menyeret kartu notifikasi (yang boleh dihapus, bukan saat membalas) melewati 96 dp lalu melepas akan `NotificationDismiss`; kurang dari itu kartu kembali. Drag horizontal dikonsumsi kartu sehingga gestur kapsul tidak ikut ganti kartu; swipe ke atas tetap menutup. Untuk ganti kartu, geser di baris titik halaman (kini selebar kartu). Swipe-up-untuk-collapse sudah ada sebelumnya. Belum dicoba di perangkat.
 
 Acceptance di device (✅ = emulator Pixel 10 Pro / API 37 dengan notifikasi debug asli, 2026-10-15):
 - [~] Pesan WhatsApp & Telegram masuk → avatar, nama, isi, badge app, glow. ✅ untuk notifikasi MessagingStyle debug (pill: avatar + ikon app + glow hijau; kartu: pengirim, app, pesan). ❌ belum dites dengan WhatsApp/Telegram asli.

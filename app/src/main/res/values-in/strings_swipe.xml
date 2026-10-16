@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="swp_title">Geser untuk menutup</string>
+    <string name="swp_desc">Geser kartu notifikasi ke kiri atau kanan untuk menutupnya. Saat aktif, menggeser kartu itu tidak lagi berpindah kartu; geser di titik-titik di bawahnya untuk berpindah.</string>
+</resources>
