@@ -65,6 +65,7 @@ import com.iqbalwork.capsule.core.settings.ShortcutKind
 import com.iqbalwork.capsule.core.settings.SystemShortcut
 import com.iqbalwork.capsule.platform.barcode.BarcodeScanResult
 import com.iqbalwork.capsule.platform.barcode.scanImage
+import com.iqbalwork.capsule.platform.barcode.scanWithPlayServices
 import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.rememberCoroutineScope
@@ -110,22 +111,39 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
     var scanningImage by remember { mutableStateOf(false) }
     var scanError by remember { mutableStateOf<String?>(null) }
 
+    // Both entry points (gallery image, camera) end in the same three outcomes.
+    val applyScanResult: (BarcodeScanResult) -> Unit = { result ->
+        when (result) {
+            is BarcodeScanResult.Found -> {
+                scanError = null
+                onUpdate { s ->
+                    s.copy(barcode = s.barcode.copy(
+                        content = result.code.content,
+                        format = result.code.format,
+                    ))
+                }
+            }
+            is BarcodeScanResult.Failed -> scanError = result.message
+            // The user backed out of the camera scanner; that is not an error.
+            BarcodeScanResult.Cancelled -> scanError = null
+        }
+    }
+
     val pickImage = rememberLauncherForActivityResult(PickVisualMedia()) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         scanError = null
         scanningImage = true
         scope.launch {
-            when (val result = scanImage(context, uri, settings.barcode.format)) {
-                is BarcodeScanResult.Found -> {
-                    onUpdate { s ->
-                        s.copy(barcode = s.barcode.copy(
-                            content = result.code.content,
-                            format = result.code.format,
-                        ))
-                    }
-                }
-                is BarcodeScanResult.Failed -> scanError = result.message
-            }
+            applyScanResult(scanImage(context, uri, settings.barcode.format))
+            scanningImage = false
+        }
+    }
+
+    val startCameraScan: () -> Unit = {
+        scanError = null
+        scanningImage = true
+        scope.launch {
+            applyScanResult(scanWithPlayServices(context, settings.barcode.format))
             scanningImage = false
         }
     }
@@ -267,9 +285,16 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
                         ) {
                             Text("Scan from image")
                         }
-                        if (scanningImage) {
-                            LinearProgressIndicator(modifier = Modifier.weight(1f))
+                        // Runs inside Play Services, so it needs no camera permission.
+                        OutlinedButton(
+                            onClick = startCameraScan,
+                            enabled = !scanningImage
+                        ) {
+                            Text("Scan with camera")
                         }
+                    }
+                    if (scanningImage) {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                     }
                     scanError?.let { message ->
                         Text(
