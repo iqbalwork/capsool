@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="st_a11y_title">Layanan aksesibilitas</string>
-    <string name="st_a11y_on">Berjalan. Kapsul ditampilkan di atas aplikasi lain.</string>
+    <string name="st_a11y_on">Berjalan. Kapsul muncul di atas aplikasi lain saat ada kejadian, seperti charger, notifikasi, atau musik. Agar selalu terlihat, aktifkan \"Selalu tampilkan pil\" di tab Capsule.</string>
     <string name="st_a11y_off">Mati. Aktifkan Capsool di setelan Aksesibilitas untuk menampilkan kapsul.</string>
     <string name="st_a11y_open">Buka setelan Aksesibilitas</string>
     <string name="st_notif_title">Akses notifikasi</string>

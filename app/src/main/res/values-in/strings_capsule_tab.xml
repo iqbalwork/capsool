@@ -13,7 +13,7 @@
     <string name="cap_reset_orientation">Setel ulang orientasi ini</string>
     <string name="cap_sec_appearance">Tampilan</string>
     <string name="cap_always_show_pill">Selalu tampilkan pil</string>
-    <string name="cap_always_show_pill_desc">Kapsul tetap terlihat meski tidak ada aktivitas.</string>
+    <string name="cap_always_show_pill_desc">Tampilkan kapsul meski tidak ada kejadian. Saat mati, kapsul hanya muncul untuk event dan kartu aktif, dan gestur ketuk serta tekan lama saat idle tidak tersedia.</string>
     <string name="cap_idle_opacity">Opasitas saat diam: %1$d%%</string>
     <string name="cap_accent_colors">Warna aksen</string>
     <string name="cap_from_wallpaper">Dari wallpaper</string>

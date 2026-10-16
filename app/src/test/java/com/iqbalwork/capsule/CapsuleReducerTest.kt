@@ -38,7 +38,15 @@ class CapsuleReducerTest {
     @Test
     fun hiddenUntilSettingsLoaded() {
         assertEquals(CapsuleMode.HIDDEN, CapsuleState().mode)
-        assertEquals(CapsuleMode.IDLE, loaded.mode)
+        assertEquals(CapsuleMode.IDLE, loaded.copy(settings = Settings(alwaysShowPill = true)).mode)
+    }
+
+    @Test
+    fun theIdlePillIsHiddenByDefaultAndAppearsOnlyForEventsAndCards() {
+        assertEquals(false, Settings().alwaysShowPill)
+        assertEquals(CapsuleMode.HIDDEN, loaded.mode)
+        val event = com.iqbalwork.capsule.model.MiniEvent(1L, com.iqbalwork.capsule.model.MiniEventType.WIFI_CONNECTED, "Wi-Fi")
+        assertEquals(CapsuleMode.MINI_EVENT, reduce(loaded, SystemEvent.MiniEventStarted(event)).mode)
     }
 
     @Test
@@ -52,7 +60,10 @@ class CapsuleReducerTest {
     fun visibilityRulesHideCapsule() {
         val fullscreen = loaded.copy(visibility = VisibilityContext(fullscreen = true))
         assertEquals(CapsuleMode.HIDDEN, fullscreen.mode)
-        assertEquals(CapsuleMode.IDLE, fullscreen.copy(settings = Settings(hideInFullscreen = false)).mode)
+        assertEquals(
+            CapsuleMode.IDLE,
+            fullscreen.copy(settings = Settings(hideInFullscreen = false, alwaysShowPill = true)).mode
+        )
         assertEquals(CapsuleMode.HIDDEN, loaded.copy(visibility = VisibilityContext(imeVisible = true)).mode)
         assertEquals(CapsuleMode.HIDDEN, loaded.copy(visibility = VisibilityContext(orientation = Orientation.LANDSCAPE)).mode)
         assertEquals(CapsuleMode.HIDDEN, loaded.copy(visibility = VisibilityContext(screenOn = false)).mode)
