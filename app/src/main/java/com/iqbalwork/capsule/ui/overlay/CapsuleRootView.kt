@@ -31,9 +31,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
@@ -62,7 +64,11 @@ import com.iqbalwork.capsule.ui.components.ExpandedBarcodeCard
 import com.iqbalwork.capsule.ui.components.ExpandedIntentCard
 import com.iqbalwork.capsule.ui.components.MiniCapsuleView
 import com.iqbalwork.capsule.ui.components.RedTargetCalibratorView
+import com.iqbalwork.capsule.ui.theme.CapsuleMotion
 import com.iqbalwork.capsule.ui.theme.CapsuleTokens
+import com.iqbalwork.capsule.ui.theme.capsuleShape
+import com.iqbalwork.capsule.ui.theme.collapsedCornerDp
+import com.iqbalwork.capsule.ui.theme.readableShellColor
 
 /**
  * The capsule itself: a black pill sized from the user's geometry that springs open into
@@ -81,7 +87,10 @@ fun CapsuleRootView(
     val mode = state.mode
     val expanded = mode == CapsuleMode.EXPANDED
     val haptics = LocalHapticFeedback.current
-    val sizeSpring = if (expanded) CapsuleTokens.FruitSpringDp else CapsuleTokens.CollapseSpringDp
+    val motion = remember(settings.animationSpeed, settings.bounce, settings.expandStyle, settings.reduceAnimations) {
+        CapsuleMotion.of(settings)
+    }
+    val sizeSpring = if (expanded) motion.expand.spec<Dp>() else motion.collapse.spec<Dp>()
 
     val width by animateDpAsState(
         targetValue = if (expanded) expandedWidth
@@ -95,12 +104,15 @@ fun CapsuleRootView(
         label = "capsule_height"
     )
     val corner by animateDpAsState(
-        targetValue = if (expanded) CapsuleTokens.ExpandedCornerRadius else geometry.cornerDp.dp,
+        targetValue = if (expanded) CapsuleTokens.ExpandedCornerRadius
+        else collapsedCornerDp(settings.shapeStyle, geometry.cornerDp, geometry.heightDp),
         animationSpec = sizeSpring,
         label = "capsule_corner"
     )
     val alpha = if (mode == CapsuleMode.IDLE) settings.idleOpacity else 1f
-    val shape = RoundedCornerShape(corner)
+    val shape = capsuleShape(settings.shapeStyle, corner)
+    val shellColor = settings.customBackground?.let { Color(readableShellColor(it)) } ?: CapsuleTokens.Shell
+    val borderColor = settings.borderColor?.let { Color(it) } ?: MaterialTheme.colorScheme.outline
 
     fun gesture(type: GestureType, haptic: HapticFeedbackType = HapticFeedbackType.TextHandleMove) {
         if (settings.hapticsEnabled && state.gesture(type).action != GestureAction.NONE) {
@@ -114,6 +126,9 @@ fun CapsuleRootView(
             modifier = Modifier
                 .size(width = width, height = height)
                 .graphicsLayer { this.alpha = alpha }
+                // Shadow and border sit outside the clip below so the clip cannot cut them off.
+                .then(if (settings.shadowDp > 0) Modifier.shadow(settings.shadowDp.dp, shape, clip = false) else Modifier)
+                .then(if (settings.borderDp > 0) Modifier.border(settings.borderDp.dp, borderColor, shape) else Modifier)
                 .notificationGlow(
                     color = state.topNotification?.glowColor,
                     enabled = settings.notificationGlow && mode == CapsuleMode.COMPACT &&
@@ -132,7 +147,7 @@ fun CapsuleRootView(
                     onSwipeUp = { dispatch(UserIntent.SwipeUp) }
                 ),
             shape = shape,
-            color = CapsuleTokens.Shell,
+            color = shellColor,
             contentColor = MaterialTheme.colorScheme.onSurface
         ) {
             // Keyed on expanded/collapsed only: the outgoing side keeps rendering the state it
@@ -159,7 +174,7 @@ fun CapsuleRootView(
                         if (frame.state.showsStaticList) {
                             ExpandedStaticList(frame.state, dispatch, cardSize)
                         } else {
-                            ExpandedCarousel(frame.state, dispatch, cardSize)
+                            ExpandedCarousel(frame.state, dispatch, motion, cardSize)
                         }
                     }
                 } else {
@@ -194,7 +209,12 @@ private data class ShellFrame(val expanded: Boolean, val state: CapsuleState)
 private data class PageFrame(val pageKey: String, val notificationKey: String?, val state: CapsuleState)
 
 @Composable
-private fun ExpandedCarousel(state: CapsuleState, dispatch: (Action) -> Unit, modifier: Modifier = Modifier) {
+private fun ExpandedCarousel(
+    state: CapsuleState,
+    dispatch: (Action) -> Unit,
+    motion: CapsuleMotion,
+    modifier: Modifier = Modifier
+) {
     val pages = state.pages
     val active = state.activePage ?: return
     Column(
@@ -213,13 +233,17 @@ private fun ExpandedCarousel(state: CapsuleState, dispatch: (Action) -> Unit, mo
                 ),
                 contentKey = { it.pageKey to it.notificationKey },
                 transitionSpec = {
-                    val from = pages.indexOfFirst { it.key == initialState.pageKey }
-                    val to = pages.indexOfFirst { it.key == targetState.pageKey }
-                    val direction = if (from == -1 || to >= from) 1 else -1
-                    (slideInHorizontally(CapsuleTokens.FruitSpringIntOffset) { direction * it } +
-                        fadeIn(CapsuleTokens.FruitSpring)) togetherWith
-                        (slideOutHorizontally(CapsuleTokens.FruitSpringIntOffset) { -direction * it } +
-                            fadeOut(CapsuleTokens.FruitSpring))
+                    if (!motion.slidesCards) {
+                        fadeIn(motion.content.spec()) togetherWith fadeOut(motion.content.spec())
+                    } else {
+                        val from = pages.indexOfFirst { it.key == initialState.pageKey }
+                        val to = pages.indexOfFirst { it.key == targetState.pageKey }
+                        val direction = if (from == -1 || to >= from) 1 else -1
+                        (slideInHorizontally(motion.content.spec()) { direction * it } +
+                            fadeIn(motion.content.spec())) togetherWith
+                            (slideOutHorizontally(motion.content.spec()) { -direction * it } +
+                                fadeOut(motion.content.spec()))
+                    }
                 },
                 label = "carousel_card"
             ) { frame ->

@@ -2,14 +2,18 @@ package com.iqbalwork.capsule.ui.companion
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,7 +24,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import com.iqbalwork.capsule.platform.Oem
+import com.iqbalwork.capsule.platform.OemGuides
 import com.iqbalwork.capsule.platform.SystemStatus
+import com.iqbalwork.capsule.platform.detectOem
 
 @Composable
 fun StatusTab(serviceRunning: Boolean, notificationAccess: Boolean, modifier: Modifier = Modifier) {
@@ -76,6 +83,7 @@ fun StatusTab(serviceRunning: Boolean, notificationAccess: Boolean, modifier: Mo
                 )
             }
         }
+        item { KeepAliveCard() }
         if (advancedProtection) {
             item {
                 StatusCard(
@@ -110,6 +118,61 @@ private fun StatusCard(
             Text(title, style = MaterialTheme.typography.titleMedium, color = accent)
             Text(body, style = MaterialTheme.typography.bodyMedium)
             action?.let { (label, onClick) -> FilledTonalButton(onClick = onClick) { Text(label) } }
+        }
+    }
+}
+
+/** F-92: how to stop the phone's battery manager from killing the capsule, for the detected brand. */
+@Composable
+private fun KeepAliveCard() {
+    val context = LocalContext.current
+    val detected = remember { detectOem(Build.MANUFACTURER, Build.BRAND) }
+    var selected by remember { mutableStateOf(detected) }
+    val guide = OemGuides.guideFor(selected)
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Keep the capsule running", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "Some phones stop background apps to save battery, which makes the capsule disappear. " +
+                    "Follow these steps once.",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Oem.entries.forEach { oem ->
+                    FilterChip(
+                        selected = oem == selected,
+                        onClick = { selected = oem },
+                        label = { Text(if (oem == detected) "${oem.displayName} (this phone)" else oem.displayName) }
+                    )
+                }
+            }
+            guide.steps.forEachIndexed { index, step ->
+                val isNote = index == guide.steps.lastIndex
+                Text(
+                    if (isNote) step else "${index + 1}. $step",
+                    style = if (isNote) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium,
+                    color = if (isNote) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilledTonalButton(onClick = { context.startActivity(SystemStatus.appDetailsIntent(context)) }) {
+                    Text("App info")
+                }
+                FilledTonalButton(onClick = {
+                    runCatching { context.startActivity(SystemStatus.batteryOptimizationIntent()) }
+                }) { Text("Battery list") }
+                if (selected == Oem.XIAOMI) {
+                    FilledTonalButton(onClick = {
+                        if (!SystemStatus.openXiaomiAutostart(context)) {
+                            context.startActivity(SystemStatus.appDetailsIntent(context))
+                        }
+                    }) { Text("Autostart") }
+                }
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule.core.settings
 
 import com.iqbalwork.capsule.model.BarcodeContent
+import com.iqbalwork.capsule.model.CapsuleCardType
 import com.iqbalwork.capsule.model.EventCategory
 
 /**
@@ -18,6 +19,63 @@ data class Geometry(
 enum class Orientation { PORTRAIT, LANDSCAPE }
 
 enum class ColorSource { DYNAMIC, BRAND }
+
+/** Activity cards, highest priority first (spec §2.3). The order the user starts with (F-06). */
+val DefaultCardPriority: List<CapsuleCardType> = listOf(
+    CapsuleCardType.NOTIFICATION,
+    CapsuleCardType.TIMER,
+    CapsuleCardType.MEDIA,
+    CapsuleCardType.PROGRESS,
+    CapsuleCardType.CHARGING,
+    CapsuleCardType.SLIDERS,
+    CapsuleCardType.SHORTCUTS
+)
+
+/**
+ * Moves [card] by [delta] places among the reorderable cards only, so Controls and Shortcuts stay
+ * behind them. A move past either end, or of a card that cannot be moved, changes nothing.
+ */
+fun moveCard(order: List<CapsuleCardType>, card: CapsuleCardType, delta: Int): List<CapsuleCardType> {
+    val full = normalizeCardPriority(order)
+    val movable = full.filter { it in ReorderableCards }.toMutableList()
+    val from = movable.indexOf(card)
+    val to = from + delta
+    if (from == -1 || to !in movable.indices) return full
+    movable.add(to, movable.removeAt(from))
+    return movable + full.filterNot { it in ReorderableCards }
+}
+
+/** The cards whose position the user can change; Controls and Shortcuts are opened on request. */
+val ReorderableCards: List<CapsuleCardType> = DefaultCardPriority.take(5)
+
+/**
+ * Makes any stored order usable: duplicates are dropped and a card that is missing (stored by an
+ * older build, or added later) keeps its default position relative to the others by being appended
+ * in default order. The result always contains every card exactly once.
+ */
+fun normalizeCardPriority(order: List<CapsuleCardType>): List<CapsuleCardType> {
+    val seen = order.distinct()
+    return seen + DefaultCardPriority.filterNot { it in seen }
+}
+
+/**
+ * F-81: outline of the capsule. ROUNDED_RECT uses the geometry's corner radius (what the capsule
+ * always did, so it is the default), PILL is fully round whatever the radius says, SQUIRCLE has
+ * the same radius with continuous, slightly squarer corners.
+ */
+enum class CapsuleShapeStyle { PILL, ROUNDED_RECT, SQUIRCLE }
+
+/** F-82: how much the capsule overshoots when it opens. NONE settles without overshoot. */
+enum class BounceLevel { NONE, LOW, DEFAULT, HIGH, MAX }
+
+/** F-82: ORGANIC springs open and shut, RIGID is a short fixed-time ease. */
+enum class ExpandStyle { ORGANIC, RIGID }
+
+const val MIN_ANIMATION_SPEED = 0.5f
+const val MAX_ANIMATION_SPEED = 2f
+const val MAX_BORDER_DP = 3
+/** The overlay window only leaves a small margin around the capsule, so a bigger shadow is clipped. */
+const val MAX_SHADOW_DP = 6
 
 /** How long a paused player stays in the capsule (F-12). */
 enum class MediaCollapseDelay(val millis: Long?) {
@@ -126,6 +184,19 @@ data class Settings(
     val showCalibrationTarget: Boolean = false,
     val colorSource: ColorSource = ColorSource.DYNAMIC,
     val hapticsEnabled: Boolean = true,
+    /** F-06: which activity card comes first when several are active. Always a full permutation. */
+    val cardPriority: List<CapsuleCardType> = DefaultCardPriority,
+    val shapeStyle: CapsuleShapeStyle = CapsuleShapeStyle.ROUNDED_RECT,
+    /** F-81: ARGB of the capsule background; null = the black shell that blends with the camera. */
+    val customBackground: Long? = null,
+    val borderDp: Int = 0,
+    /** ARGB of the border; null = the theme's outline color. */
+    val borderColor: Long? = null,
+    val shadowDp: Int = 0,
+    val animationSpeed: Float = 1f,
+    val bounce: BounceLevel = BounceLevel.DEFAULT,
+    val expandStyle: ExpandStyle = ExpandStyle.ORGANIC,
+    val reduceAnimations: Boolean = false,
     val hideInFullscreen: Boolean = true,
     val hideWithKeyboard: Boolean = true,
     val hideInLandscape: Boolean = true,

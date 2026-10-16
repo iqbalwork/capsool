@@ -42,6 +42,28 @@ object SystemStatus {
         }
     }
 
+    /** The system list where an app can be taken out of battery optimisation; needs no permission. */
+    fun batteryOptimizationIntent(): Intent =
+        Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+    /**
+     * Xiaomi's autostart screen is not part of Android, so it is opened by its component name and
+     * may be missing or renamed on a given build. Returns false when it could not be opened, so the
+     * caller can fall back to App info.
+     */
+    fun openXiaomiAutostart(context: Context): Boolean = try {
+        context.startActivity(
+            Intent().setComponent(
+                ComponentName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity")
+            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+        true
+    } catch (_: ActivityNotFoundException) {
+        false
+    } catch (_: SecurityException) {
+        false
+    }
+
     /** App info screen, where sideloaded apps unlock "restricted settings" on Android 13+. */
     fun appDetailsIntent(context: Context): Intent =
         Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))

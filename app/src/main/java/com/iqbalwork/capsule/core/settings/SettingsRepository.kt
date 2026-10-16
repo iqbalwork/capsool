@@ -16,6 +16,7 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.iqbalwork.capsule.model.BarcodeContent
 import com.iqbalwork.capsule.model.BarcodeFormat
+import com.iqbalwork.capsule.model.CapsuleCardType
 import com.iqbalwork.capsule.model.EventCategory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -76,6 +77,16 @@ object SettingsMapper {
     private val ShowCalibrationTarget = booleanPreferencesKey("geometry.showCalibrationTarget")
     private val ColorSourceKey = stringPreferencesKey("appearance.colorSource")
     private val Haptics = booleanPreferencesKey("haptics.enabled")
+    private val CardPriorityKey = stringPreferencesKey("cards.priority")
+    private val ShapeStyleKey = stringPreferencesKey("appearance.shape")
+    private val CustomBackground = longPreferencesKey("appearance.customBg")
+    private val BorderDp = intPreferencesKey("appearance.border")
+    private val BorderColorKey = longPreferencesKey("appearance.borderColor")
+    private val ShadowDp = intPreferencesKey("appearance.shadow")
+    private val AnimationSpeed = floatPreferencesKey("animation.speed")
+    private val BounceKey = stringPreferencesKey("animation.bounce")
+    private val ExpandStyleKey = stringPreferencesKey("animation.expandStyle")
+    private val ReduceAnimations = booleanPreferencesKey("animation.reduce")
     private val HideFullscreen = booleanPreferencesKey("visibility.hideFullscreen")
     private val HideKeyboard = booleanPreferencesKey("visibility.hideIme")
     private val HideLandscape = booleanPreferencesKey("visibility.hideLandscape")
@@ -144,6 +155,17 @@ object SettingsMapper {
             showCalibrationTarget = prefs[ShowCalibrationTarget] ?: defaults.showCalibrationTarget,
             colorSource = enumOrDefault(prefs[ColorSourceKey], defaults.colorSource),
             hapticsEnabled = prefs[Haptics] ?: defaults.hapticsEnabled,
+            cardPriority = readCardPriority(prefs[CardPriorityKey]),
+            shapeStyle = enumOrDefault(prefs[ShapeStyleKey], defaults.shapeStyle),
+            customBackground = prefs[CustomBackground],
+            borderDp = (prefs[BorderDp] ?: defaults.borderDp).coerceIn(0, MAX_BORDER_DP),
+            borderColor = prefs[BorderColorKey],
+            shadowDp = (prefs[ShadowDp] ?: defaults.shadowDp).coerceIn(0, MAX_SHADOW_DP),
+            animationSpeed = (prefs[AnimationSpeed] ?: defaults.animationSpeed)
+                .coerceIn(MIN_ANIMATION_SPEED, MAX_ANIMATION_SPEED),
+            bounce = enumOrDefault(prefs[BounceKey], defaults.bounce),
+            expandStyle = enumOrDefault(prefs[ExpandStyleKey], defaults.expandStyle),
+            reduceAnimations = prefs[ReduceAnimations] ?: defaults.reduceAnimations,
             hideInFullscreen = prefs[HideFullscreen] ?: defaults.hideInFullscreen,
             hideWithKeyboard = prefs[HideKeyboard] ?: defaults.hideWithKeyboard,
             hideInLandscape = prefs[HideLandscape] ?: defaults.hideInLandscape,
@@ -215,6 +237,17 @@ object SettingsMapper {
         prefs[ShowCalibrationTarget] = settings.showCalibrationTarget
         prefs[ColorSourceKey] = settings.colorSource.name
         prefs[Haptics] = settings.hapticsEnabled
+        prefs[CardPriorityKey] = normalizeCardPriority(settings.cardPriority).joinToString(",") { it.name }
+        prefs[ShapeStyleKey] = settings.shapeStyle.name
+        // Absent key = "no custom color", so clearing the color must remove the key.
+        settings.customBackground?.let { prefs[CustomBackground] = it } ?: prefs.remove(CustomBackground)
+        prefs[BorderDp] = settings.borderDp
+        settings.borderColor?.let { prefs[BorderColorKey] = it } ?: prefs.remove(BorderColorKey)
+        prefs[ShadowDp] = settings.shadowDp
+        prefs[AnimationSpeed] = settings.animationSpeed
+        prefs[BounceKey] = settings.bounce.name
+        prefs[ExpandStyleKey] = settings.expandStyle.name
+        prefs[ReduceAnimations] = settings.reduceAnimations
         prefs[HideFullscreen] = settings.hideInFullscreen
         prefs[HideKeyboard] = settings.hideWithKeyboard
         prefs[HideLandscape] = settings.hideInLandscape
@@ -273,6 +306,13 @@ object SettingsMapper {
             false -> LockScreenBehavior.SHOW
             null -> defaults.lockScreenBehavior
         }
+
+    /** Unknown names are skipped, so a value written by a newer build still yields a usable order. */
+    private fun readCardPriority(stored: String?): List<CapsuleCardType> =
+        normalizeCardPriority(
+            stored?.split(',')?.mapNotNull { name -> CapsuleCardType.entries.firstOrNull { it.name == name } }
+                ?: emptyList()
+        )
 
     private inline fun <reified E : Enum<E>> enumOrDefault(name: String?, default: E): E =
         name?.let { runCatching { enumValueOf<E>(it) }.getOrNull() } ?: default
