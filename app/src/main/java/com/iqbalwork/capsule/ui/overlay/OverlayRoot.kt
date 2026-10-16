@@ -1,6 +1,10 @@
 package com.iqbalwork.capsule.ui.overlay
 
 import android.annotation.SuppressLint
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
@@ -30,17 +34,28 @@ fun OverlayRoot(
     @SuppressLint("ConfigurationScreenWidthHeight")
     val screenWidthDp = LocalConfiguration.current.screenWidthDp.toFloat()
 
-    OverlayTheme(colorSource = state.settings.colorSource) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-            CapsuleRootView(
-                state = state,
-                dispatch = dispatch,
-                expandedWidth = OverlayPlacement.expandedWidthDp(screenWidthDp).dp,
-                expandedHeight = OverlayPlacement.expandedContentHeightDp(state.listRows).dp,
-                modifier = Modifier
-                    .offset { IntOffset(placement.contentOffsetXPx, placement.contentOffsetYPx) }
-                    .padding(top = OverlayPlacement.MARGIN_DP.dp)
-            )
+    // The capsule and its cards have fixed sizes (they must line up with the camera cutout), so
+    // text is allowed to grow with the system font size only until it would start to clip.
+    val density = LocalDensity.current
+    val cappedDensity = remember(density) {
+        Density(density.density, fontScale = density.fontScale.coerceAtMost(MAX_OVERLAY_FONT_SCALE))
+    }
+    CompositionLocalProvider(LocalDensity provides cappedDensity) {
+        OverlayTheme(colorSource = state.settings.colorSource) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                CapsuleRootView(
+                    state = state,
+                    dispatch = dispatch,
+                    expandedWidth = OverlayPlacement.expandedWidthDp(screenWidthDp).dp,
+                    expandedHeight = OverlayPlacement.expandedContentHeightDp(state.listRows).dp,
+                    modifier = Modifier
+                        .offset { IntOffset(placement.contentOffsetXPx, placement.contentOffsetYPx) }
+                        .padding(top = OverlayPlacement.MARGIN_DP.dp)
+                )
+            }
         }
     }
 }
+
+/** Text in the overlay stops growing here; the companion app has no such limit. */
+private const val MAX_OVERLAY_FONT_SCALE = 1.3f

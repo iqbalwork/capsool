@@ -136,6 +136,7 @@ fun CapsuleRootView(
                     shape = shape
                 )
                 .clip(shape)
+                .capsuleSemantics(state, expanded, dispatch)
                 .capsuleGestures(
                     tapsEnabled = !expanded,
                     doubleTapEnabled = state.gesture(GestureType.DOUBLE_TAP).action != GestureAction.NONE,

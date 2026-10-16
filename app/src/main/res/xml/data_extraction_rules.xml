@@ -1,19 +1,14 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
-   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Capsool's settings can hold personal content: barcode and loyalty-card numbers, phone numbers on
+  contact shortcuts, and which apps are hidden. They stay out of Google cloud backup, but still
+  move with a direct phone-to-phone transfer (device-transfer has no excludes, so everything is
+  copied). The settings live in DataStore: files/datastore/.
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <exclude domain="file" path="datastore/" />
+        <exclude domain="sharedpref" path="." />
     </cloud-backup>
-    <!--
-    <device-transfer>
-        <include .../>
-        <exclude .../>
-    </device-transfer>
-    -->
+    <device-transfer />
 </data-extraction-rules>

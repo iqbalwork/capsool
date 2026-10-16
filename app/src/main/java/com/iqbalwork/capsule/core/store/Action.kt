@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule.core.store
 
 import com.iqbalwork.capsule.core.settings.GestureType
+import com.iqbalwork.capsule.core.settings.GestureAction
 import com.iqbalwork.capsule.core.settings.Settings
 import com.iqbalwork.capsule.model.CapsuleCardType
 import com.iqbalwork.capsule.model.ChargingState
@@ -16,6 +17,11 @@ sealed interface Action
 /** Something the user did on the capsule or in the companion app. */
 sealed interface UserIntent : Action {
     data class Gesture(val type: GestureType) : UserIntent
+    /**
+     * Runs a gesture action directly, without going through the user's gesture bindings. Used by
+     * accessibility actions (TalkBack cannot swipe or long press), which must do a fixed thing.
+     */
+    data class Perform(val action: GestureAction) : UserIntent
     data object SwipeUp : UserIntent
     data object Collapse : UserIntent
     data class SelectCard(val card: CapsuleCardType) : UserIntent

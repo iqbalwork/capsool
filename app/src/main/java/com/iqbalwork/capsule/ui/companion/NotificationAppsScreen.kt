@@ -1,6 +1,8 @@
 package com.iqbalwork.capsule.ui.companion
 
 import android.content.Intent
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import android.provider.Settings as AndroidSettings
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
@@ -33,6 +35,8 @@ import androidx.compose.ui.unit.dp
 import com.iqbalwork.capsule.core.settings.Settings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import androidx.compose.ui.res.stringResource
+import com.iqbalwork.capsule.R
 
 /**
  * F-22 and F-26: choose which apps may show notifications in the capsule, and jump to each
@@ -54,25 +58,24 @@ fun NotificationAppsScreen(
 
     Column(modifier = modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = onBack) { Text("Back") }
-            Text("Apps in the capsule", style = MaterialTheme.typography.titleLarge)
+            TextButton(onClick = onBack) { Text(stringResource(R.string.gx_back)) }
+            Text(stringResource(R.string.gx_apps_in_capsule), style = MaterialTheme.typography.titleLarge)
         }
         Text(
-            "Switch off apps you do not want in the capsule. For apps you keep, tap \"Pop-up\" and turn off " +
-                "the system pop-up so their messages do not show twice.",
+            stringResource(R.string.gx_apps_desc),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
-            placeholder = { Text("Search apps") },
+            placeholder = { Text(stringResource(R.string.gx_search_apps)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
         val list = apps
         if (list == null) {
-            Text("Loading apps…", style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.gx_loading_apps), style = MaterialTheme.typography.bodyMedium)
         } else {
             val shown = list.filter { query.isBlank() || it.label.contains(query, ignoreCase = true) }
             LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -82,8 +85,9 @@ fun NotificationAppsScreen(
                         Image(app.icon.asImageBitmap(), contentDescription = null, modifier = Modifier.size(36.dp))
                         Spacer(Modifier.width(12.dp))
                         Text(app.label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-                        TextButton(onClick = { context.startActivity(popUpSettings(app.packageName)) }) { Text("Pop-up") }
+                        TextButton(onClick = { context.startActivity(popUpSettings(app.packageName)) }) { Text(stringResource(R.string.gx_popup)) }
                         Switch(
+                            modifier = Modifier.semantics { contentDescription = app.label },
                             checked = allowed,
                             onCheckedChange = { allow ->
                                 onUpdate {

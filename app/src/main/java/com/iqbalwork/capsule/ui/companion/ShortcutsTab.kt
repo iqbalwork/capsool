@@ -1,6 +1,8 @@
 package com.iqbalwork.capsule.ui.companion
 
 import android.app.Activity
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
 import android.content.Intent
 import android.provider.ContactsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -57,6 +59,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.iqbalwork.capsule.R
+import com.iqbalwork.capsule.core.UiText
+import com.iqbalwork.capsule.platform.barcode.toUiText
 import androidx.compose.ui.unit.dp
 import com.iqbalwork.capsule.core.settings.ContactAction
 import com.iqbalwork.capsule.core.settings.Settings
@@ -109,7 +115,7 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
 
     val scope = rememberCoroutineScope()
     var scanningImage by remember { mutableStateOf(false) }
-    var scanError by remember { mutableStateOf<String?>(null) }
+    var scanError by remember { mutableStateOf<UiText?>(null) }
 
     // Both entry points (gallery image, camera) end in the same three outcomes.
     val applyScanResult: (BarcodeScanResult) -> Unit = { result ->
@@ -152,28 +158,27 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
         item {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Shortcuts card", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.sc_shortcuts_card_title), style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Long-press the capsule while nothing is showing to open it (change this in Gestures). " +
-                            "Up to $MAX_SHORTCUTS shortcuts.",
+                        stringResource(R.string.sc_shortcuts_card_desc, MAX_SHORTCUTS),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilledTonalButton(onClick = { pickingApp = true }, enabled = !full) { Text("Add app") }
+                        FilledTonalButton(onClick = { pickingApp = true }, enabled = !full) { Text(stringResource(R.string.sc_add_app)) }
                         FilledTonalButton(
                             onClick = { pickContact.launch(Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI)) },
                             enabled = !full
-                        ) { Text("Add contact") }
-                        FilledTonalButton(onClick = { pickingSystem = true }, enabled = !full) { Text("Add system") }
+                        ) { Text(stringResource(R.string.sc_add_contact)) }
+                        FilledTonalButton(onClick = { pickingSystem = true }, enabled = !full) { Text(stringResource(R.string.sc_add_system)) }
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().toggleable(value = settings.themedShortcutIcons, role = Role.Switch, onValueChange = { on -> onUpdate { it.copy(themedShortcutIcons = on) } })) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Themed app icons", style = MaterialTheme.typography.bodyLarge)
-                            Text("Uses each app's monochrome icon in your wallpaper colors (Android 13+).",
+                            Text(stringResource(R.string.sc_themed_icons_title), style = MaterialTheme.typography.bodyLarge)
+                            Text(stringResource(R.string.sc_themed_icons_desc),
                                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        Switch(checked = settings.themedShortcutIcons, onCheckedChange = { on -> onUpdate { it.copy(themedShortcutIcons = on) } })
+                        Switch(checked = settings.themedShortcutIcons, onCheckedChange = null)
                     }
                 }
             }
@@ -181,26 +186,21 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
         item {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().toggleable(value = settings.barcode.enabled, role = Role.Switch, onValueChange = { on -> onUpdate { it.copy(barcode = it.barcode.copy(enabled = on)) } })) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Barcode card", style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(R.string.sc_barcode_card_title), style = MaterialTheme.typography.titleMedium)
                             Text(
-                                "Show loyalty barcode or QR code at the top of the capsule.",
+                                stringResource(R.string.sc_barcode_card_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Switch(
-                            checked = settings.barcode.enabled,
-                            onCheckedChange = { on ->
-                                onUpdate { it.copy(barcode = it.barcode.copy(enabled = on)) }
-                            }
-                        )
+                        Switch(checked = settings.barcode.enabled, onCheckedChange = null)
                     }
 
                     var formatMenuExpanded by remember { mutableStateOf(false) }
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                        Text("Format", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                        Text(stringResource(R.string.sc_format), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
                         Box {
                             OutlinedButton(onClick = { formatMenuExpanded = true }) {
                                 Text(settings.barcode.format.displayName)
@@ -232,10 +232,11 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
                             null
                         }
                     }
-                    val encoderError = encodeResult?.exceptionOrNull()?.message
+                    val encoderError = encodeResult?.exceptionOrNull()?.toUiText()
+                    val encoderErrorText = encoderError?.asString()
                     val barcodeErrorMessage = when {
-                        validation is BarcodeValidationResult.Error -> validation.message
-                        encoderError != null -> "Could not build the code: $encoderError"
+                        validation is BarcodeValidationResult.Error -> validation.message.asString()
+                        encoderErrorText != null -> stringResource(R.string.sc_barcode_build_error, encoderErrorText)
                         else -> null
                     }
 
@@ -244,7 +245,7 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
                         onValueChange = { newContent ->
                             onUpdate { it.copy(barcode = it.barcode.copy(content = newContent)) }
                         },
-                        label = { Text("Content / Code") },
+                        label = { Text(stringResource(R.string.sc_content_code)) },
                         placeholder = {
                             Text(when (settings.barcode.format) {
                                 BarcodeFormat.QR_CODE -> "https://example.com"
@@ -283,14 +284,14 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
                             },
                             enabled = !scanningImage
                         ) {
-                            Text("Scan from image")
+                            Text(stringResource(R.string.sc_scan_image))
                         }
                         // Runs inside Play Services, so it needs no camera permission.
                         OutlinedButton(
                             onClick = startCameraScan,
                             enabled = !scanningImage
                         ) {
-                            Text("Scan with camera")
+                            Text(stringResource(R.string.sc_scan_camera))
                         }
                     }
                     if (scanningImage) {
@@ -298,7 +299,7 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
                     }
                     scanError?.let { message ->
                         Text(
-                            text = message,
+                            text = message.asString(),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error
                         )
@@ -309,14 +310,14 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
                         onValueChange = { newLabel ->
                             onUpdate { it.copy(barcode = it.barcode.copy(label = newLabel)) }
                         },
-                        label = { Text("Label (optional)") },
-                        placeholder = { Text("e.g. Member Card 🏷️") },
+                        label = { Text(stringResource(R.string.sc_label_optional)) },
+                        placeholder = { Text(stringResource(R.string.sc_label_placeholder)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
 
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("Barcode color", style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(R.string.sc_barcode_color), style = MaterialTheme.typography.bodyMedium)
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -340,7 +341,7 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
                                             if (isSelected) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
                                             else Modifier.border(1.dp, Color.Gray.copy(alpha = 0.5f), CircleShape)
                                         )
-                                        .clickable {
+                                        .clickable(role = Role.Button) {
                                             onUpdate { it.copy(barcode = it.barcode.copy(color = colorLong)) }
                                         }
                                 )
@@ -348,25 +349,20 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
                         }
                     }
 
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().toggleable(value = settings.barcode.flipped, role = Role.Switch, onValueChange = { on -> onUpdate { it.copy(barcode = it.barcode.copy(flipped = on)) } })) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Flip 180°", style = MaterialTheme.typography.bodyLarge)
+                            Text(stringResource(R.string.sc_flip_title), style = MaterialTheme.typography.bodyLarge)
                             Text(
-                                "Rotates barcode upside-down for presenting to scanners.",
+                                stringResource(R.string.sc_flip_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Switch(
-                            checked = settings.barcode.flipped,
-                            onCheckedChange = { flipped ->
-                                onUpdate { it.copy(barcode = it.barcode.copy(flipped = flipped)) }
-                            }
-                        )
+                        Switch(checked = settings.barcode.flipped, onCheckedChange = null)
                     }
 
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("Live preview", style = MaterialTheme.typography.titleSmall)
+                        Text(stringResource(R.string.sc_live_preview), style = MaterialTheme.typography.titleSmall)
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -382,9 +378,9 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
                                     showLabel = true
                                 )
                             } else {
-                                val previewReason = barcodeErrorMessage ?: "Kode tidak valid"
+                                val previewReason = barcodeErrorMessage ?: stringResource(R.string.sc_preview_invalid)
                                 Text(
-                                    text = "Preview unavailable: $previewReason",
+                                    text = stringResource(R.string.sc_preview_unavailable, previewReason),
                                     color = MaterialTheme.colorScheme.error,
                                     style = MaterialTheme.typography.bodySmall,
                                     textAlign = TextAlign.Center
@@ -401,20 +397,24 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
                     Text(shortcut.label, style = MaterialTheme.typography.bodyLarge)
                     Text(
                         when (shortcut.kind) {
-                            ShortcutKind.APP -> "App"
-                            ShortcutKind.CONTACT -> if (shortcut.contactAction == ContactAction.CALL) "Call ${shortcut.target}" else "WhatsApp ${shortcut.target}"
-                            ShortcutKind.SYSTEM -> "System"
+                            ShortcutKind.APP -> stringResource(R.string.sc_kind_app)
+                            ShortcutKind.CONTACT -> if (shortcut.contactAction == ContactAction.CALL) {
+                                stringResource(R.string.sc_kind_call, shortcut.target)
+                            } else {
+                                stringResource(R.string.sc_kind_whatsapp, shortcut.target)
+                            }
+                            ShortcutKind.SYSTEM -> stringResource(R.string.sc_kind_system)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                IconButton(onClick = { move(index, -1) }, enabled = index > 0) { Icon(Icons.Rounded.KeyboardArrowUp, "Move up") }
+                IconButton(onClick = { move(index, -1) }, enabled = index > 0) { Icon(Icons.Rounded.KeyboardArrowUp, stringResource(R.string.sc_move_up)) }
                 IconButton(onClick = { move(index, 1) }, enabled = index < settings.shortcuts.lastIndex) {
-                    Icon(Icons.Rounded.KeyboardArrowDown, "Move down")
+                    Icon(Icons.Rounded.KeyboardArrowDown, stringResource(R.string.sc_move_down))
                 }
                 IconButton(onClick = { onUpdate { s -> s.copy(shortcuts = s.shortcuts.filter { it.id != shortcut.id }) } }) {
-                    Icon(Icons.Rounded.Delete, "Remove")
+                    Icon(Icons.Rounded.Delete, stringResource(R.string.sc_remove))
                 }
             }
         }
@@ -422,7 +422,7 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
 
     if (pickingApp) {
         AppPickerDialog(
-            title = "Add app",
+            title = stringResource(R.string.sc_add_app),
             onPick = { app ->
                 add(Shortcut(UUID.randomUUID().toString(), ShortcutKind.APP, app.label, app.packageName))
                 pickingApp = false
@@ -433,37 +433,38 @@ fun ShortcutsTab(settings: Settings, onUpdate: ((Settings) -> Settings) -> Unit,
     if (pickingSystem) {
         AlertDialog(
             onDismissRequest = { pickingSystem = false },
-            title = { Text("Add system shortcut") },
+            title = { Text(stringResource(R.string.sc_add_system_title)) },
             text = {
                 Column {
                     SystemShortcut.entries.forEach { screen ->
+                        val screenName = stringResource(screen.labelRes)
                         TextButton(onClick = {
-                            add(Shortcut(UUID.randomUUID().toString(), ShortcutKind.SYSTEM, screen.label, screen.name))
+                            add(Shortcut(UUID.randomUUID().toString(), ShortcutKind.SYSTEM, screenName, screen.name))
                             pickingSystem = false
-                        }) { Text(screen.label) }
+                        }) { Text(screenName) }
                     }
                 }
             },
             confirmButton = {},
-            dismissButton = { TextButton(onClick = { pickingSystem = false }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { pickingSystem = false }) { Text(stringResource(R.string.sc_cancel)) } }
         )
     }
     contact?.let { picked ->
         AlertDialog(
             onDismissRequest = { contact = null },
             title = { Text(picked.name.ifBlank { picked.number }) },
-            text = { Text("What should tapping this contact do?") },
+            text = { Text(stringResource(R.string.sc_contact_prompt)) },
             confirmButton = {
                 TextButton(onClick = {
                     add(Shortcut(UUID.randomUUID().toString(), ShortcutKind.CONTACT, picked.name.ifBlank { picked.number }, picked.number, ContactAction.CALL))
                     contact = null
-                }) { Text("Call") }
+                }) { Text(stringResource(R.string.sc_call)) }
             },
             dismissButton = {
                 TextButton(onClick = {
                     add(Shortcut(UUID.randomUUID().toString(), ShortcutKind.CONTACT, picked.name.ifBlank { picked.number }, picked.number, ContactAction.WHATSAPP))
                     contact = null
-                }) { Text("WhatsApp") }
+                }) { Text(stringResource(R.string.sc_whatsapp)) }
             }
         )
     }

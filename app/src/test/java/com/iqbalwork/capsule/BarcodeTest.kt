@@ -1,6 +1,8 @@
 package com.iqbalwork.capsule
 
 import androidx.datastore.preferences.core.mutablePreferencesOf
+import com.iqbalwork.capsule.core.UiText
+import com.iqbalwork.capsule.R
 import com.iqbalwork.capsule.core.settings.Settings
 import com.iqbalwork.capsule.core.settings.SettingsMapper
 import com.iqbalwork.capsule.model.BarcodeContent
@@ -30,7 +32,9 @@ class BarcodeTest {
         val res = BarcodeValidator.validate("", BarcodeFormat.QR_CODE)
         assertTrue(res is BarcodeValidationResult.Error)
         val error = res as BarcodeValidationResult.Error
-        assertTrue(error.message.contains("QR Code"))
+        val reason = error.message as UiText.Res
+        assertEquals(R.string.barcode_err_empty, reason.id)
+        assertTrue(reason.args.contains("QR Code"))
     }
 
     // --- Validator: EAN-13 ---
@@ -47,7 +51,7 @@ class BarcodeTest {
         val res = BarcodeValidator.validate("4006381333932", BarcodeFormat.EAN_13)
         assertTrue(res is BarcodeValidationResult.Error)
         val error = res as BarcodeValidationResult.Error
-        assertTrue(error.message.lowercase().contains("checksum"))
+        assertEquals(R.string.barcode_err_checksum, (error.message as UiText.Res).id)
     }
 
     @Test
@@ -139,7 +143,7 @@ class BarcodeTest {
         val res = BarcodeValidator.validate("12345", BarcodeFormat.ITF)
         assertTrue(res is BarcodeValidationResult.Error)
         val error = res as BarcodeValidationResult.Error
-        assertTrue(error.message.lowercase().contains("genap"))
+        assertEquals(R.string.barcode_err_itf_even, (error.message as UiText.Res).id)
     }
 
     @Test
@@ -317,7 +321,8 @@ class BarcodeTest {
         val res82 = BarcodeValidator.validate(itf82, BarcodeFormat.ITF)
         assertTrue("ITF 82 digits must be rejected by validator", res82 is BarcodeValidationResult.Error)
         val errorMsg = (res82 as BarcodeValidationResult.Error).message
-        assertTrue("Error message must mention 80 digit limit: $errorMsg", errorMsg.contains("80"))
+        assertEquals(R.string.barcode_err_itf_max, (errorMsg as UiText.Res).id)
+        assertEquals(80, errorMsg.args.first())
     }
 
     @Test
@@ -330,7 +335,8 @@ class BarcodeTest {
         val res81 = BarcodeValidator.validate(c39_81, BarcodeFormat.CODE_39)
         assertTrue("Code 39 81 chars must be rejected by validator", res81 is BarcodeValidationResult.Error)
         val errorMsg = (res81 as BarcodeValidationResult.Error).message
-        assertTrue("Error message must mention 80 char limit: $errorMsg", errorMsg.contains("80"))
+        assertEquals(R.string.barcode_err_code39_max, (errorMsg as UiText.Res).id)
+        assertEquals(80, errorMsg.args.first())
     }
 
     @Test
@@ -343,7 +349,8 @@ class BarcodeTest {
         val res81 = BarcodeValidator.validate(c93_81, BarcodeFormat.CODE_93)
         assertTrue("Code 93 81 basic chars must be rejected", res81 is BarcodeValidationResult.Error)
         val error81 = (res81 as BarcodeValidationResult.Error).message
-        assertTrue("Error message must mention 80 limit: $error81", error81.contains("80"))
+        assertEquals(R.string.barcode_err_code93_max, (error81 as UiText.Res).id)
+        assertEquals(80, error81.args.first())
 
         val c93_40lower = "a".repeat(40)
         val res40 = BarcodeValidator.validate(c93_40lower, BarcodeFormat.CODE_93)
@@ -353,7 +360,8 @@ class BarcodeTest {
         val res41 = BarcodeValidator.validate(c93_41lower, BarcodeFormat.CODE_93)
         assertTrue("Code 93 41 lowercase chars (82 encoded) must be rejected", res41 is BarcodeValidationResult.Error)
         val error41 = (res41 as BarcodeValidationResult.Error).message
-        assertTrue("Error message must mention 80 limit: $error41", error41.contains("80"))
+        assertEquals(R.string.barcode_err_code93_max, (error41 as UiText.Res).id)
+        assertEquals(80, error41.args.first())
     }
 
     @Test

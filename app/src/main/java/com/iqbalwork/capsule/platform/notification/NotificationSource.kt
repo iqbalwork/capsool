@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule.platform.notification
 
 import android.app.Notification
+import com.iqbalwork.capsule.R
 import android.app.PendingIntent
 import android.app.RemoteInput
 import android.content.Context
@@ -151,7 +152,7 @@ class NotificationSource(
                     MiniEvent(
                         id = System.nanoTime(),
                         type = MiniEventType.PROGRESS_DONE,
-                        title = "Done",
+                        title = context.getString(R.string.event_done),
                         subtitle = title.orEmpty()
                     )
                 )

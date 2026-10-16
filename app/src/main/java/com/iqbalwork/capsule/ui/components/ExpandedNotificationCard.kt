@@ -1,5 +1,7 @@
 package com.iqbalwork.capsule.ui.components
 
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -83,7 +85,7 @@ fun ExpandedNotificationCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(enabled = !replying) { onAction(UserIntent.NotificationOpen(notification.key)) },
+                .clickable(role = Role.Button, enabled = !replying) { onAction(UserIntent.NotificationOpen(notification.key)) },
             verticalAlignment = Alignment.Top
         ) {
             AvatarWithBadge(notification, size = 48.dp, accent = accent)
@@ -100,9 +102,10 @@ fun ExpandedNotificationCard(
                         modifier = Modifier.weight(1f, fill = false)
                     )
                     Spacer(Modifier.width(8.dp))
+                    val timeText = relativeTime(notification.postedAt)
                     Text(
                         text = buildString {
-                            append(relativeTime(notification.postedAt))
+                            append(timeText)
                             if (queuedCount > 1) append(" · +${queuedCount - 1}")
                         },
                         color = Color.White.copy(alpha = 0.6f),
@@ -119,7 +122,7 @@ fun ExpandedNotificationCard(
                     )
                 }
                 Text(
-                    text = if (showText) notification.text else "New notification",
+                    text = if (showText) notification.text else stringResource(R.string.st_notification_new),
                     color = Color.White.copy(alpha = 0.85f),
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 2,
@@ -134,15 +137,15 @@ fun ExpandedNotificationCard(
             // Equal-width buttons so three of them fit the card without wrapping.
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (notification.canReply && showText) {
-                    CardButton("Reply", Modifier.weight(1f), accent, Color.Black) {
+                    CardButton(stringResource(R.string.st_reply), Modifier.weight(1f), accent, Color.Black) {
                         onAction(UserIntent.NotificationStartReply(notification.key))
                     }
                 }
                 if (notification.canMarkRead) {
-                    CardButton("Read", Modifier.weight(1f)) { onAction(UserIntent.NotificationMarkRead(notification.key)) }
+                    CardButton(stringResource(R.string.st_read), Modifier.weight(1f)) { onAction(UserIntent.NotificationMarkRead(notification.key)) }
                 }
                 if (notification.clearable) {
-                    CardButton("Dismiss", Modifier.weight(1f)) { onAction(UserIntent.NotificationDismiss(notification.key)) }
+                    CardButton(stringResource(R.string.st_dismiss), Modifier.weight(1f)) { onAction(UserIntent.NotificationDismiss(notification.key)) }
                 }
             }
         }
@@ -166,7 +169,7 @@ private fun ReplyField(accent: Color, onSend: (String) -> Unit) {
         TextField(
             value = text,
             onValueChange = { text = it },
-            placeholder = { Text("Message") },
+            placeholder = { Text(stringResource(R.string.st_message)) },
             singleLine = true,
             shape = RoundedCornerShape(24.dp),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
@@ -190,7 +193,7 @@ private fun ReplyField(accent: Color, onSend: (String) -> Unit) {
             enabled = text.isNotBlank(),
             colors = IconButtonDefaults.filledIconButtonColors(containerColor = accent, contentColor = Color.Black)
         ) {
-            Icon(painterResource(R.drawable.ic_send), contentDescription = "Send")
+            Icon(painterResource(R.drawable.ic_send), contentDescription = stringResource(R.string.st_send))
         }
     }
 }
@@ -271,11 +274,12 @@ fun RoundBitmap(bitmap: Bitmap?, fallbackText: String, background: Color, modifi
     }
 }
 
+@Composable
 private fun relativeTime(postedAt: Long, now: Long = System.currentTimeMillis()): String {
     val minutes = (now - postedAt) / 60_000
     return when {
-        minutes < 1 -> "now"
-        minutes < 60 -> "${minutes}m"
-        else -> "${minutes / 60}h"
+        minutes < 1 -> stringResource(R.string.st_time_now)
+        minutes < 60 -> stringResource(R.string.st_time_minutes, minutes)
+        else -> stringResource(R.string.st_time_hours, minutes / 60)
     }
 }

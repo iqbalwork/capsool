@@ -41,14 +41,14 @@ class OemGuideTest {
             val guide = OemGuides.guideFor(oem)
             assertEquals(oem, guide.oem)
             assertTrue("$oem has steps", guide.steps.size >= 2)
-            assertTrue("$oem note last", guide.steps.last().startsWith("Menu names differ"))
+            assertEquals("$oem note last", OemGuides.NOTE, guide.steps.last())
         }
     }
 
     @Test
     fun theUniversalBatteryStepIsPresentForEveryBrand() {
         Oem.entries.forEach { oem ->
-            assertTrue(OemGuides.guideFor(oem).steps.any { it.contains("Unrestricted") })
+            assertTrue(OemGuides.COMMON_BATTERY_STEP in OemGuides.guideFor(oem).steps)
         }
     }
 }

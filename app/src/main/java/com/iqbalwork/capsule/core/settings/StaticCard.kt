@@ -1,10 +1,17 @@
 package com.iqbalwork.capsule.core.settings
 
-enum class StaticCardType(val label: String) {
-    SHORTCUTS("Shortcuts"),
-    BARCODE("Barcode"),
-    SLIDERS("Controls"),
-    INTENT("Custom action")
+import androidx.annotation.StringRes
+import com.iqbalwork.capsule.R
+
+/**
+ * [label] is the stable default name stored with a card and compared against to tell "the user
+ * renamed it" from "still the default"; it is never shown. Show [labelRes] instead.
+ */
+enum class StaticCardType(val label: String, @StringRes val labelRes: Int) {
+    SHORTCUTS("Shortcuts", R.string.static_type_shortcuts),
+    BARCODE("Barcode", R.string.static_type_barcode),
+    SLIDERS("Controls", R.string.static_type_sliders),
+    INTENT("Custom action", R.string.static_type_intent)
 }
 
 enum class StaticCardViewMode { CAROUSEL, LIST }

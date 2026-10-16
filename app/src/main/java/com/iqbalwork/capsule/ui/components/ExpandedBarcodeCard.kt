@@ -1,5 +1,7 @@
 package com.iqbalwork.capsule.ui.components
 
+import com.iqbalwork.capsule.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -30,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.iqbalwork.capsule.model.BarcodeContent
 import com.iqbalwork.capsule.platform.barcode.BarcodeEncoder
 import com.iqbalwork.capsule.platform.barcode.BarcodeMatrix
+import com.iqbalwork.capsule.platform.barcode.toUiText
 import kotlin.math.max
 import kotlin.math.min
 
@@ -48,7 +51,7 @@ fun ExpandedBarcodeCard(
         runCatching { BarcodeEncoder.encode(barcode.content, barcode.format) }
     }
     val matrix = encodeResult.getOrNull()
-    val encodeError = encodeResult.exceptionOrNull()?.message
+    val encodeError = encodeResult.exceptionOrNull()?.toUiText()
 
     val codeColor = remember(barcode.color) {
         val c = Color(barcode.color)
@@ -80,11 +83,11 @@ fun ExpandedBarcodeCard(
                 )
             }
         } else {
-            val reason = encodeError?.ifBlank { null }
+            val reason = encodeError?.asString()?.ifBlank { null }
             val errorText = if (reason != null) {
-                "Kode tidak bisa dibuat: $reason"
+                stringResource(R.string.st_barcode_error_reason, reason)
             } else {
-                "Kode tidak bisa dibuat"
+                stringResource(R.string.st_barcode_error)
             }
             Box(
                 modifier = Modifier

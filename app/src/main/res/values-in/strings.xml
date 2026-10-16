@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Capsool</string>
+    <string name="accessibility_service_description">Capsool menampilkan kapsul interaktif di sekitar lubang kamera. Layanan aksesibilitas dipakai untuk menampilkan kapsul di atas aplikasi lain, mengetahui saat keyboard atau aplikasi layar penuh terbuka agar kapsul bisa bersembunyi, membaca nama aplikasi yang sedang di depan agar kapsul bisa disembunyikan di aplikasi pilihan, membuka bayangan notifikasi, setelan cepat, mengambil screenshot atau mengunci layar saat Anda menetapkan aksi itu ke sebuah gestur, dan menggulir aplikasi di depan kembali ke atas saat diminta (hanya melihat bagian layar mana yang bisa digulir, bukan isinya). Tidak ada data yang dikumpulkan atau dikirim ke mana pun.</string>
+
+    <string name="disclosure_title">Sebelum mengaktifkan Capsool</string>
+    <string name="disclosure_intro">Capsool membutuhkan izin Aksesibilitas agar berfungsi. Berikut persis apa yang dilakukannya dengan izin itu.</string>
+    <string name="disclosure_item_overlay">Menampilkan kapsul di atas aplikasi lain dan status bar.</string>
+    <string name="disclosure_item_windows">Memeriksa jendela apa saja yang ada di layar, supaya kapsul bersembunyi saat keyboard atau aplikasi layar penuh (video, game) terbuka.</string>
+    <string name="disclosure_item_app">Membaca nama paket aplikasi yang sedang di depan, supaya Anda bisa menyembunyikan kapsul atau kartu media di aplikasi pilihan. Isi layar dan apa yang Anda ketik tidak dibaca.</string>
+    <string name="disclosure_item_actions">Membuka bayangan notifikasi atau setelan cepat, mengambil screenshot atau mengunci layar saat Anda menetapkan aksi itu ke sebuah gestur.</string>
+    <string name="disclosure_item_scroll">Menggulir aplikasi di depan kembali ke atas saat Anda menetapkannya ke sebuah gestur. Hanya mencari bagian layar yang bisa digulir, bukan apa yang ditampilkannya.</string>
+    <string name="disclosure_privacy">Capsool tidak punya izin internet. Tidak ada yang dilihatnya yang keluar dari ponsel Anda, dan teks notifikasi tidak pernah disimpan.</string>
+    <string name="disclosure_accept">Setuju dan lanjutkan</string>
+    <string name="disclosure_decline">Nanti saja</string>
+    <string name="disclosure_declined_title">Capsool nonaktif</string>
+    <string name="disclosure_declined_body">Tanpa izin Aksesibilitas, Capsool tidak bisa menampilkan kapsul. Anda bisa membaca penjelasan ini lagi kapan saja.</string>
+    <string name="disclosure_review">Lihat lagi</string>
+</resources>

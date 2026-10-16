@@ -1,6 +1,8 @@
 package com.iqbalwork.capsule.platform.system
 
 import com.iqbalwork.capsule.model.ChargingState
+import androidx.annotation.StringRes
+import com.iqbalwork.capsule.R
 import com.iqbalwork.capsule.model.ChargingType
 import com.iqbalwork.capsule.model.MiniEventType
 
@@ -45,11 +47,12 @@ object BatteryEventDetector {
     private fun crossedDown(previous: ChargingState, current: ChargingState, level: Int): Boolean =
         previous.chargePercentage > level && current.chargePercentage <= level
 
-    fun chargerLabel(type: ChargingType): String = when (type) {
-        ChargingType.AC -> "Charging"
-        ChargingType.USB -> "USB charging"
-        ChargingType.WIRELESS -> "Wireless charging"
-        ChargingType.DOCK -> "Dock charging"
-        ChargingType.NONE -> "Charging"
+    @StringRes
+    fun chargerLabelRes(type: ChargingType): Int = when (type) {
+        ChargingType.AC -> R.string.charger_ac
+        ChargingType.USB -> R.string.charger_usb
+        ChargingType.WIRELESS -> R.string.charger_wireless
+        ChargingType.DOCK -> R.string.charger_dock
+        ChargingType.NONE -> R.string.charger_ac
     }
 }

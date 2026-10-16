@@ -1,5 +1,7 @@
 package com.iqbalwork.capsule.ui.companion
 
+import com.iqbalwork.capsule.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -44,29 +46,28 @@ fun StatusTab(serviceRunning: Boolean, notificationAccess: Boolean, modifier: Mo
     ) {
         item {
             StatusCard(
-                title = "Accessibility service",
+                title = stringResource(R.string.st_a11y_title),
                 body = if (serviceRunning) {
-                    "Running. The capsule is drawn over other apps."
+                    stringResource(R.string.st_a11y_on)
                 } else {
-                    "Off. Turn on Capsool in Accessibility settings to show the capsule."
+                    stringResource(R.string.st_a11y_off)
                 },
                 ok = serviceRunning,
-                action = if (serviceRunning) null else "Open Accessibility settings" to {
+                action = if (serviceRunning) null else stringResource(R.string.st_a11y_open) to {
                     context.startActivity(SystemStatus.accessibilitySettingsIntent())
                 }
             )
         }
         item {
             StatusCard(
-                title = "Notification access",
+                title = stringResource(R.string.st_notif_title),
                 body = if (notificationAccess) {
-                    "On. The capsule can follow music and video players."
+                    stringResource(R.string.st_notif_on)
                 } else {
-                    "Off. Needed to show what is playing and control it from the capsule. " +
-                        "Capsool reads notifications on your phone only and never stores their text."
+                    stringResource(R.string.st_notif_off)
                 },
                 ok = notificationAccess,
-                action = if (notificationAccess) null else "Allow notification access" to {
+                action = if (notificationAccess) null else stringResource(R.string.st_notif_allow) to {
                     SystemStatus.openNotificationAccess(context)
                 }
             )
@@ -74,12 +75,10 @@ fun StatusTab(serviceRunning: Boolean, notificationAccess: Boolean, modifier: Mo
         if (!serviceRunning || !notificationAccess) {
             item {
                 StatusCard(
-                    title = "Option greyed out?",
-                    body = "On Android 13+ apps installed outside the Play Store are blocked from Accessibility " +
-                        "and notification access. " +
-                        "Open App info, tap ⋮ and choose \"Allow restricted settings\", then try again.",
+                    title = stringResource(R.string.st_restricted_title),
+                    body = stringResource(R.string.st_restricted_body),
                     ok = null,
-                    action = "Open App info" to { context.startActivity(SystemStatus.appDetailsIntent(context)) }
+                    action = stringResource(R.string.st_restricted_open) to { context.startActivity(SystemStatus.appDetailsIntent(context)) }
                 )
             }
         }
@@ -87,9 +86,8 @@ fun StatusTab(serviceRunning: Boolean, notificationAccess: Boolean, modifier: Mo
         if (advancedProtection) {
             item {
                 StatusCard(
-                    title = "Advanced Protection is on",
-                    body = "Android Advanced Protection can switch off accessibility services that are not " +
-                        "assistive tools, which stops the capsule. Capsool cannot work around this.",
+                    title = stringResource(R.string.st_ap_title),
+                    body = stringResource(R.string.st_ap_body),
                     ok = false,
                     action = null
                 )
@@ -135,10 +133,9 @@ private fun KeepAliveCard() {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Keep the capsule running", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.st_keepalive_title), style = MaterialTheme.typography.titleMedium)
             Text(
-                "Some phones stop background apps to save battery, which makes the capsule disappear. " +
-                    "Follow these steps once.",
+                stringResource(R.string.st_keepalive_body),
                 style = MaterialTheme.typography.bodyMedium
             )
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -146,31 +143,40 @@ private fun KeepAliveCard() {
                     FilterChip(
                         selected = oem == selected,
                         onClick = { selected = oem },
-                        label = { Text(if (oem == detected) "${oem.displayName} (this phone)" else oem.displayName) }
+                        label = {
+                            Text(
+                                if (oem == detected) {
+                                    stringResource(R.string.st_oem_this_phone, stringResource(oem.labelRes))
+                                } else {
+                                    stringResource(oem.labelRes)
+                                }
+                            )
+                        }
                     )
                 }
             }
             guide.steps.forEachIndexed { index, step ->
                 val isNote = index == guide.steps.lastIndex
+                val stepText = stringResource(step)
                 Text(
-                    if (isNote) step else "${index + 1}. $step",
+                    if (isNote) stepText else "${index + 1}. $stepText",
                     style = if (isNote) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium,
                     color = if (isNote) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilledTonalButton(onClick = { context.startActivity(SystemStatus.appDetailsIntent(context)) }) {
-                    Text("App info")
+                    Text(stringResource(R.string.st_app_info))
                 }
                 FilledTonalButton(onClick = {
                     runCatching { context.startActivity(SystemStatus.batteryOptimizationIntent()) }
-                }) { Text("Battery list") }
+                }) { Text(stringResource(R.string.st_battery_list)) }
                 if (selected == Oem.XIAOMI) {
                     FilledTonalButton(onClick = {
                         if (!SystemStatus.openXiaomiAutostart(context)) {
                             context.startActivity(SystemStatus.appDetailsIntent(context))
                         }
-                    }) { Text("Autostart") }
+                    }) { Text(stringResource(R.string.st_autostart)) }
                 }
             }
         }

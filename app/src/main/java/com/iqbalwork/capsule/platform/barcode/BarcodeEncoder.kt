@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule.platform.barcode
 
 import com.google.zxing.EncodeHintType
+import com.iqbalwork.capsule.core.UiText
 import com.google.zxing.MultiFormatWriter
 import com.google.zxing.BarcodeFormat as ZxFormat
 import com.iqbalwork.capsule.model.BarcodeFormat
@@ -13,12 +14,22 @@ data class BarcodeMatrix(
     operator fun get(x: Int, y: Int): Boolean = rows[y][x]
 }
 
+/** The content failed [BarcodeValidator]; [uiMessage] is the translatable reason. */
+class BarcodeInvalidException(val uiMessage: UiText) : IllegalArgumentException()
+
+/**
+ * What to show the user for a failed encode: our own validation message (translated), or the
+ * encoder library's wording as is, since that is not ours to translate.
+ */
+fun Throwable.toUiText(): UiText =
+    (this as? BarcodeInvalidException)?.uiMessage ?: UiText.Raw(message ?: javaClass.simpleName)
+
 object BarcodeEncoder {
 
     fun encode(content: String, format: BarcodeFormat, width: Int = 1, height: Int = 1): BarcodeMatrix {
         val validation = BarcodeValidator.validate(content, format)
         if (validation is BarcodeValidationResult.Error) {
-            throw IllegalArgumentException(validation.message)
+            throw BarcodeInvalidException(validation.message)
         }
 
         val zxingFormat = format.toZxing()

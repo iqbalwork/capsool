@@ -1,6 +1,8 @@
 package com.iqbalwork.capsule.platform.barcode
 
 import android.app.Activity
+import com.iqbalwork.capsule.core.UiText
+import com.iqbalwork.capsule.R
 import android.content.Context
 import android.content.ContextWrapper
 import android.net.Uri
@@ -22,8 +24,8 @@ import kotlin.coroutines.resume
 /** Result of attempting to decode a barcode. */
 sealed interface BarcodeScanResult {
     data class Found(val code: ScannedCode) : BarcodeScanResult
-    /** [message] is a human-readable string that can be shown directly in the UI. */
-    data class Failed(val message: String) : BarcodeScanResult
+    /** [message] is shown directly in the UI, translated at display time. */
+    data class Failed(val message: UiText) : BarcodeScanResult
     /** The user backed out of the camera scanner. Not an error — show nothing. */
     data object Cancelled : BarcodeScanResult
 }
@@ -73,14 +75,14 @@ suspend fun scanImage(
         val codes = mlkitBarcodes.mapNotNull { it.toScannedCode() }
 
         when (val picked = BarcodeScanPolicy.pick(codes, preferred)) {
-            null -> BarcodeScanResult.Failed("No barcode found in that image")
+            null -> BarcodeScanResult.Failed(UiText.res(R.string.scan_err_no_barcode))
             else -> BarcodeScanResult.Found(picked)
         }
     }.getOrElse { cause ->
         // Only two real failure modes here: the image could not be decoded, or ML Kit itself
         // failed. Both are reported with the underlying cause rather than a generic message.
         val reason = cause.message ?: cause.javaClass.simpleName
-        BarcodeScanResult.Failed("Could not read that image: $reason")
+        BarcodeScanResult.Failed(UiText.res(R.string.scan_err_read_image, reason))
     }
 }
 
@@ -103,7 +105,7 @@ suspend fun scanWithPlayServices(
     preferred: BarcodeFormat,
 ): BarcodeScanResult {
     val activity = context.findActivity()
-        ?: return BarcodeScanResult.Failed("Camera scanning needs to be started from the app window")
+        ?: return BarcodeScanResult.Failed(UiText.res(R.string.scan_err_needs_window))
 
     return suspendCancellableCoroutine { continuation ->
         val options = GmsBarcodeScannerOptions.Builder()
@@ -118,7 +120,7 @@ suspend fun scanWithPlayServices(
                 val code = barcode.toScannedCode()
                 continuation.resume(
                     if (code == null) {
-                        BarcodeScanResult.Failed("That code is not one of the supported formats")
+                        BarcodeScanResult.Failed(UiText.res(R.string.scan_err_unsupported))
                     } else {
                         BarcodeScanResult.Found(code)
                     },
@@ -135,7 +137,7 @@ suspend fun scanWithPlayServices(
                         // Typical causes: Play Services missing or too old, the scanner module
                         // could not be installed, or the user declined the download.
                         val reason = cause.message ?: cause.javaClass.simpleName
-                        BarcodeScanResult.Failed("Camera scan unavailable: $reason")
+                        BarcodeScanResult.Failed(UiText.res(R.string.scan_err_unavailable, reason))
                     },
                 )
             }
