@@ -1,6 +1,8 @@
 package com.iqbalwork.capsule.ui.companion
 
 import android.Manifest
+import com.iqbalwork.capsule.platform.ScreenSize
+import com.iqbalwork.capsule.core.settings.ScreenProfileKey
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.foundation.selection.selectable
@@ -93,9 +95,15 @@ fun CapsuleTab(
     modifier: Modifier = Modifier
 ) {
     var editing by remember(currentOrientation) { mutableStateOf(currentOrientation) }
-    val geometry = settings.geometry(editing)
+    // F-08: the calibration belongs to this panel and the orientation being edited.
+    val context = LocalContext.current
+    val profile = remember(editing) {
+        val (width, height) = ScreenSize.of(context)
+        ScreenProfileKey.of(width, height, editing)
+    }
+    val geometry = settings.geometry(profile, editing)
     fun updateGeometry(transform: (Geometry) -> Geometry) =
-        onUpdate { it.withGeometry(editing, transform(it.geometry(editing))) }
+        onUpdate { it.withGeometry(profile, editing, transform(it.geometry(profile, editing))) }
 
     LazyColumn(
         modifier = modifier.padding(horizontal = 16.dp),
@@ -120,6 +128,17 @@ fun CapsuleTab(
                 IntSlider(stringResource(R.string.cap_width), geometry.widthDp, 60..260) { v -> updateGeometry { it.copy(widthDp = v) } }
                 IntSlider(stringResource(R.string.cap_height), geometry.heightDp, 20..64) { v -> updateGeometry { it.copy(heightDp = v) } }
                 IntSlider(stringResource(R.string.cap_corner_radius), geometry.cornerDp, 0..32) { v -> updateGeometry { it.copy(cornerDp = v) } }
+                profile?.let { key ->
+                    val calibrated = key in settings.profiles
+                    Text(
+                        stringResource(
+                            if (calibrated) R.string.prof_info_own else R.string.prof_info_template,
+                            key.shortPx, key.longPx
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 TextButton(onClick = { updateGeometry { Geometry() } }) { Text(stringResource(R.string.cap_reset_orientation)) }
             }
         }

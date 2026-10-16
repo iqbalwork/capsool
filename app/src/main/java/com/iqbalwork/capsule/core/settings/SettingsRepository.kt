@@ -77,6 +77,7 @@ object SettingsMapper {
     private val ShowCalibrationTarget = booleanPreferencesKey("geometry.showCalibrationTarget")
     private val ColorSourceKey = stringPreferencesKey("appearance.colorSource")
     private val Haptics = booleanPreferencesKey("haptics.enabled")
+    private val ProfilesKey = stringPreferencesKey("geometry.profiles")
     private val CardPriorityKey = stringPreferencesKey("cards.priority")
     private val ShapeStyleKey = stringPreferencesKey("appearance.shape")
     private val CustomBackground = longPreferencesKey("appearance.customBg")
@@ -150,6 +151,7 @@ object SettingsMapper {
         return Settings(
             portrait = readGeometry(Orientation.PORTRAIT, defaults.portrait),
             landscape = readGeometry(Orientation.LANDSCAPE, defaults.landscape),
+            profiles = decodeProfiles(prefs[ProfilesKey]),
             idleOpacity = prefs[IdleOpacity] ?: defaults.idleOpacity,
             alwaysShowPill = prefs[AlwaysShowPill] ?: defaults.alwaysShowPill,
             showCalibrationTarget = prefs[ShowCalibrationTarget] ?: defaults.showCalibrationTarget,
@@ -232,6 +234,7 @@ object SettingsMapper {
         }
         writeGeometry(Orientation.PORTRAIT, settings.portrait)
         writeGeometry(Orientation.LANDSCAPE, settings.landscape)
+        prefs[ProfilesKey] = encodeProfiles(settings.profiles)
         prefs[IdleOpacity] = settings.idleOpacity
         prefs[AlwaysShowPill] = settings.alwaysShowPill
         prefs[ShowCalibrationTarget] = settings.showCalibrationTarget

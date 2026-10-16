@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="prof_info_own">Tersimpan untuk layar ini (%1$d × %2$d px). Ukuran dan resolusi layar lain punya posisi sendiri.</string>
+    <string name="prof_info_template">Layar ini (%1$d × %2$d px) belum disesuaikan. Mulai dari posisi Anda sebelumnya; perubahan hanya disimpan untuk layar ini.</string>
+</resources>

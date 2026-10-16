@@ -18,6 +18,56 @@ data class Geometry(
 
 enum class Orientation { PORTRAIT, LANDSCAPE }
 
+/**
+ * F-08: which calibration applies. The panel is identified by its short and long side in pixels, so
+ * rotating the phone keeps the same panel while switching resolution (FHD+ to QHD+) or unfolding a
+ * foldable gives another one, and each panel x orientation has its own geometry.
+ */
+data class ScreenProfileKey(val shortPx: Int, val longPx: Int, val orientation: Orientation) {
+    /** "1080x2400:PORTRAIT", as stored in preferences. */
+    fun encode(): String = "${shortPx}x$longPx:${orientation.name}"
+
+    fun withOrientation(value: Orientation) = copy(orientation = value)
+
+    companion object {
+        /** From a window's pixel size in either rotation; null when the size is unknown. */
+        fun of(widthPx: Int, heightPx: Int, orientation: Orientation): ScreenProfileKey? =
+            if (widthPx <= 0 || heightPx <= 0) null
+            else ScreenProfileKey(minOf(widthPx, heightPx), maxOf(widthPx, heightPx), orientation)
+
+        fun decode(value: String): ScreenProfileKey? {
+            val (size, orientation) = value.split(':', limit = 2).takeIf { it.size == 2 } ?: return null
+            val (short, long) = size.split('x', limit = 2).takeIf { it.size == 2 } ?: return null
+            return ScreenProfileKey(
+                shortPx = short.toIntOrNull()?.takeIf { it > 0 } ?: return null,
+                longPx = long.toIntOrNull()?.takeIf { it > 0 } ?: return null,
+                orientation = runCatching { Orientation.valueOf(orientation) }.getOrNull() ?: return null
+            )
+        }
+    }
+}
+
+/** Most calibrations kept; past this the oldest is forgotten (it falls back to the template again). */
+const val MAX_SCREEN_PROFILES = 12
+
+/** "key;offsetX;offsetY;width;height;corner" per line. Malformed lines are skipped. */
+internal fun encodeProfiles(profiles: Map<ScreenProfileKey, Geometry>): String =
+    profiles.entries.joinToString("\n") { (key, g) ->
+        listOf(key.encode(), g.offsetXDp, g.offsetYDp, g.widthDp, g.heightDp, g.cornerDp).joinToString(";")
+    }
+
+internal fun decodeProfiles(value: String?): Map<ScreenProfileKey, Geometry> {
+    val result = linkedMapOf<ScreenProfileKey, Geometry>()
+    value.orEmpty().lineSequence().forEach { line ->
+        val f = line.split(';')
+        if (f.size != 6) return@forEach
+        val key = ScreenProfileKey.decode(f[0]) ?: return@forEach
+        val n = f.drop(1).map { it.toIntOrNull() ?: return@forEach }
+        result[key] = Geometry(n[0], n[1], n[2], n[3], n[4])
+    }
+    return result
+}
+
 enum class ColorSource { DYNAMIC, BRAND }
 
 /** Activity cards, highest priority first (spec §2.3). The order the user starts with (F-06). */
@@ -177,8 +227,14 @@ val DefaultIdleGestures: Map<GestureType, GestureBinding> = mapOf(
 )
 
 data class Settings(
+    /**
+     * Geometry used for a screen that has no profile of its own yet (F-08). These are the calibrations
+     * from before profiles existed, so nobody has to recalibrate; a new profile starts from them.
+     */
     val portrait: Geometry = Geometry(),
     val landscape: Geometry = Geometry(),
+    /** F-08: the calibration of each panel x orientation the user has adjusted. */
+    val profiles: Map<ScreenProfileKey, Geometry> = emptyMap(),
     val idleOpacity: Float = 1f,
     val alwaysShowPill: Boolean = true,
     val showCalibrationTarget: Boolean = false,
@@ -264,11 +320,28 @@ data class Settings(
     val effectiveStartCardId: String?
         get() = if (effectiveStaticCards.any { it.id == startCardId }) startCardId else null
 
+    /** The orientation's template, used when [profile] is unknown or has no calibration yet. */
     fun geometry(orientation: Orientation): Geometry =
         if (orientation == Orientation.LANDSCAPE) landscape else portrait
 
-    fun withGeometry(orientation: Orientation, geometry: Geometry): Settings =
-        if (orientation == Orientation.LANDSCAPE) copy(landscape = geometry) else copy(portrait = geometry)
+    fun geometry(profile: ScreenProfileKey?, orientation: Orientation): Geometry =
+        profile?.let { profiles[it] } ?: geometry(orientation)
+
+    /**
+     * Saves [geometry] as the calibration of [profile]. With no profile (screen size not known) the
+     * orientation's template is changed instead.
+     */
+    fun withGeometry(profile: ScreenProfileKey?, orientation: Orientation, geometry: Geometry): Settings {
+        if (profile == null) {
+            return if (orientation == Orientation.LANDSCAPE) copy(landscape = geometry) else copy(portrait = geometry)
+        }
+        // Re-inserting moves the profile to the end, so the oldest one is what gets dropped.
+        val updated = (profiles - profile + (profile to geometry)).entries.toList().takeLast(MAX_SCREEN_PROFILES)
+        return copy(profiles = updated.associate { it.key to it.value })
+    }
+
+    /** Forgets [profile]'s calibration; it goes back to the template. */
+    fun withoutProfile(profile: ScreenProfileKey): Settings = copy(profiles = profiles - profile)
 
     fun gesture(type: GestureType, active: Boolean): GestureBinding =
         if (active) gesturesActive[type] ?: DefaultActiveGestures.getValue(type)

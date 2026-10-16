@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule.platform.accessibility
 
 import android.accessibilityservice.AccessibilityService
+import com.iqbalwork.capsule.platform.ScreenSize
 import android.app.KeyguardManager
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -58,7 +59,9 @@ class CapsoolAccessibilityService : AccessibilityService() {
             VisibilityContext(
                 screenOn = getSystemService(PowerManager::class.java).isInteractive,
                 locked = isLocked(),
-                orientation = orientationOf(resources.configuration)
+                orientation = orientationOf(resources.configuration),
+                screenWidthPx = ScreenSize.of(this).first,
+                screenHeightPx = ScreenSize.of(this).second
             )
         }
 
@@ -92,7 +95,10 @@ class CapsoolAccessibilityService : AccessibilityService() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         if (!::graph.isInitialized) return
-        updateVisibility { it.copy(orientation = orientationOf(newConfig)) }
+        val (width, height) = ScreenSize.of(this)
+        updateVisibility {
+            it.copy(orientation = orientationOf(newConfig), screenWidthPx = width, screenHeightPx = height)
+        }
         overlay?.refresh()
     }
 

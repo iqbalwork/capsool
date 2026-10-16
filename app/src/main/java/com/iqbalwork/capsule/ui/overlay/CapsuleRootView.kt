@@ -83,7 +83,7 @@ fun CapsuleRootView(
     modifier: Modifier = Modifier
 ) {
     val settings = state.settings
-    val geometry = settings.geometry(state.visibility.orientation)
+    val geometry = state.geometry
     val mode = state.mode
     val expanded = mode == CapsuleMode.EXPANDED
     val haptics = LocalHapticFeedback.current

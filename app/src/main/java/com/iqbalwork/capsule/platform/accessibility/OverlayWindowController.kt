@@ -132,7 +132,7 @@ class OverlayWindowController(
                         }
                     LayoutKey(
                         mode = it.mode,
-                        geometry = it.settings.geometry(it.visibility.orientation),
+                        geometry = it.geometry,
                         focusable = it.replyingTo != null,
                         barcodeShowing = barcodeShowing,
                         listRows = it.listRows
