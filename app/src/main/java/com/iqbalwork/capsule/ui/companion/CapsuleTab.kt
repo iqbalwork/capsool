@@ -1,6 +1,10 @@
 package com.iqbalwork.capsule.ui.companion
 
 import android.Manifest
+import com.iqbalwork.capsule.core.settings.MAX_CARD_CORNER_DP
+import com.iqbalwork.capsule.core.settings.MIN_CARD_CORNER_DP
+import com.iqbalwork.capsule.core.settings.CardWidthMode
+import com.iqbalwork.capsule.core.settings.PlacementMode
 import com.iqbalwork.capsule.platform.ScreenSize
 import com.iqbalwork.capsule.core.settings.ScreenProfileKey
 import androidx.compose.ui.platform.LocalDensity
@@ -111,12 +115,15 @@ fun CapsuleTab(
     ) {
         item {
             Section(stringResource(R.string.cap_sec_size_position)) {
-                SwitchRow(
-                    title = stringResource(R.string.cap_calibration_target),
-                    description = stringResource(R.string.cap_calibration_target_desc),
-                    checked = settings.showCalibrationTarget,
-                    onChange = { show -> onUpdate { it.copy(showCalibrationTarget = show) } }
-                )
+                // The red target hides under the camera hole; independent mode is not tied to the camera.
+                if (settings.placementMode == PlacementMode.CAMERA) {
+                    SwitchRow(
+                        title = stringResource(R.string.cap_calibration_target),
+                        description = stringResource(R.string.cap_calibration_target_desc),
+                        checked = settings.showCalibrationTarget,
+                        onChange = { show -> onUpdate { it.copy(showCalibrationTarget = show) } }
+                    )
+                }
                 Options(
                     options = Orientation.entries,
                     selected = editing,
@@ -140,6 +147,41 @@ fun CapsuleTab(
                     )
                 }
                 TextButton(onClick = { updateGeometry { Geometry() } }) { Text(stringResource(R.string.cap_reset_orientation)) }
+            }
+        }
+        item {
+            Section(stringResource(R.string.mode_section)) {
+                Text(stringResource(R.string.mode_placement), style = MaterialTheme.typography.bodyMedium)
+                Options(
+                    options = PlacementMode.entries,
+                    selected = settings.placementMode,
+                    label = {
+                        stringResource(if (it == PlacementMode.CAMERA) R.string.mode_camera else R.string.mode_independent)
+                    },
+                    onSelect = { mode -> onUpdate { it.copy(placementMode = mode) } }
+                )
+                Text(
+                    stringResource(
+                        if (settings.placementMode == PlacementMode.CAMERA) R.string.mode_camera_desc
+                        else R.string.mode_independent_desc
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(stringResource(R.string.mode_card_width), style = MaterialTheme.typography.bodyMedium)
+                Options(
+                    options = CardWidthMode.entries,
+                    selected = settings.cardWidthMode,
+                    label = {
+                        stringResource(if (it == CardWidthMode.CONTENT) R.string.mode_width_content else R.string.mode_width_full)
+                    },
+                    onSelect = { mode -> onUpdate { it.copy(cardWidthMode = mode) } }
+                )
+                IntSlider(
+                    stringResource(R.string.mode_card_radius),
+                    settings.cardCornerDp,
+                    MIN_CARD_CORNER_DP..MAX_CARD_CORNER_DP
+                ) { v -> onUpdate { it.copy(cardCornerDp = v) } }
             }
         }
         item {

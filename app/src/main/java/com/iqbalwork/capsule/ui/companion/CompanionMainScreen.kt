@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule.ui.companion
 
 import androidx.compose.foundation.layout.Box
+import com.iqbalwork.capsule.core.settings.CardWidthMode
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -116,7 +117,7 @@ private fun CompanionMainScreen(
                     CapsuleRootView(
                         state = state,
                         dispatch = dispatch,
-                        expandedWidth = OverlayPlacement.expandedWidthDp(screenWidthDp).dp,
+                        expandedWidth = OverlayPlacement.expandedWidthDp(screenWidthDp, state.settings.cardWidthMode == CardWidthMode.FULL).dp,
                         expandedHeight = OverlayPlacement.EXPANDED_HEIGHT_DP.dp,
                         modifier = Modifier.padding(top = 12.dp)
                     )

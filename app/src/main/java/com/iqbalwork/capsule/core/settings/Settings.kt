@@ -70,6 +70,20 @@ internal fun decodeProfiles(value: String?): Map<ScreenProfileKey, Geometry> {
 
 enum class ColorSource { DYNAMIC, BRAND }
 
+/**
+ * F-09: where the capsule sits. CAMERA covers the camera cutout (the capsule is a pill around it);
+ * INDEPENDENT puts it just below the status bar, centered on the screen, where every gesture works
+ * because the system's pull-down zone at the very top of the screen is not in the way.
+ */
+enum class PlacementMode { CAMERA, INDEPENDENT }
+
+/** F-09: CONTENT keeps the compact card width the cards are designed for; FULL spans the screen. */
+enum class CardWidthMode { CONTENT, FULL }
+
+const val DEFAULT_CARD_CORNER_DP = 32
+const val MIN_CARD_CORNER_DP = 8
+const val MAX_CARD_CORNER_DP = 40
+
 /** Activity cards, highest priority first (spec §2.3). The order the user starts with (F-06). */
 val DefaultCardPriority: List<CapsuleCardType> = listOf(
     CapsuleCardType.NOTIFICATION,
@@ -240,6 +254,10 @@ data class Settings(
     val showCalibrationTarget: Boolean = false,
     val colorSource: ColorSource = ColorSource.DYNAMIC,
     val hapticsEnabled: Boolean = true,
+    val placementMode: PlacementMode = PlacementMode.CAMERA,
+    val cardWidthMode: CardWidthMode = CardWidthMode.CONTENT,
+    /** Corner radius of the opened card; the collapsed capsule uses the geometry's own radius. */
+    val cardCornerDp: Int = DEFAULT_CARD_CORNER_DP,
     /** F-06: which activity card comes first when several are active. Always a full permutation. */
     val cardPriority: List<CapsuleCardType> = DefaultCardPriority,
     val shapeStyle: CapsuleShapeStyle = CapsuleShapeStyle.ROUNDED_RECT,

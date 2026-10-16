@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mode_section">Mode kapsul</string>
+    <string name="mode_placement">Posisi</string>
+    <string name="mode_camera">Di kamera</string>
+    <string name="mode_independent">Di bawah status bar</string>
+    <string name="mode_camera_desc">Kapsul membungkus lubang kamera. Tepi paling atas layar dipakai Android untuk menarik bayangan notifikasi, jadi geser di sana kurang andal.</string>
+    <string name="mode_independent_desc">Kapsul berada tepat di bawah status bar, di tengah layar. Semua gestur bekerja seperti biasa. Geser slider posisi untuk memindahkannya.</string>
+    <string name="mode_card_width">Lebar kartu</string>
+    <string name="mode_width_content">Ringkas</string>
+    <string name="mode_width_full">Penuh</string>
+    <string name="mode_card_radius">Radius sudut kartu</string>
+</resources>

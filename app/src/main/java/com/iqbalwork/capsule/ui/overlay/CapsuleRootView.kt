@@ -104,7 +104,7 @@ fun CapsuleRootView(
         label = "capsule_height"
     )
     val corner by animateDpAsState(
-        targetValue = if (expanded) CapsuleTokens.ExpandedCornerRadius
+        targetValue = if (expanded) settings.cardCornerDp.dp
         else collapsedCornerDp(settings.shapeStyle, geometry.cornerDp, geometry.heightDp),
         animationSpec = sizeSpring,
         label = "capsule_corner"

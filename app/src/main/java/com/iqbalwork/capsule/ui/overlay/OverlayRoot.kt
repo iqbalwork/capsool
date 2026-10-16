@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule.ui.overlay
 
 import android.annotation.SuppressLint
+import com.iqbalwork.capsule.core.settings.CardWidthMode
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.runtime.remember
@@ -46,7 +47,7 @@ fun OverlayRoot(
                 CapsuleRootView(
                     state = state,
                     dispatch = dispatch,
-                    expandedWidth = OverlayPlacement.expandedWidthDp(screenWidthDp).dp,
+                    expandedWidth = OverlayPlacement.expandedWidthDp(screenWidthDp, state.settings.cardWidthMode == CardWidthMode.FULL).dp,
                     expandedHeight = OverlayPlacement.expandedContentHeightDp(state.listRows).dp,
                     modifier = Modifier
                         .offset { IntOffset(placement.contentOffsetXPx, placement.contentOffsetYPx) }

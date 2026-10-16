@@ -32,5 +32,4 @@ object CapsuleTokens {
 
     // Capsule shell: pure black so the pill blends with the camera hole.
     val Shell = Color(0xFF000000)
-    val ExpandedCornerRadius = 32.dp
 }

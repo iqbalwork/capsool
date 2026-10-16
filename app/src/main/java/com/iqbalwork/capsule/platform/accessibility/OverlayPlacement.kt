@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule.platform.accessibility
 
 import com.iqbalwork.capsule.core.settings.Geometry
+import com.iqbalwork.capsule.core.settings.PlacementMode
 import kotlin.math.min
 import kotlin.math.roundToInt
 
@@ -61,8 +62,13 @@ object OverlayPlacement {
     private const val SCREEN_GUTTER_DP = 8
     private const val NO_CUTOUT_TOP_DP = 6
 
-    fun expandedWidthDp(screenWidthDp: Float): Float =
-        min(EXPANDED_MAX_WIDTH_DP.toFloat(), screenWidthDp - 2 * SCREEN_GUTTER_DP)
+    /** Space between the status bar and the capsule in independent mode. */
+    const val INDEPENDENT_GAP_DP = 4
+
+    /** The card's width: capped at [EXPANDED_MAX_WIDTH_DP], or the whole screen less the gutters when [full]. */
+    fun expandedWidthDp(screenWidthDp: Float, full: Boolean = false): Float =
+        if (full) screenWidthDp - 2 * SCREEN_GUTTER_DP
+        else min(EXPANDED_MAX_WIDTH_DP.toFloat(), screenWidthDp - 2 * SCREEN_GUTTER_DP)
 
     /**
      * The part of a card-sized window the capsule covers, for the touchable region (API 34+):
@@ -96,16 +102,26 @@ object OverlayPlacement {
         geometry: Geometry,
         expanded: Boolean,
         miniEvent: Boolean = false,
-        listRows: Int = 0
+        listRows: Int = 0,
+        mode: PlacementMode = PlacementMode.CAMERA,
+        statusBarHeightPx: Int = 0,
+        fullWidthCard: Boolean = false
     ): WindowPlacement {
         fun px(dp: Float) = dp * density
         val capsuleHeight = px(geometry.heightDp.toFloat())
-        val centerX = (cutout?.centerX ?: (screenWidthPx / 2f)) + px(geometry.offsetXDp.toFloat())
-        val defaultCenterY = cutout?.centerY ?: (px(NO_CUTOUT_TOP_DP.toFloat()) + capsuleHeight / 2f)
+        val independent = mode == PlacementMode.INDEPENDENT
+        // Independent ignores the camera: centered on the screen, just under the status bar.
+        val baseCenterX = if (independent) screenWidthPx / 2f else cutout?.centerX ?: (screenWidthPx / 2f)
+        val centerX = baseCenterX + px(geometry.offsetXDp.toFloat())
+        val defaultCenterY = when {
+            independent -> statusBarHeightPx + px(INDEPENDENT_GAP_DP.toFloat()) + capsuleHeight / 2f
+            else -> cutout?.centerY ?: (px(NO_CUTOUT_TOP_DP.toFloat()) + capsuleHeight / 2f)
+        }
         val capsuleTop = defaultCenterY - capsuleHeight / 2f + px(geometry.offsetYDp.toFloat())
 
         val pillWidth = px(pillWidthDp(geometry, miniEvent).toFloat())
-        val contentWidth = if (expanded) maxOf(px(expandedWidthDp(screenWidthPx / density)), pillWidth) else pillWidth
+        val contentWidth =
+            if (expanded) maxOf(px(expandedWidthDp(screenWidthPx / density, fullWidthCard)), pillWidth) else pillWidth
         val contentHeight = if (expanded) px(expandedContentHeightDp(listRows)) else capsuleHeight
         val margin = px(MARGIN_DP.toFloat())
 

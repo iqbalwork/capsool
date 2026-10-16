@@ -1,6 +1,9 @@
 package com.iqbalwork.capsule.platform.accessibility
 
 import android.annotation.SuppressLint
+import android.view.WindowInsets
+import com.iqbalwork.capsule.core.settings.CardWidthMode
+import com.iqbalwork.capsule.core.settings.PlacementMode
 import com.iqbalwork.capsule.R
 import android.content.Context
 import android.graphics.PixelFormat
@@ -70,7 +73,9 @@ class OverlayWindowController(
         val focusable: Boolean,
         val barcodeShowing: Boolean = false,
         /** Rows the LIST panel would show; 0 when the carousel is used. */
-        val listRows: Int = 0
+        val listRows: Int = 0,
+        val placementMode: PlacementMode = PlacementMode.CAMERA,
+        val fullWidthCard: Boolean = false
     )
 
     fun attach() {
@@ -135,7 +140,9 @@ class OverlayWindowController(
                         geometry = it.geometry,
                         focusable = it.replyingTo != null,
                         barcodeShowing = barcodeShowing,
-                        listRows = it.listRows
+                        listRows = it.listRows,
+                        placementMode = it.settings.placementMode,
+                        fullWidthCard = it.settings.cardWidthMode == CardWidthMode.FULL
                     )
                 }
                 .distinctUntilChanged()
@@ -190,7 +197,10 @@ class OverlayWindowController(
             // API 34+: the window keeps card size and only its touchable region changes.
             expanded = expanded || FIXED_SIZE_WINDOW,
             miniEvent = key.mode == CapsuleMode.MINI_EVENT,
-            listRows = key.listRows
+            listRows = key.listRows,
+            mode = key.placementMode,
+            statusBarHeightPx = metrics.windowInsets.getInsets(WindowInsets.Type.statusBars()).top,
+            fullWidthCard = key.fullWidthCard
         )
         windowExpanded = expanded
         placement.value = newPlacement

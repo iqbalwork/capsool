@@ -77,6 +77,9 @@ object SettingsMapper {
     private val ShowCalibrationTarget = booleanPreferencesKey("geometry.showCalibrationTarget")
     private val ColorSourceKey = stringPreferencesKey("appearance.colorSource")
     private val Haptics = booleanPreferencesKey("haptics.enabled")
+    private val PlacementModeKey = stringPreferencesKey("capsule.mode")
+    private val CardWidthModeKey = stringPreferencesKey("capsule.widthMode")
+    private val CardCornerKey = intPreferencesKey("capsule.cardRadius")
     private val ProfilesKey = stringPreferencesKey("geometry.profiles")
     private val CardPriorityKey = stringPreferencesKey("cards.priority")
     private val ShapeStyleKey = stringPreferencesKey("appearance.shape")
@@ -152,6 +155,9 @@ object SettingsMapper {
             portrait = readGeometry(Orientation.PORTRAIT, defaults.portrait),
             landscape = readGeometry(Orientation.LANDSCAPE, defaults.landscape),
             profiles = decodeProfiles(prefs[ProfilesKey]),
+            placementMode = enumOrDefault(prefs[PlacementModeKey], defaults.placementMode),
+            cardWidthMode = enumOrDefault(prefs[CardWidthModeKey], defaults.cardWidthMode),
+            cardCornerDp = (prefs[CardCornerKey] ?: defaults.cardCornerDp).coerceIn(MIN_CARD_CORNER_DP, MAX_CARD_CORNER_DP),
             idleOpacity = prefs[IdleOpacity] ?: defaults.idleOpacity,
             alwaysShowPill = prefs[AlwaysShowPill] ?: defaults.alwaysShowPill,
             showCalibrationTarget = prefs[ShowCalibrationTarget] ?: defaults.showCalibrationTarget,
@@ -235,6 +241,9 @@ object SettingsMapper {
         writeGeometry(Orientation.PORTRAIT, settings.portrait)
         writeGeometry(Orientation.LANDSCAPE, settings.landscape)
         prefs[ProfilesKey] = encodeProfiles(settings.profiles)
+        prefs[PlacementModeKey] = settings.placementMode.name
+        prefs[CardWidthModeKey] = settings.cardWidthMode.name
+        prefs[CardCornerKey] = settings.cardCornerDp
         prefs[IdleOpacity] = settings.idleOpacity
         prefs[AlwaysShowPill] = settings.alwaysShowPill
         prefs[ShowCalibrationTarget] = settings.showCalibrationTarget
