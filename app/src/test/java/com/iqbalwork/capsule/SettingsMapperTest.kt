@@ -11,6 +11,7 @@ import com.iqbalwork.capsule.core.settings.GestureType
 import com.iqbalwork.capsule.core.settings.Geometry
 import com.iqbalwork.capsule.core.settings.MediaCollapseDelay
 import com.iqbalwork.capsule.core.settings.MiniEventDuration
+import com.iqbalwork.capsule.core.settings.LockScreenBehavior
 import com.iqbalwork.capsule.model.EventCategory
 import com.iqbalwork.capsule.core.settings.NotificationDelay
 import com.iqbalwork.capsule.core.settings.NotificationDisplay
@@ -56,7 +57,8 @@ class SettingsMapperTest {
             notificationDisplay = NotificationDisplay.EXPANDED,
             notificationDelay = NotificationDelay.UNTIL_OPENED,
             notificationBlockedApps = setOf("com.a", "com.b"),
-            hideNotificationTextWhenLocked = false,
+            hiddenPackages = setOf("com.hide.me"),
+            lockScreenBehavior = LockScreenBehavior.HIDE,
             removeNotificationAfterViewing = true,
             notificationGlow = false,
             chargingCardEnabled = false,
@@ -83,5 +85,45 @@ class SettingsMapperTest {
         val settings = SettingsMapper.read(prefs)
         assertEquals(GestureAction.OPEN_QUICK_SETTINGS, settings.gesture(GestureType.LONG_PRESS, active = true).action)
         assertEquals(GestureAction.OPEN_SHORTCUTS, settings.gesture(GestureType.LONG_PRESS, active = false).action)
+    }
+
+    // --- F-85 expand phase: the legacy lock-screen boolean migrates into the behaviour enum ---
+
+    private val legacyHideTextKey =
+        androidx.datastore.preferences.core.booleanPreferencesKey("notification.hideContentWhenLocked")
+    private val newLockScreenKey =
+        androidx.datastore.preferences.core.stringPreferencesKey("visibility.lockScreenBehavior")
+
+    @Test
+    fun aDeviceThatOnlyHasTheLegacySwitchKeepsHidingText() {
+        val prefs = mutablePreferencesOf(legacyHideTextKey to true)
+        assertEquals(LockScreenBehavior.SHOW_WITHOUT_CONTENT, SettingsMapper.read(prefs).lockScreenBehavior)
+    }
+
+    @Test
+    fun aDeviceThatHadTheLegacySwitchOffStartsShowingText() {
+        val prefs = mutablePreferencesOf(legacyHideTextKey to false)
+        assertEquals(LockScreenBehavior.SHOW, SettingsMapper.read(prefs).lockScreenBehavior)
+    }
+
+    @Test
+    fun theNewKeyWinsOverTheLegacyOne() {
+        val prefs = mutablePreferencesOf(
+            legacyHideTextKey to true,
+            newLockScreenKey to LockScreenBehavior.HIDE.name
+        )
+        assertEquals(LockScreenBehavior.HIDE, SettingsMapper.read(prefs).lockScreenBehavior)
+    }
+
+    @Test
+    fun writingKeepsTheLegacyKeyInStepForOlderBuilds() {
+        val prefs = mutablePreferencesOf()
+        SettingsMapper.write(prefs, Settings(lockScreenBehavior = LockScreenBehavior.SHOW))
+        // An older build can only read the boolean, and must not keep hiding text the user revealed.
+        assertEquals(false, prefs[legacyHideTextKey])
+
+        val hidden = mutablePreferencesOf()
+        SettingsMapper.write(hidden, Settings(lockScreenBehavior = LockScreenBehavior.HIDE))
+        assertEquals(true, hidden[legacyHideTextKey])
     }
 }
