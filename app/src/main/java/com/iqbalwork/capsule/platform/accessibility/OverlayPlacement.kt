@@ -2,6 +2,7 @@ package com.iqbalwork.capsule.platform.accessibility
 
 import com.iqbalwork.capsule.core.settings.Geometry
 import com.iqbalwork.capsule.core.settings.PlacementMode
+import kotlin.math.ceil
 import kotlin.math.min
 import kotlin.math.roundToInt
 
@@ -27,7 +28,12 @@ data class WindowPlacement(
      * screen for pulling down the notification shade, so interactive content starts below the status
      * bar. Zero for a collapsed capsule and in independent mode.
      */
-    val contentTopInsetPx: Int = 0
+    val contentTopInsetPx: Int = 0,
+    /**
+     * Width in dp of the strip at the middle of the pill that sits over the camera hole (the hole
+     * plus a little room each side); 0 when there is no hole to avoid. Content must stay out of it.
+     */
+    val cameraGapDp: Int = 0
 )
 
 /** A rectangle in window pixels (a plain stand-in for android.graphics.Rect, for unit tests). */
@@ -63,8 +69,21 @@ object OverlayPlacement {
     /** Mini events widen the pill so an icon, a title and a value fit (F-60..F-69). */
     const val MINI_EVENT_EXTRA_WIDTH_DP = 110
 
-    fun pillWidthDp(geometry: Geometry, miniEvent: Boolean): Int =
-        geometry.widthDp + if (miniEvent) MINI_EVENT_EXTRA_WIDTH_DP else 0
+    /** Room kept clear on each side of the camera hole. */
+    const val CAMERA_GAP_PADDING_DP = 4
+
+    /** A pill split around the hole needs more room, or its two halves cannot hold a title and a value. */
+    const val SPLIT_EXTRA_WIDTH_DP = 40
+
+    /** The strip over the camera hole, from the hole's width in pixels; 0 when there is none. */
+    fun cameraGapDp(cutoutWidthPx: Int, density: Float): Int =
+        if (cutoutWidthPx <= 0) 0 else ceil(cutoutWidthPx / density).toInt() + 2 * CAMERA_GAP_PADDING_DP
+
+    fun pillWidthDp(geometry: Geometry, miniEvent: Boolean, cameraGapDp: Int = 0): Int {
+        if (!miniEvent) return geometry.widthDp
+        val split = if (cameraGapDp > 0) cameraGapDp + SPLIT_EXTRA_WIDTH_DP else 0
+        return geometry.widthDp + MINI_EVENT_EXTRA_WIDTH_DP + split
+    }
     private const val SCREEN_GUTTER_DP = 8
     private const val NO_CUTOUT_TOP_DP = 6
 
@@ -89,7 +108,7 @@ object OverlayPlacement {
         miniEvent: Boolean = false
     ): PxRect {
         val margin = MARGIN_DP * density
-        val width = if (expanded) window.width - 2 * margin else pillWidthDp(geometry, miniEvent) * density
+        val width = if (expanded) window.width - 2 * margin else pillWidthDp(geometry, miniEvent, window.cameraGapDp) * density
         // Expanded: the whole window less its margins, so a taller card (list rows, the camera-mode
         // top inset) is touchable all the way down.
         val height = if (expanded) window.height - 2 * margin else geometry.heightDp * density
@@ -127,7 +146,9 @@ object OverlayPlacement {
         }
         val capsuleTop = defaultCenterY - capsuleHeight / 2f + px(geometry.offsetYDp.toFloat())
 
-        val pillWidth = px(pillWidthDp(geometry, miniEvent).toFloat())
+        // Independent mode is not over the camera, so there is nothing to keep clear.
+        val cameraGap = if (independent || cutout == null) 0 else cameraGapDp(cutout.right - cutout.left, density)
+        val pillWidth = px(pillWidthDp(geometry, miniEvent, cameraGap).toFloat())
         val contentWidth =
             if (expanded) maxOf(px(expandedWidthDp(screenWidthPx / density, fullWidthCard)), pillWidth) else pillWidth
         // The part of the status bar the capsule's top edge does not already clear (spec §2.4.3 point 6).
@@ -149,7 +170,8 @@ object OverlayPlacement {
             height = height,
             contentOffsetXPx = idealX - x,
             contentOffsetYPx = idealY - y,
-            contentTopInsetPx = deadZone.roundToInt()
+            contentTopInsetPx = deadZone.roundToInt(),
+            cameraGapDp = cameraGap
         )
     }
 }

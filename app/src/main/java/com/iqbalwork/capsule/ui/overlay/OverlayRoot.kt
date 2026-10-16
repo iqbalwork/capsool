@@ -51,6 +51,7 @@ fun OverlayRoot(
                     expandedWidth = OverlayPlacement.expandedWidthDp(screenWidthDp, state.settings.cardWidthMode == CardWidthMode.FULL).dp,
                     expandedHeight = (OverlayPlacement.expandedContentHeightDp(state.listRows) + topInsetDp).dp,
                 contentTopInset = topInsetDp.dp,
+                cameraGapDp = placement.cameraGapDp,
                     modifier = Modifier
                         .offset { IntOffset(placement.contentOffsetXPx, placement.contentOffsetYPx) }
                         .padding(top = OverlayPlacement.MARGIN_DP.dp)

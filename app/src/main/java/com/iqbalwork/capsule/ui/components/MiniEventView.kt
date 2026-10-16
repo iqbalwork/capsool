@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule.ui.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.RowScope
 import com.iqbalwork.capsule.core.settings.EventStyle
 import com.iqbalwork.capsule.core.settings.EventRightShape
 import com.iqbalwork.capsule.core.settings.EventLeftShape
@@ -57,43 +58,58 @@ val AlertRed = Color(0xFFFF6B5E)
 private val AirplaneAmber = Color(0xFFFFB74D)
 private val WifiBlue = Color(0xFF8AB4F8)
 
-/** The wide pill shown for a mini event (F-60..F-69): icon, title, and a value or battery ring. */
+/**
+ * The wide pill shown for a mini event (F-60..F-69): icon, title, and a value or battery ring.
+ *
+ * The pill is centered on the camera hole, which hides whatever is drawn over it. With a
+ * [cameraGapDp] the content is therefore split in two equal halves with that strip left empty
+ * between them: icon and title on the left, value and ring on the right.
+ */
 @Composable
-fun MiniEventView(event: MiniEvent, modifier: Modifier = Modifier, style: EventStyle = EventStyle.Default) {
+fun MiniEventView(
+    event: MiniEvent,
+    modifier: Modifier = Modifier,
+    style: EventStyle = EventStyle.Default,
+    cameraGapDp: Int = 0
+) {
     val color = style.color?.let { Color(it) } ?: event.type.accent()
-    Row(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 7.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        if (style.left != EventLeftShape.NONE) {
-            Box(
-                modifier = Modifier
-                    .size(24.dp)
-                    .clip(if (style.left == EventLeftShape.SQUARE) RoundedCornerShape(7.dp) else CircleShape)
-                    .background(color.copy(alpha = 0.22f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    style.icon?.let(::customIntentIcon) ?: event.type.icon(),
-                    contentDescription = null,
-                    tint = color,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-            Spacer(Modifier.width(8.dp))
+    val split = cameraGapDp > 0
+
+    @Composable
+    fun Badge() {
+        if (style.left == EventLeftShape.NONE) return
+        Box(
+            modifier = Modifier
+                .size(24.dp)
+                .clip(if (style.left == EventLeftShape.SQUARE) RoundedCornerShape(7.dp) else CircleShape)
+                .background(color.copy(alpha = 0.22f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                style.icon?.let(::customIntentIcon) ?: event.type.icon(),
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(16.dp)
+            )
         }
+        Spacer(Modifier.width(8.dp))
+    }
+
+    @Composable
+    fun RowScope.Title() {
         Text(
             text = event.title,
             color = Color.White,
-            style = MaterialTheme.typography.labelLarge,
+            style = if (split) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
         )
+    }
+
+    @Composable
+    fun Trailing() {
         if (event.subtitle.isNotEmpty() && style.right != EventRightShape.NONE) {
             Spacer(Modifier.width(6.dp))
             Text(
@@ -107,6 +123,30 @@ fun MiniEventView(event: MiniEvent, modifier: Modifier = Modifier, style: EventS
         event.level?.takeIf { style.right == EventRightShape.AUTO }?.let { level ->
             Spacer(Modifier.width(6.dp))
             LevelRing(level = level, color = color, size = 18.dp, stroke = 3.dp)
+        }
+    }
+
+    Row(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 7.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (split) {
+            Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                Badge()
+                Title()
+            }
+            Spacer(Modifier.width(cameraGapDp.dp))
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End
+            ) { Trailing() }
+        } else {
+            Badge()
+            Title()
+            Trailing()
         }
     }
 }

@@ -62,7 +62,9 @@ import com.iqbalwork.capsule.ui.theme.CapsuleTokens
 @Composable
 fun MiniCapsuleView(
     state: CapsuleState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Width of the camera hole under the middle of the pill, in dp; 0 = none. */
+    cameraGapDp: Int = 0
 ) {
     val miniEvent = state.miniEvent
 
@@ -70,7 +72,8 @@ fun MiniCapsuleView(
         MiniEventView(
             event = miniEvent,
             modifier = modifier,
-            style = state.settings.eventStyle(miniEvent.type.category)
+            style = state.settings.eventStyle(miniEvent.type.category),
+            cameraGapDp = cameraGapDp
         )
     } else {
         // Compact pill: the left and right slots follow the card the carousel would open.

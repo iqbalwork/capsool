@@ -85,7 +85,9 @@ fun CapsuleRootView(
     expandedHeight: Dp,
     modifier: Modifier = Modifier,
     /** Space kept free at the top of an opened card, below the status bar (camera mode). */
-    contentTopInset: Dp = 0.dp
+    contentTopInset: Dp = 0.dp,
+    /** Strip over the camera hole that pill content must stay out of (see WindowPlacement.cameraGapDp). */
+    cameraGapDp: Int = 0
 ) {
     val settings = state.settings
     val geometry = state.geometry
@@ -99,7 +101,7 @@ fun CapsuleRootView(
 
     val width by animateDpAsState(
         targetValue = if (expanded) expandedWidth
-        else OverlayPlacement.pillWidthDp(geometry, miniEvent = mode == CapsuleMode.MINI_EVENT).dp,
+        else OverlayPlacement.pillWidthDp(geometry, miniEvent = mode == CapsuleMode.MINI_EVENT, cameraGapDp = cameraGapDp).dp,
         animationSpec = sizeSpring,
         label = "capsule_width"
     )
@@ -191,7 +193,7 @@ fun CapsuleRootView(
                         }
                     }
                 } else {
-                    MiniCapsuleView(state = frame.state)
+                    MiniCapsuleView(state = frame.state, cameraGapDp = cameraGapDp)
                 }
             }
         }
