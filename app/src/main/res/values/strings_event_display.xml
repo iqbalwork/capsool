@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="evd_position">Pop-up position</string>
+    <string name="evd_icon">Icon only</string>
     <string name="evd_below">Below camera</string>
     <string name="evd_split">Around camera</string>
+    <string name="evd_icon_desc">Only the event\'s icon (and a ring for the battery level) in the capsule. Nothing grows and no text is hidden by the camera. The capsule\'s accessibility description still says what happened.</string>
     <string name="evd_below_desc">The pill grows downward and the text sits in a row under the camera hole, so nothing is hidden.</string>
     <string name="evd_split_desc">The pill stays short and its text is split into two halves either side of the camera hole. Long titles may be cut off.</string>
 </resources>
