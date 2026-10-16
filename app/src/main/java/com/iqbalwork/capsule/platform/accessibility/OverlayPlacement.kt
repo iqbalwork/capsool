@@ -34,6 +34,25 @@ object OverlayPlacement {
     const val MARGIN_DP = 8
     const val EXPANDED_MAX_WIDTH_DP = 360
     const val EXPANDED_HEIGHT_DP = 196
+
+    /**
+     * LIST view stacks the same cards vertically, so a row is a full card plus the gap to the
+     * next one. The panel shows at most [MAX_LIST_ROWS] rows and the list scrolls beyond that;
+     * without a cap the window would grow down over the screen for every card the user adds.
+     */
+    const val MAX_LIST_ROWS = 2
+    const val LIST_ROW_DP = EXPANDED_HEIGHT_DP + 8
+
+    /** Height of the LIST panel for [rows] cards, clamped to [MAX_LIST_ROWS]. */
+    fun listHeightDp(rows: Int): Float = (LIST_ROW_DP * rows.coerceIn(1, MAX_LIST_ROWS)).toFloat()
+
+    /**
+     * Height of the expanded content area. Both the window controller and the Compose content
+     * call this with the same row count, so the panel they draw cannot disagree with the window
+     * it is drawn into. [listRows] is 0 whenever the carousel is used.
+     */
+    fun expandedContentHeightDp(listRows: Int): Float =
+        if (listRows > 0) listHeightDp(listRows) else EXPANDED_HEIGHT_DP.toFloat()
     /** Mini events widen the pill so an icon, a title and a value fit (F-60..F-69). */
     const val MINI_EVENT_EXTRA_WIDTH_DP = 110
 
@@ -76,7 +95,8 @@ object OverlayPlacement {
         cutout: CutoutBounds?,
         geometry: Geometry,
         expanded: Boolean,
-        miniEvent: Boolean = false
+        miniEvent: Boolean = false,
+        listRows: Int = 0
     ): WindowPlacement {
         fun px(dp: Float) = dp * density
         val capsuleHeight = px(geometry.heightDp.toFloat())
@@ -86,7 +106,7 @@ object OverlayPlacement {
 
         val pillWidth = px(pillWidthDp(geometry, miniEvent).toFloat())
         val contentWidth = if (expanded) maxOf(px(expandedWidthDp(screenWidthPx / density)), pillWidth) else pillWidth
-        val contentHeight = if (expanded) px(EXPANDED_HEIGHT_DP.toFloat()) else capsuleHeight
+        val contentHeight = if (expanded) px(expandedContentHeightDp(listRows)) else capsuleHeight
         val margin = px(MARGIN_DP.toFloat())
 
         val width = (contentWidth + 2 * margin).roundToInt()

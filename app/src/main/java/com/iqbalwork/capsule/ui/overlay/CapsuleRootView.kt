@@ -19,11 +19,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -152,7 +155,12 @@ fun CapsuleRootView(
                             .fillMaxSize()
                             .wrapContentSize(Alignment.TopCenter, unbounded = true)
                     ) {
-                        ExpandedCarousel(frame.state, dispatch, Modifier.size(expandedWidth, expandedHeight))
+                        val cardSize = Modifier.size(expandedWidth, expandedHeight)
+                        if (frame.state.showsStaticList) {
+                            ExpandedStaticList(frame.state, dispatch, cardSize)
+                        } else {
+                            ExpandedCarousel(frame.state, dispatch, cardSize)
+                        }
                     }
                 } else {
                     MiniCapsuleView(state = frame.state)
@@ -237,6 +245,43 @@ private fun ExpandedCarousel(state: CapsuleState, dispatch: (Action) -> Unit, mo
                             )
                     )
                 }
+            }
+        }
+    }
+}
+
+/**
+ * LIST view (spec line 81): the same static cards stacked vertically instead of side by side.
+ * Every row reuses [StaticCardContent], so a card cannot look different between the two modes;
+ * the panel scrolls when there are more rows than [OverlayPlacement.MAX_LIST_ROWS].
+ */
+@Composable
+private fun ExpandedStaticList(state: CapsuleState, dispatch: (Action) -> Unit, modifier: Modifier = Modifier) {
+    val pages = state.pages.filterIsInstance<CardPage.Static>()
+    val active = state.activePage
+    val scrollState = rememberScrollState()
+
+    Column(
+        modifier = modifier.verticalScroll(scrollState),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        pages.forEach { page ->
+            val selected = page.key == active?.key
+            val rowShape = RoundedCornerShape(20.dp)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(rowShape)
+                    .then(
+                        if (selected) {
+                            Modifier.border(1.dp, MaterialTheme.colorScheme.primary, rowShape)
+                        } else {
+                            Modifier
+                        }
+                    )
+            ) {
+                StaticCardContent(page, state, dispatch)
             }
         }
     }

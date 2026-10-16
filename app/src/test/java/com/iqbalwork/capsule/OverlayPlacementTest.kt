@@ -79,4 +79,44 @@ class OverlayPlacementTest {
         assertEquals(window.width - margin.toInt(), card.right)
         assertEquals((margin + OverlayPlacement.EXPANDED_HEIGHT_DP * density).toInt(), card.bottom)
     }
+
+    // --- LIST mode panel height (M6c-3b) ---
+
+    @Test
+    fun oneListRowMakesAPanelTallerThanTheCollapsedPill() {
+        val rows = OverlayPlacement.compute(screenWidth, density, cutout, geometry, expanded = true, listRows = 1)
+        assertEquals((OverlayPlacement.LIST_ROW_DP * density + 2 * margin).toInt(), rows.height)
+        // The panel still hangs from the cutout, so its top edge does not move.
+        assertEquals((90 - 18 * density - margin).toInt(), rows.y)
+    }
+
+    @Test
+    fun twoListRowsAreTwiceAsTallAsOne() {
+        val one = OverlayPlacement.compute(screenWidth, density, cutout, geometry, expanded = true, listRows = 1)
+        val two = OverlayPlacement.compute(screenWidth, density, cutout, geometry, expanded = true, listRows = 2)
+        assertEquals((OverlayPlacement.LIST_ROW_DP * density).toInt(), two.height - one.height)
+    }
+
+    @Test
+    fun listHeightStopsGrowingAtTheRowCap() {
+        val atCap = OverlayPlacement.compute(screenWidth, density, cutout, geometry, expanded = true, listRows = OverlayPlacement.MAX_LIST_ROWS)
+        val past = OverlayPlacement.compute(screenWidth, density, cutout, geometry, expanded = true, listRows = OverlayPlacement.MAX_LIST_ROWS + 6)
+        // The panel scrolls instead of growing down over the screen.
+        assertEquals(atCap.height, past.height)
+    }
+
+    @Test
+    fun listRowsZeroKeepsTheNormalExpandedPanel() {
+        val without = OverlayPlacement.compute(screenWidth, density, cutout, geometry, expanded = true)
+        val zero = OverlayPlacement.compute(screenWidth, density, cutout, geometry, expanded = true, listRows = 0)
+        assertEquals(without.height, zero.height)
+        assertEquals((OverlayPlacement.EXPANDED_HEIGHT_DP * density + 2 * margin).toInt(), zero.height)
+    }
+
+    @Test
+    fun listRowsAreIgnoredWhileThePillIsCollapsed() {
+        val collapsed = OverlayPlacement.compute(screenWidth, density, cutout, geometry, expanded = false, listRows = 2)
+        val base = OverlayPlacement.compute(screenWidth, density, cutout, geometry, expanded = false)
+        assertEquals(base.height, collapsed.height)
+    }
 }

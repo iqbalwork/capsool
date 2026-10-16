@@ -72,7 +72,9 @@ class OverlayWindowController(
         val mode: CapsuleMode,
         val geometry: Geometry,
         val focusable: Boolean,
-        val barcodeShowing: Boolean = false
+        val barcodeShowing: Boolean = false,
+        /** Rows the LIST panel would show; 0 when the carousel is used. */
+        val listRows: Int = 0
     )
 
     fun attach() {
@@ -136,7 +138,8 @@ class OverlayWindowController(
                         mode = it.mode,
                         geometry = it.settings.geometry(it.visibility.orientation),
                         focusable = it.replyingTo != null,
-                        barcodeShowing = barcodeShowing
+                        barcodeShowing = barcodeShowing,
+                        listRows = it.listRows
                     )
                 }
                 .distinctUntilChanged()
@@ -190,7 +193,8 @@ class OverlayWindowController(
             geometry = key.geometry,
             // API 34+: the window keeps card size and only its touchable region changes.
             expanded = expanded || FIXED_SIZE_WINDOW,
-            miniEvent = key.mode == CapsuleMode.MINI_EVENT
+            miniEvent = key.mode == CapsuleMode.MINI_EVENT,
+            listRows = key.listRows
         )
         windowExpanded = expanded
         placement.value = newPlacement

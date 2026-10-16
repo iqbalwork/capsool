@@ -9,6 +9,7 @@ import com.iqbalwork.capsule.core.settings.GestureType
 import com.iqbalwork.capsule.core.settings.Settings
 import com.iqbalwork.capsule.core.settings.StaticCard
 import com.iqbalwork.capsule.core.settings.StaticCardType
+import com.iqbalwork.capsule.core.settings.StaticCardViewMode
 import com.iqbalwork.capsule.core.store.CapsuleReducer
 import com.iqbalwork.capsule.core.store.CapsuleState
 import com.iqbalwork.capsule.core.store.CardPage
@@ -32,13 +33,15 @@ class StaticCardPagesTest {
         cards: List<StaticCard> = listOf(shortcutsCard, barcodeCard, intentCard),
         startCardId: String? = null,
         customIntents: List<CustomIntent> = emptyList(),
-        timer: TimerState? = null
+        timer: TimerState? = null,
+        viewMode: StaticCardViewMode = StaticCardViewMode.CAROUSEL
     ) = CapsuleState(
         settingsLoaded = true,
         settings = Settings(
             staticCards = cards,
             startCardId = startCardId,
             customIntents = customIntents,
+            staticCardViewMode = viewMode,
             gesturesIdle = DefaultIdleGestures +
                 (GestureType.SWIPE_LEFT to GestureBinding(GestureAction.NEXT_CARD)) +
                 (GestureType.SWIPE_RIGHT to GestureBinding(GestureAction.PREVIOUS_CARD))
@@ -67,6 +70,44 @@ class StaticCardPagesTest {
     fun dynamicActivityHidesTheStaticCards() {
         val state = stateWithCards(timer = runningTimer)
         assertEquals(listOf<CardPage>(CardPage.Dynamic(CapsuleCardType.TIMER)), state.pages)
+    }
+
+    // --- LIST view (M6c-3b) ---
+
+    @Test
+    fun listModeStacksTheCardsWhenNothingIsRunning() {
+        val state = stateWithCards(viewMode = StaticCardViewMode.LIST)
+        assertTrue(state.showsStaticList)
+        assertEquals(3, state.listRows)
+    }
+
+    @Test
+    fun carouselModeNeverUsesTheList() {
+        val state = stateWithCards(viewMode = StaticCardViewMode.CAROUSEL)
+        assertFalse(state.showsStaticList)
+        assertEquals(0, state.listRows)
+    }
+
+    @Test
+    fun runningActivityKeepsTheCarouselEvenInListMode() {
+        // LIST is the idle presentation (spec line 81); a real activity gets the carousel.
+        val state = stateWithCards(timer = runningTimer, viewMode = StaticCardViewMode.LIST)
+        assertTrue(state.hasActivity)
+        assertFalse(state.showsStaticList)
+        assertEquals(0, state.listRows)
+    }
+
+    @Test
+    fun listRowsFollowTheCardCount() {
+        val state = stateWithCards(cards = listOf(shortcutsCard, barcodeCard), viewMode = StaticCardViewMode.LIST)
+        assertEquals(2, state.listRows)
+    }
+
+    @Test
+    fun listIsNotUsedWithoutStaticCards() {
+        val state = stateWithCards(cards = emptyList(), viewMode = StaticCardViewMode.LIST)
+        assertFalse(state.showsStaticList)
+        assertEquals(0, state.listRows)
     }
 
     @Test

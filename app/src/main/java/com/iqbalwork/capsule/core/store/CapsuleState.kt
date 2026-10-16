@@ -4,6 +4,7 @@ import com.iqbalwork.capsule.core.settings.GestureBinding
 import com.iqbalwork.capsule.core.settings.GestureType
 import com.iqbalwork.capsule.core.settings.Orientation
 import com.iqbalwork.capsule.core.settings.Settings
+import com.iqbalwork.capsule.core.settings.StaticCardViewMode
 import com.iqbalwork.capsule.model.CapsuleCardType
 import com.iqbalwork.capsule.model.ChargingState
 import com.iqbalwork.capsule.model.MediaState
@@ -120,6 +121,24 @@ data class CapsuleState(
      * Static pages are idle context — they do not count as activity.
      */
     val hasActivity: Boolean get() = activeCards.any { it != openedCard }
+
+    /**
+     * Static cards are presented as a vertical list only when the user chose LIST *and* nothing is
+     * running. The spec presents carousel/list as the idle presentation of the static cards
+     * (line 81), so a real activity always keeps the carousel it is designed for.
+     */
+    val showsStaticList: Boolean
+        get() = !hasActivity &&
+            settings.staticCardViewMode == StaticCardViewMode.LIST &&
+            pages.any { it is CardPage.Static }
+
+    /**
+     * Number of rows the LIST panel would show, or 0 when the carousel is used. Drives the panel
+     * height in [com.iqbalwork.capsule.platform.accessibility.OverlayPlacement], so both the
+     * window and its content derive the size from this one value.
+     */
+    val listRows: Int
+        get() = if (showsStaticList) pages.count { it is CardPage.Static } else 0
 
     fun gesture(type: GestureType): GestureBinding = settings.gesture(type, active = hasActivity)
 
