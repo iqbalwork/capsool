@@ -1,6 +1,11 @@
 package com.iqbalwork.capsule.ui.components
 
 import androidx.compose.foundation.Canvas
+import com.iqbalwork.capsule.core.settings.EventStyle
+import com.iqbalwork.capsule.core.settings.EventRightShape
+import com.iqbalwork.capsule.core.settings.EventLeftShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -54,8 +59,8 @@ private val WifiBlue = Color(0xFF8AB4F8)
 
 /** The wide pill shown for a mini event (F-60..F-69): icon, title, and a value or battery ring. */
 @Composable
-fun MiniEventView(event: MiniEvent, modifier: Modifier = Modifier) {
-    val color = event.type.accent()
+fun MiniEventView(event: MiniEvent, modifier: Modifier = Modifier, style: EventStyle = EventStyle.Default) {
+    val color = style.color?.let { Color(it) } ?: event.type.accent()
     Row(
         modifier = modifier
             .fillMaxSize()
@@ -63,16 +68,23 @@ fun MiniEventView(event: MiniEvent, modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Box(
-            modifier = Modifier
-                .size(24.dp)
-                .clip(CircleShape)
-                .background(color.copy(alpha = 0.22f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(event.type.icon(), contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
+        if (style.left != EventLeftShape.NONE) {
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(if (style.left == EventLeftShape.SQUARE) RoundedCornerShape(7.dp) else CircleShape)
+                    .background(color.copy(alpha = 0.22f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    style.icon?.let(::customIntentIcon) ?: event.type.icon(),
+                    contentDescription = null,
+                    tint = color,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+            Spacer(Modifier.width(8.dp))
         }
-        Spacer(Modifier.width(8.dp))
         Text(
             text = event.title,
             color = Color.White,
@@ -82,7 +94,7 @@ fun MiniEventView(event: MiniEvent, modifier: Modifier = Modifier) {
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
         )
-        if (event.subtitle.isNotEmpty()) {
+        if (event.subtitle.isNotEmpty() && style.right != EventRightShape.NONE) {
             Spacer(Modifier.width(6.dp))
             Text(
                 text = event.subtitle,
@@ -92,7 +104,7 @@ fun MiniEventView(event: MiniEvent, modifier: Modifier = Modifier) {
                 maxLines = 1
             )
         }
-        event.level?.let { level ->
+        event.level?.takeIf { style.right == EventRightShape.AUTO }?.let { level ->
             Spacer(Modifier.width(6.dp))
             LevelRing(level = level, color = color, size = 18.dp, stroke = 3.dp)
         }
@@ -128,12 +140,13 @@ fun MiniEventType.icon(): ImageVector = when (this) {
     MiniEventType.AUTO_BRIGHTNESS_ON -> Icons.Rounded.BrightnessAuto
     MiniEventType.AUTO_BRIGHTNESS_OFF -> Icons.Rounded.BrightnessMedium
     MiniEventType.PROGRESS_DONE -> Icons.Rounded.DownloadDone
+    MiniEventType.ACTION_FAILED -> Icons.Rounded.ErrorOutline
 }
 
 @Composable
 private fun MiniEventType.accent(): Color = when (this) {
     MiniEventType.CHARGER_CONNECTED, MiniEventType.FULLY_CHARGED, MiniEventType.PROGRESS_DONE -> ChargingGreen
-    MiniEventType.LOW_BATTERY -> AlertRed
+    MiniEventType.LOW_BATTERY, MiniEventType.ACTION_FAILED -> AlertRed
     MiniEventType.AIRPLANE_ON, MiniEventType.AIRPLANE_OFF -> AirplaneAmber
     MiniEventType.WIFI_CONNECTED, MiniEventType.WIFI_DISCONNECTED -> WifiBlue
     MiniEventType.CHARGER_DISCONNECTED -> Color.White

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="prg_only_selected">Only selected apps</string>
+    <string name="prg_only_selected_desc">Show downloads and uploads only for the apps you choose below.</string>
+    <string name="prg_allowed_title">Allowed apps</string>
+    <string name="prg_allowed_desc">With none chosen, no download shows in the capsule.</string>
+    <string name="prg_pick_title">Choose an app</string>
+    <string name="prg_icon_style">Icon</string>
+    <string name="prg_icon_app">App icon</string>
+    <string name="prg_icon_shape">Download badge</string>
+    <string name="prg_bar_color">Progress color</string>
+    <string name="prg_from_app">From app</string>
+    <string name="prg_track_color">Track color</string>
+    <string name="prg_default">Default</string>
+    <string name="evs_section">Pop-up appearance</string>
+    <string name="evs_color">Color</string>
+    <string name="evs_icon">Icon</string>
+    <string name="evs_left">Left side</string>
+    <string name="evs_right">Right side</string>
+    <string name="evs_shape_circle">Circle</string>
+    <string name="evs_shape_square">Rounded square</string>
+    <string name="evs_none">None</string>
+    <string name="evs_right_auto">Value and ring</string>
+    <string name="evs_right_text">Value only</string>
+    <string name="evs_reset">Reset this pop-up</string>
+</resources>

@@ -1,6 +1,8 @@
 package com.iqbalwork.capsule.ui.components
 
 import androidx.compose.foundation.Image
+import com.iqbalwork.capsule.core.settings.Settings
+import com.iqbalwork.capsule.core.settings.ProgressIconStyle
 import com.iqbalwork.capsule.R
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
@@ -36,16 +38,32 @@ import com.iqbalwork.capsule.model.ProgressItem
 
 private const val MAX_ROWS = 3
 
+/** F-43: how downloads and uploads are drawn; null colors mean "derive from the app". */
+data class ProgressStyle(
+    val icon: ProgressIconStyle = ProgressIconStyle.APP,
+    val color: Color? = null,
+    val track: Color? = null
+) {
+    fun accent(item: ProgressItem): Color = color ?: mediaPalette(Color(item.color)).accent
+    val trackColor: Color get() = track ?: Color.White.copy(alpha = 0.15f)
+}
+
+fun Settings.progressStyle() = ProgressStyle(
+    icon = progressIconStyle,
+    color = progressColor?.let { Color(it) },
+    track = progressTrackColor?.let { Color(it) }
+)
+
 /** F-40: up to three downloads/uploads with their app, title and progress. */
 @Composable
-fun ExpandedProgressCard(items: List<ProgressItem>, modifier: Modifier = Modifier) {
+fun ExpandedProgressCard(items: List<ProgressItem>, modifier: Modifier = Modifier, style: ProgressStyle = ProgressStyle()) {
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)
     ) {
-        items.take(MAX_ROWS).forEach { item -> ProgressRow(item) }
+        items.take(MAX_ROWS).forEach { item -> ProgressRow(item, style) }
         if (items.size > MAX_ROWS) {
             Text(
                 stringResource(R.string.st_progress_more, items.size - MAX_ROWS),
@@ -57,10 +75,10 @@ fun ExpandedProgressCard(items: List<ProgressItem>, modifier: Modifier = Modifie
 }
 
 @Composable
-private fun ProgressRow(item: ProgressItem) {
-    val accent = mediaPalette(Color(item.color)).accent
+private fun ProgressRow(item: ProgressItem, style: ProgressStyle) {
+    val accent = style.accent(item)
     Row(verticalAlignment = Alignment.CenterVertically) {
-        AppIconBadge(item, accent, size = 32)
+        AppIconBadge(item, accent, size = 32, iconStyle = style.icon)
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -86,11 +104,11 @@ private fun ProgressRow(item: ProgressItem) {
                 LinearProgressIndicator(
                     progress = { fraction },
                     color = accent,
-                    trackColor = Color.White.copy(alpha = 0.15f),
+                    trackColor = style.trackColor,
                     modifier = Modifier.fillMaxWidth()
                 )
             } else {
-                LinearProgressIndicator(color = accent, trackColor = Color.White.copy(alpha = 0.15f), modifier = Modifier.fillMaxWidth())
+                LinearProgressIndicator(color = accent, trackColor = style.trackColor, modifier = Modifier.fillMaxWidth())
             }
         }
     }
@@ -98,7 +116,7 @@ private fun ProgressRow(item: ProgressItem) {
 
 /** The posting app's status icon in a tinted circle; a download glyph if it has none. */
 @Composable
-fun AppIconBadge(item: ProgressItem, accent: Color, size: Int) {
+fun AppIconBadge(item: ProgressItem, accent: Color, size: Int, iconStyle: ProgressIconStyle = ProgressIconStyle.APP) {
     Box(
         modifier = Modifier
             .size(size.dp)
@@ -106,7 +124,7 @@ fun AppIconBadge(item: ProgressItem, accent: Color, size: Int) {
             .background(accent.copy(alpha = 0.2f)),
         contentAlignment = Alignment.Center
     ) {
-        val icon = item.appIcon
+        val icon = item.appIcon.takeIf { iconStyle == ProgressIconStyle.APP }
         if (icon != null) {
             Image(
                 bitmap = remember(icon) { icon.asImageBitmap() },

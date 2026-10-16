@@ -21,7 +21,13 @@ data class WindowPlacement(
     val width: Int,
     val height: Int,
     val contentOffsetXPx: Int,
-    val contentOffsetYPx: Int
+    val contentOffsetYPx: Int,
+    /**
+     * Extra height at the top of an opened card (camera mode): Android reserves the very top of the
+     * screen for pulling down the notification shade, so interactive content starts below the status
+     * bar. Zero for a collapsed capsule and in independent mode.
+     */
+    val contentTopInsetPx: Int = 0
 )
 
 /** A rectangle in window pixels (a plain stand-in for android.graphics.Rect, for unit tests). */
@@ -84,7 +90,9 @@ object OverlayPlacement {
     ): PxRect {
         val margin = MARGIN_DP * density
         val width = if (expanded) window.width - 2 * margin else pillWidthDp(geometry, miniEvent) * density
-        val height = if (expanded) EXPANDED_HEIGHT_DP * density else geometry.heightDp * density
+        // Expanded: the whole window less its margins, so a taller card (list rows, the camera-mode
+        // top inset) is touchable all the way down.
+        val height = if (expanded) window.height - 2 * margin else geometry.heightDp * density
         val centerX = window.width / 2f + window.contentOffsetXPx
         val top = margin + window.contentOffsetYPx
         return PxRect(
@@ -122,7 +130,9 @@ object OverlayPlacement {
         val pillWidth = px(pillWidthDp(geometry, miniEvent).toFloat())
         val contentWidth =
             if (expanded) maxOf(px(expandedWidthDp(screenWidthPx / density, fullWidthCard)), pillWidth) else pillWidth
-        val contentHeight = if (expanded) px(expandedContentHeightDp(listRows)) else capsuleHeight
+        // The part of the status bar the capsule's top edge does not already clear (spec §2.4.3 point 6).
+        val deadZone = if (expanded && !independent) (statusBarHeightPx - capsuleTop).coerceAtLeast(0f) else 0f
+        val contentHeight = if (expanded) px(expandedContentHeightDp(listRows)) + deadZone else capsuleHeight
         val margin = px(MARGIN_DP.toFloat())
 
         val width = (contentWidth + 2 * margin).roundToInt()
@@ -138,7 +148,8 @@ object OverlayPlacement {
             width = width,
             height = height,
             contentOffsetXPx = idealX - x,
-            contentOffsetYPx = idealY - y
+            contentOffsetYPx = idealY - y,
+            contentTopInsetPx = deadZone.roundToInt()
         )
     }
 }

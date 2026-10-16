@@ -120,6 +120,12 @@ object SettingsMapper {
     private val SliderStyleKey = stringPreferencesKey("sliders.style")
     private val BrightnessMax = intPreferencesKey("sliders.brightnessMax")
     private val ProgressEnabled = booleanPreferencesKey("cards.progress.enabled")
+    private val ProgressOnlyAllowed = booleanPreferencesKey("progress.onlyAllowedApps")
+    private val ProgressAllowedApps = stringSetPreferencesKey("progress.appWhitelist")
+    private val ProgressIconStyleKey = stringPreferencesKey("progress.iconStyle")
+    private val ProgressColorKey = longPreferencesKey("progress.color")
+    private val ProgressTrackColorKey = longPreferencesKey("progress.trackColor")
+    private val EventStylesKey = stringPreferencesKey("events.styles")
     private val TimerEnabled = booleanPreferencesKey("cards.timer.enabled")
     private val DisclosureAccepted = booleanPreferencesKey("onboarding.disclosureAccepted")
     /** Pre-M6 single mapping; read once as the "active" set so old choices survive. */
@@ -227,6 +233,12 @@ object SettingsMapper {
             sliderStyle = enumOrDefault(prefs[SliderStyleKey], defaults.sliderStyle),
             brightnessMax = prefs[BrightnessMax] ?: defaults.brightnessMax,
             progressEnabled = prefs[ProgressEnabled] ?: defaults.progressEnabled,
+            progressOnlyAllowedApps = prefs[ProgressOnlyAllowed] ?: defaults.progressOnlyAllowedApps,
+            progressAllowedApps = prefs[ProgressAllowedApps] ?: defaults.progressAllowedApps,
+            progressIconStyle = enumOrDefault(prefs[ProgressIconStyleKey], defaults.progressIconStyle),
+            progressColor = prefs[ProgressColorKey],
+            progressTrackColor = prefs[ProgressTrackColorKey],
+            eventStyles = decodeEventStyles(prefs[EventStylesKey]),
             timerEnabled = prefs[TimerEnabled] ?: defaults.timerEnabled,
             barcode = BarcodeContent(
                 content = prefs[BarcodeContentKey] ?: defaults.barcode.content,
@@ -316,6 +328,12 @@ object SettingsMapper {
         prefs[SliderStyleKey] = settings.sliderStyle.name
         prefs[BrightnessMax] = settings.brightnessMax
         prefs[ProgressEnabled] = settings.progressEnabled
+        prefs[ProgressOnlyAllowed] = settings.progressOnlyAllowedApps
+        prefs[ProgressAllowedApps] = settings.progressAllowedApps
+        prefs[ProgressIconStyleKey] = settings.progressIconStyle.name
+        settings.progressColor?.let { prefs[ProgressColorKey] = it } ?: prefs.remove(ProgressColorKey)
+        settings.progressTrackColor?.let { prefs[ProgressTrackColorKey] = it } ?: prefs.remove(ProgressTrackColorKey)
+        prefs[EventStylesKey] = encodeEventStyles(settings.eventStyles)
         prefs[TimerEnabled] = settings.timerEnabled
         prefs[BarcodeCardEnabled] = settings.barcodeCardEnabled
         prefs[BarcodeContentKey] = settings.barcode.content
