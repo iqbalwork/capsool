@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule.platform.accessibility
 
 import android.annotation.SuppressLint
+import com.iqbalwork.capsule.core.settings.EventDisplay
 import android.view.WindowInsets
 import com.iqbalwork.capsule.core.settings.CardWidthMode
 import com.iqbalwork.capsule.core.settings.PlacementMode
@@ -75,7 +76,10 @@ class OverlayWindowController(
         /** Rows the LIST panel would show; 0 when the carousel is used. */
         val listRows: Int = 0,
         val placementMode: PlacementMode = PlacementMode.CAMERA,
-        val fullWidthCard: Boolean = false
+        val fullWidthCard: Boolean = false,
+        val eventDisplay: EventDisplay = EventDisplay.BELOW_CAMERA,
+        /** What the event on screen needs, so the pill is only as wide as that; null when none. */
+        val miniContent: MiniContent? = null
     )
 
     fun attach() {
@@ -142,7 +146,11 @@ class OverlayWindowController(
                         barcodeShowing = barcodeShowing,
                         listRows = it.listRows,
                         placementMode = it.settings.placementMode,
-                        fullWidthCard = it.settings.cardWidthMode == CardWidthMode.FULL
+                        fullWidthCard = it.settings.cardWidthMode == CardWidthMode.FULL,
+                        eventDisplay = it.settings.eventDisplay,
+                        miniContent = it.miniEvent?.let { event ->
+                            MiniEventWidth.of(event, it.settings.eventStyle(event.type.category))
+                        }
                     )
                 }
                 .distinctUntilChanged()
@@ -200,7 +208,9 @@ class OverlayWindowController(
             listRows = key.listRows,
             mode = key.placementMode,
             statusBarHeightPx = metrics.windowInsets.getInsets(WindowInsets.Type.statusBars()).top,
-            fullWidthCard = key.fullWidthCard
+            fullWidthCard = key.fullWidthCard,
+            eventDisplay = key.eventDisplay,
+            miniContent = key.miniContent
         )
         windowExpanded = expanded
         placement.value = newPlacement

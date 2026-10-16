@@ -1,6 +1,10 @@
 package com.iqbalwork.capsule.ui.overlay
 
 import androidx.compose.animation.AnimatedContent
+import com.iqbalwork.capsule.platform.accessibility.MiniEventWidth
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.gestures.detectTapGestures
 import com.iqbalwork.capsule.ui.components.progressStyle
 import com.iqbalwork.capsule.ui.theme.resolveAppearance
 import androidx.compose.ui.graphics.Brush
@@ -85,7 +89,11 @@ fun CapsuleRootView(
     expandedHeight: Dp,
     modifier: Modifier = Modifier,
     /** Space kept free at the top of an opened card, below the status bar (camera mode). */
-    contentTopInset: Dp = 0.dp
+    contentTopInset: Dp = 0.dp,
+    /** Strip over the camera hole that pill content must stay out of (see WindowPlacement.cameraGapDp). */
+    cameraGapDp: Int = 0,
+    /** Height added under the pill while a pop-up event is shown, for its row under the camera hole. */
+    eventRowDp: Int = 0
 ) {
     val settings = state.settings
     val geometry = state.geometry
@@ -95,16 +103,24 @@ fun CapsuleRootView(
     val motion = remember(settings.animationSpeed, settings.bounce, settings.expandStyle, settings.reduceAnimations) {
         CapsuleMotion.of(settings)
     }
+    // The same estimate the window was sized with, so the pill and its window agree on the width.
+    val miniContent = remember(state.miniEvent, settings.eventStyles) {
+        state.miniEvent?.let { MiniEventWidth.of(it, settings.eventStyle(it.type.category)) }
+    }
     val sizeSpring = if (expanded) motion.expand.spec<Dp>() else motion.collapse.spec<Dp>()
 
     val width by animateDpAsState(
         targetValue = if (expanded) expandedWidth
-        else OverlayPlacement.pillWidthDp(geometry, miniEvent = mode == CapsuleMode.MINI_EVENT).dp,
+        else OverlayPlacement.pillWidthDp(geometry, miniEvent = mode == CapsuleMode.MINI_EVENT, cameraGapDp = cameraGapDp, content = miniContent).dp,
         animationSpec = sizeSpring,
         label = "capsule_width"
     )
     val height by animateDpAsState(
-        targetValue = if (expanded) expandedHeight else geometry.heightDp.dp,
+        targetValue = when {
+            expanded -> expandedHeight
+            mode == CapsuleMode.MINI_EVENT -> (geometry.heightDp + eventRowDp).dp
+            else -> geometry.heightDp.dp
+        },
         animationSpec = sizeSpring,
         label = "capsule_height"
     )
@@ -191,7 +207,11 @@ fun CapsuleRootView(
                         }
                     }
                 } else {
-                    MiniCapsuleView(state = frame.state)
+                    MiniCapsuleView(
+                        state = frame.state,
+                        cameraGapDp = cameraGapDp,
+                        belowCameraTopDp = if (eventRowDp > 0) geometry.heightDp else 0
+                    )
                 }
             }
         }
@@ -267,8 +287,23 @@ private fun ExpandedCarousel(
         if (pages.size > 1) {
             // Full width, so a swipe anywhere along this strip switches cards even where the card
             // above consumes sideways drags (swipe to dismiss).
+            val tapSwitch = state.settings.cardTapSwitch
             Row(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (tapSwitch) {
+                            Modifier
+                                .heightIn(min = TAP_STRIP_MIN_HEIGHT_DP.dp)
+                                .pointerInput(Unit) {
+                                    detectTapGestures { offset ->
+                                        dispatch(UserIntent.Perform(tapSwitchAction(offset.x, size.width.toFloat())))
+                                    }
+                                }
+                        } else {
+                            Modifier.padding(bottom = 6.dp)
+                        }
+                    ),
                 horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically
             ) {

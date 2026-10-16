@@ -13,8 +13,22 @@ data class Geometry(
     val offsetYDp: Int = 0,
     val widthDp: Int = 120,
     val heightDp: Int = 36,
-    val cornerDp: Int = 18
+    val cornerDp: Int = 18,
+    /**
+     * The pop-up event pill ("Mini") is calibrated on its own: how much wider than the capsule it
+     * is, how tall its row under the camera hole is, and how far it is shifted sideways. They
+     * belong to the same screen profile as the rest of the geometry.
+     */
+    val miniExtraWidthDp: Int = DEFAULT_MINI_EXTRA_WIDTH_DP,
+    val miniRowDp: Int = DEFAULT_MINI_ROW_DP,
+    val miniOffsetXDp: Int = 0
 )
+
+const val DEFAULT_MINI_EXTRA_WIDTH_DP = 110
+const val DEFAULT_MINI_ROW_DP = 28
+val MiniExtraWidthRange = 40..200
+val MiniRowRange = 20..48
+val MiniOffsetXRange = -60..60
 
 enum class Orientation { PORTRAIT, LANDSCAPE }
 
@@ -50,20 +64,32 @@ data class ScreenProfileKey(val shortPx: Int, val longPx: Int, val orientation: 
 /** Most calibrations kept; past this the oldest is forgotten (it falls back to the template again). */
 const val MAX_SCREEN_PROFILES = 12
 
-/** "key;offsetX;offsetY;width;height;corner" per line. Malformed lines are skipped. */
+/**
+ * "key;offsetX;offsetY;width;height;corner;miniExtraWidth;miniRow;miniOffsetX" per line. Lines written
+ * before the Mini fields existed have only the first six and get the Mini defaults. Malformed lines
+ * are skipped.
+ */
 internal fun encodeProfiles(profiles: Map<ScreenProfileKey, Geometry>): String =
     profiles.entries.joinToString("\n") { (key, g) ->
-        listOf(key.encode(), g.offsetXDp, g.offsetYDp, g.widthDp, g.heightDp, g.cornerDp).joinToString(";")
+        listOf(
+            key.encode(), g.offsetXDp, g.offsetYDp, g.widthDp, g.heightDp, g.cornerDp,
+            g.miniExtraWidthDp, g.miniRowDp, g.miniOffsetXDp
+        ).joinToString(";")
     }
 
 internal fun decodeProfiles(value: String?): Map<ScreenProfileKey, Geometry> {
     val result = linkedMapOf<ScreenProfileKey, Geometry>()
     value.orEmpty().lineSequence().forEach { line ->
         val f = line.split(';')
-        if (f.size != 6) return@forEach
+        if (f.size != 6 && f.size != 9) return@forEach
         val key = ScreenProfileKey.decode(f[0]) ?: return@forEach
         val n = f.drop(1).map { it.toIntOrNull() ?: return@forEach }
-        result[key] = Geometry(n[0], n[1], n[2], n[3], n[4])
+        result[key] = Geometry(
+            n[0], n[1], n[2], n[3], n[4],
+            miniExtraWidthDp = n.getOrNull(5)?.coerceIn(MiniExtraWidthRange) ?: DEFAULT_MINI_EXTRA_WIDTH_DP,
+            miniRowDp = n.getOrNull(6)?.coerceIn(MiniRowRange) ?: DEFAULT_MINI_ROW_DP,
+            miniOffsetXDp = n.getOrNull(7)?.coerceIn(MiniOffsetXRange) ?: 0
+        )
     }
     return result
 }
@@ -175,6 +201,13 @@ enum class MiniEventDuration(val millis: Long) {
     SECONDS_4(4_000L),
     SECONDS_6(6_000L)
 }
+
+/**
+ * Where a pop-up event (charger, Wi-Fi, ...) puts its text when the capsule sits over the camera hole.
+ * BELOW_CAMERA grows the pill downward and draws the text in a row under the hole; SPLIT keeps the
+ * pill's height and splits the text into two halves either side of the hole.
+ */
+enum class EventDisplay { BELOW_CAMERA, SPLIT }
 
 /** F-43: the posting app's own icon, or a generic download badge. */
 enum class ProgressIconStyle { APP, SHAPE }
@@ -306,6 +339,8 @@ data class Settings(
     val hapticsEnabled: Boolean = true,
     val placementMode: PlacementMode = PlacementMode.CAMERA,
     val cardWidthMode: CardWidthMode = CardWidthMode.CONTENT,
+    /** Tap the left or right half of the dots under an opened card to go to the previous or next card. */
+    val cardTapSwitch: Boolean = false,
     /** Corner radius of the opened card; the collapsed capsule uses the geometry's own radius. */
     val cardCornerDp: Int = DEFAULT_CARD_CORNER_DP,
     /** F-06: which activity card comes first when several are active. Always a full permutation. */
@@ -378,6 +413,7 @@ data class Settings(
     val progressColor: Long? = null,
     /** ARGB of the bar's track; null = a faint white. */
     val progressTrackColor: Long? = null,
+    val eventDisplay: EventDisplay = EventDisplay.BELOW_CAMERA,
     /** F-68: look of each kind of mini event; a category not listed is shown as designed. */
     val eventStyles: Map<EventCategory, EventStyle> = emptyMap(),
     val timerEnabled: Boolean = true,

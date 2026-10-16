@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mini_title">Pop-up event pill</string>
+    <string name="mini_desc">Adjust the pill shown for charger, Wi-Fi and other events on its own, for this screen.</string>
+    <string name="mini_extra_width">Extra width</string>
+    <string name="mini_row">Text row height</string>
+    <string name="mini_offset_x">Horizontal shift</string>
+    <string name="tap_title">Tap to switch cards</string>
+    <string name="tap_desc">Tap the left or right half of the dots under an open card to go to the previous or next card. Useful when swiping is taken by another setting.</string>
+</resources>

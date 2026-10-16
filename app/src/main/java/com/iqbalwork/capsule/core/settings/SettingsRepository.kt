@@ -60,7 +60,10 @@ object SettingsMapper {
             offsetY = intPreferencesKey("$prefix.offsetY"),
             width = intPreferencesKey("$prefix.width"),
             height = intPreferencesKey("$prefix.height"),
-            corner = intPreferencesKey("$prefix.corner")
+            corner = intPreferencesKey("$prefix.corner"),
+            miniExtraWidth = intPreferencesKey("$prefix.miniExtraWidth"),
+            miniRow = intPreferencesKey("$prefix.miniRow"),
+            miniOffsetX = intPreferencesKey("$prefix.miniOffsetX")
         )
     }
 
@@ -69,7 +72,10 @@ object SettingsMapper {
         val offsetY: Preferences.Key<Int>,
         val width: Preferences.Key<Int>,
         val height: Preferences.Key<Int>,
-        val corner: Preferences.Key<Int>
+        val corner: Preferences.Key<Int>,
+        val miniExtraWidth: Preferences.Key<Int>,
+        val miniRow: Preferences.Key<Int>,
+        val miniOffsetX: Preferences.Key<Int>
     )
 
     private val IdleOpacity = floatPreferencesKey("appearance.idleOpacity")
@@ -84,6 +90,7 @@ object SettingsMapper {
     private val CutoutGradientKey = booleanPreferencesKey("appearance.cutoutGradient")
     private val PlacementModeKey = stringPreferencesKey("capsule.mode")
     private val CardWidthModeKey = stringPreferencesKey("capsule.widthMode")
+    private val CardTapSwitchKey = booleanPreferencesKey("capsule.tapSwitch")
     private val CardCornerKey = intPreferencesKey("capsule.cardRadius")
     private val ProfilesKey = stringPreferencesKey("geometry.profiles")
     private val CardPriorityKey = stringPreferencesKey("cards.priority")
@@ -125,6 +132,7 @@ object SettingsMapper {
     private val ProgressIconStyleKey = stringPreferencesKey("progress.iconStyle")
     private val ProgressColorKey = longPreferencesKey("progress.color")
     private val ProgressTrackColorKey = longPreferencesKey("progress.trackColor")
+    private val EventDisplayKey = stringPreferencesKey("events.display")
     private val EventStylesKey = stringPreferencesKey("events.styles")
     private val TimerEnabled = booleanPreferencesKey("cards.timer.enabled")
     private val DisclosureAccepted = booleanPreferencesKey("onboarding.disclosureAccepted")
@@ -158,7 +166,10 @@ object SettingsMapper {
                 offsetYDp = prefs[keys.offsetY] ?: fallback.offsetYDp,
                 widthDp = prefs[keys.width] ?: fallback.widthDp,
                 heightDp = prefs[keys.height] ?: fallback.heightDp,
-                cornerDp = prefs[keys.corner] ?: fallback.cornerDp
+                cornerDp = prefs[keys.corner] ?: fallback.cornerDp,
+                miniExtraWidthDp = (prefs[keys.miniExtraWidth] ?: fallback.miniExtraWidthDp).coerceIn(MiniExtraWidthRange),
+                miniRowDp = (prefs[keys.miniRow] ?: fallback.miniRowDp).coerceIn(MiniRowRange),
+                miniOffsetXDp = (prefs[keys.miniOffsetX] ?: fallback.miniOffsetXDp).coerceIn(MiniOffsetXRange)
             )
         }
         val lockScreenBehavior = enumOrDefault(
@@ -171,6 +182,7 @@ object SettingsMapper {
             profiles = decodeProfiles(prefs[ProfilesKey]),
             placementMode = enumOrDefault(prefs[PlacementModeKey], defaults.placementMode),
             cardWidthMode = enumOrDefault(prefs[CardWidthModeKey], defaults.cardWidthMode),
+            cardTapSwitch = prefs[CardTapSwitchKey] ?: defaults.cardTapSwitch,
             cardCornerDp = (prefs[CardCornerKey] ?: defaults.cardCornerDp).coerceIn(MIN_CARD_CORNER_DP, MAX_CARD_CORNER_DP),
             idleOpacity = prefs[IdleOpacity] ?: defaults.idleOpacity,
             alwaysShowPill = prefs[AlwaysShowPill] ?: defaults.alwaysShowPill,
@@ -238,6 +250,7 @@ object SettingsMapper {
             progressIconStyle = enumOrDefault(prefs[ProgressIconStyleKey], defaults.progressIconStyle),
             progressColor = prefs[ProgressColorKey],
             progressTrackColor = prefs[ProgressTrackColorKey],
+            eventDisplay = enumOrDefault(prefs[EventDisplayKey], defaults.eventDisplay),
             eventStyles = decodeEventStyles(prefs[EventStylesKey]),
             timerEnabled = prefs[TimerEnabled] ?: defaults.timerEnabled,
             barcode = BarcodeContent(
@@ -265,6 +278,9 @@ object SettingsMapper {
             prefs[keys.width] = geometry.widthDp
             prefs[keys.height] = geometry.heightDp
             prefs[keys.corner] = geometry.cornerDp
+            prefs[keys.miniExtraWidth] = geometry.miniExtraWidthDp
+            prefs[keys.miniRow] = geometry.miniRowDp
+            prefs[keys.miniOffsetX] = geometry.miniOffsetXDp
         }
         writeGeometry(Orientation.PORTRAIT, settings.portrait)
         writeGeometry(Orientation.LANDSCAPE, settings.landscape)
@@ -272,6 +288,7 @@ object SettingsMapper {
         prefs[PlacementModeKey] = settings.placementMode.name
         prefs[CardWidthModeKey] = settings.cardWidthMode.name
         prefs[CardCornerKey] = settings.cardCornerDp
+        prefs[CardTapSwitchKey] = settings.cardTapSwitch
         prefs[IdleOpacity] = settings.idleOpacity
         prefs[AlwaysShowPill] = settings.alwaysShowPill
         prefs[ShowCalibrationTarget] = settings.showCalibrationTarget
@@ -333,6 +350,7 @@ object SettingsMapper {
         prefs[ProgressIconStyleKey] = settings.progressIconStyle.name
         settings.progressColor?.let { prefs[ProgressColorKey] = it } ?: prefs.remove(ProgressColorKey)
         settings.progressTrackColor?.let { prefs[ProgressTrackColorKey] = it } ?: prefs.remove(ProgressTrackColorKey)
+        prefs[EventDisplayKey] = settings.eventDisplay.name
         prefs[EventStylesKey] = encodeEventStyles(settings.eventStyles)
         prefs[TimerEnabled] = settings.timerEnabled
         prefs[BarcodeCardEnabled] = settings.barcodeCardEnabled

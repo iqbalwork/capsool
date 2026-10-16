@@ -113,4 +113,13 @@ class EventsLookTest {
         val wifi = MiniEvent(2L, MiniEventType.WIFI_CONNECTED, "Wi-Fi")
         assertNull(reduce(quiet, SystemEvent.MiniEventStarted(wifi)).miniEvent)
     }
+
+    @Test
+    fun eventDisplayDefaultsToBelowCameraAndSurvivesStorage() {
+        assertEquals(com.iqbalwork.capsule.core.settings.EventDisplay.BELOW_CAMERA, Settings().eventDisplay)
+        val split = Settings(eventDisplay = com.iqbalwork.capsule.core.settings.EventDisplay.SPLIT)
+        val prefs = mutablePreferencesOf()
+        SettingsMapper.write(prefs, split)
+        assertEquals(split, SettingsMapper.read(prefs))
+    }
 }
