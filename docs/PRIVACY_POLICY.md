@@ -39,9 +39,10 @@ permission for this. Google's own services may process data under Google's polic
 **[Verify and complete this paragraph against Google's ML Kit / Google Play services disclosures before publishing.]**
 
 ### Backup
-If automatic backup is turned on for your Google account, Android may include Capsool's settings in your backup,
-which can contain the content you entered in shortcuts and barcodes. You can remove it from your Google account
-backups. **[Update this section if the backup decision in docs/PLAY_CONSOLE.md changes.]**
+Capsool's settings can contain personal content (barcode and card numbers, phone numbers on shortcuts), so they are
+**excluded from Google cloud backup**. They are copied only when you move to a new phone with a direct
+phone-to-phone transfer (cable or Android's device-to-device setup), which does not go through Google's servers
+from Capsool's side. After restoring your phone from a cloud backup you will need to set Capsool up again.
 
 ### Sharing and selling
 We do not collect, share, or sell your personal information.
@@ -92,9 +93,10 @@ kamera untuk ini. Layanan Google sendiri dapat memproses data sesuai kebijakan G
 **[Verifikasi dan lengkapi paragraf ini dengan pengungkapan ML Kit / Google Play services sebelum dipublikasikan.]**
 
 ### Pencadangan
-Jika pencadangan otomatis aktif di akun Google Anda, Android dapat menyertakan pengaturan Capsool dalam cadangan,
-yang bisa memuat isi yang Anda masukkan di pintasan dan barcode. Anda dapat menghapusnya dari cadangan akun Google.
-**[Perbarui bagian ini jika keputusan backup di docs/PLAY_CONSOLE.md berubah.]**
+Pengaturan Capsool dapat memuat konten pribadi (nomor barcode dan kartu, nomor telepon pada pintasan), sehingga
+**dikecualikan dari cadangan cloud Google**. Pengaturan hanya disalin saat Anda pindah ke ponsel baru lewat transfer
+langsung ponsel ke ponsel (kabel atau penyiapan perangkat-ke-perangkat Android). Setelah memulihkan ponsel dari
+cadangan cloud, Anda perlu menyiapkan Capsool lagi.
 
 ### Berbagi dan penjualan
 Kami tidak mengumpulkan, membagikan, atau menjual informasi pribadi Anda.

@@ -19,15 +19,13 @@ Kebijakan Play berubah; cocokkan ulang dengan halaman kebijakan resmi saat mengi
 
 ## 2. Yang perlu diputuskan atau diverifikasi sebelum mengisi formulir
 
-1. **Auto Backup [keputusan]**. `allowBackup="true"` dan `backup_rules.xml` / `data_extraction_rules.xml` masih
-   berisi template kosong, sehingga **seluruh DataStore ikut Auto Backup ke akun Google pengguna**. Isinya termasuk
-   isi barcode (mis. nomor kartu member), nomor telepon pada pintasan kontak, daftar app yang disembunyikan, dan
-   pengaturan lainnya. Pilihan:
-   - (a) biarkan: pengaturan ikut pindah ke ponsel baru, tetapi data pribadi itu ikut tersimpan di backup Google
-     pengguna, dan kebijakan privasi harus menyebutnya (sudah disebut di `PRIVACY_POLICY.md`);
-   - (b) kecualikan `datastore/` dari `cloud-backup` tetapi pertahankan di `device-transfer`;
-   - (c) matikan backup sepenuhnya (`allowBackup="false"`).
-   Rekomendasi: (b). Belum diubah di kode.
+1. **Auto Backup [diputuskan dan diterapkan]**. Sebelumnya `allowBackup="true"` dengan aturan template kosong
+   membuat seluruh DataStore (isi barcode, nomor telepon pintasan, app yang disembunyikan) ikut Auto Backup ke akun
+   Google. Keputusan: `datastore/` dan `sharedpref` **dikecualikan dari `cloud-backup`** tetapi tetap ikut
+   `device-transfer` (`data_extraction_rules.xml`; `backup_rules.xml` memuat aturan yang sama untuk Android < 12).
+   Dampak: setelah memulihkan dari cadangan cloud, pengaturan harus diatur ulang; pindah ponsel langsung tetap
+   membawa pengaturan. Kebijakan privasi sudah diperbarui. Perilaku di perangkat belum diuji
+   (`adb shell bmgr` / transfer sungguhan). **[belum diverifikasi di perangkat]**
 2. **SDK Google [belum diverifikasi]**. ML Kit Barcode Scanning (model bundel), `play-services-code-scanner`
    (pemindai berjalan di proses Google Play Services) dapat mengirim telemetri/diagnostik atas nama Google. Larangan
    INTERNET hanya berlaku untuk proses app ini, tidak untuk Play Services. Baca halaman pengungkapan data ML Kit dan
@@ -41,13 +39,13 @@ Kebijakan Play berubah; cocokkan ulang dengan halaman kebijakan resmi saat mengi
 
 ## 3. Formulir Data safety (draf jawaban)
 
-Jawaban akhir bergantung pada butir 2.1 dan 2.2.
+Jawaban akhir bergantung pada butir 2.2 (butir 2.1 sudah beres).
 
 | Pertanyaan | Draf jawaban | Catatan |
 |---|---|---|
-| Apakah app mengumpulkan atau membagikan data pengguna? | **Tahan dulu**: "tidak" hanya jika 2.2 terbukti aman | Kode app sendiri tidak mengirim apa pun (tanpa INTERNET). |
+| Apakah app mengumpulkan atau membagikan data pengguna? | **Tahan dulu**: "tidak" hanya jika 2.2 terbukti aman (backup sudah beres, butir 2.1) | Kode app sendiri tidak mengirim apa pun (tanpa INTERNET). |
 | Data dikirim lewat koneksi terenkripsi? | Tidak berlaku | Tidak ada transmisi dari app. |
-| Pengguna bisa meminta penghapusan data? | Hapus data app / copot instalasi | Semua data lokal. Bila backup dibiarkan (2.1a), data di backup Google dikelola lewat akun Google. |
+| Pengguna bisa meminta penghapusan data? | Hapus data app / copot instalasi | Semua data lokal. Data app tidak ada di backup cloud Google (butir 2.1). |
 | Data yang diproses di perangkat saja | Isi notifikasi (memori), nama paket app di depan, daftar app terpasang (nama dan ikon), kontak yang dipilih untuk pintasan (nomor telepon), isi barcode | Tidak keluar dari perangkat oleh kode app. |
 
 ## 4. Deklarasi layanan aksesibilitas (draf teks)
@@ -108,7 +106,7 @@ Rekam layar ponsel (≥ Android 12), tanpa data pribadi di layar:
 
 ## 8. Daftar periksa sebelum kirim
 
-- [ ] Putuskan butir 2.1 (backup) dan perbarui kode + kebijakan privasi sesuai pilihan.
+- [x] Butir 2.1 (backup): aturan diterapkan dan kebijakan privasi diperbarui; uji di perangkat masih perlu.
 - [ ] Verifikasi butir 2.2 (SDK Google) lalu finalkan jawaban Data safety.
 - [ ] Unggah kebijakan privasi (`PRIVACY_POLICY.md`) ke URL publik dan isi URL-nya di Play Console.
 - [ ] Rekam video bagian 5 di perangkat fisik dan unggah.
