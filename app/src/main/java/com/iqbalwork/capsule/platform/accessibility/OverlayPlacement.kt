@@ -41,7 +41,9 @@ data class WindowPlacement(
      * Height in dp added under the pill for a pop-up event's own row, so its text sits below the
      * camera hole; 0 when the event is not shown that way.
      */
-    val eventRowDp: Int = 0
+    val eventRowDp: Int = 0,
+    /** Width in dp of the event pill this placement was computed for; 0 when no event is shown. */
+    val miniPillWidthDp: Int = 0
 )
 
 /** A rectangle in window pixels (a plain stand-in for android.graphics.Rect, for unit tests). */
@@ -90,10 +92,17 @@ object OverlayPlacement {
     fun cameraGapDp(cutoutWidthPx: Int, density: Float): Int =
         if (cutoutWidthPx <= 0) 0 else ceil(cutoutWidthPx / density).toInt() + 2 * CAMERA_GAP_PADDING_DP
 
-    fun pillWidthDp(geometry: Geometry, miniEvent: Boolean, cameraGapDp: Int = 0): Int {
+    /**
+     * The pill's width. For an event it is as wide as [content] needs, but never narrower than the
+     * capsule (which covers the camera hole) nor wider than the user's extra width allows; with no
+     * [content] it takes the full allowance.
+     */
+    fun pillWidthDp(geometry: Geometry, miniEvent: Boolean, cameraGapDp: Int = 0, content: MiniContent? = null): Int {
         if (!miniEvent) return geometry.widthDp
         val split = if (cameraGapDp > 0) cameraGapDp + SPLIT_EXTRA_WIDTH_DP else 0
-        return geometry.widthDp + geometry.miniExtraWidthDp + split
+        val most = geometry.widthDp + geometry.miniExtraWidthDp + split
+        if (content == null) return most
+        return MiniEventWidth.wantedDp(content, cameraGapDp).coerceIn(geometry.widthDp, most)
     }
     private const val SCREEN_GUTTER_DP = 8
     private const val NO_CUTOUT_TOP_DP = 6
@@ -119,7 +128,7 @@ object OverlayPlacement {
         miniEvent: Boolean = false
     ): PxRect {
         val margin = MARGIN_DP * density
-        val width = if (expanded) window.width - 2 * margin else pillWidthDp(geometry, miniEvent, window.cameraGapDp) * density
+        val width = if (expanded) window.width - 2 * margin else (if (miniEvent && window.miniPillWidthDp > 0) window.miniPillWidthDp else pillWidthDp(geometry, miniEvent, window.cameraGapDp)) * density
         // Expanded: the whole window less its margins, so a taller card (list rows, the camera-mode
         // top inset) is touchable all the way down.
         val height = if (expanded) window.height - 2 * margin else (geometry.heightDp + if (miniEvent) window.eventRowDp else 0) * density
@@ -144,7 +153,8 @@ object OverlayPlacement {
         mode: PlacementMode = PlacementMode.CAMERA,
         statusBarHeightPx: Int = 0,
         fullWidthCard: Boolean = false,
-        eventDisplay: EventDisplay = EventDisplay.BELOW_CAMERA
+        eventDisplay: EventDisplay = EventDisplay.BELOW_CAMERA,
+        miniContent: MiniContent? = null
     ): WindowPlacement {
         fun px(dp: Float) = dp * density
         val capsuleHeight = px(geometry.heightDp.toFloat())
@@ -166,7 +176,8 @@ object OverlayPlacement {
             if (overHole && eventDisplay == EventDisplay.SPLIT) cameraGapDp(cutout!!.right - cutout.left, density) else 0
         // Below the camera: the pill gets a row of its own under the hole instead of being split.
         val eventRow = if (overHole && miniEvent && eventDisplay == EventDisplay.BELOW_CAMERA) geometry.miniRowDp else 0
-        val pillWidth = px(pillWidthDp(geometry, miniEvent, cameraGap).toFloat())
+        val pillWidthDp = pillWidthDp(geometry, miniEvent, cameraGap, miniContent)
+        val pillWidth = px(pillWidthDp.toFloat())
         val contentWidth =
             if (expanded) maxOf(px(expandedWidthDp(screenWidthPx / density, fullWidthCard)), pillWidth) else pillWidth
         // The part of the status bar the capsule's top edge does not already clear (spec §2.4.3 point 6).
@@ -190,7 +201,8 @@ object OverlayPlacement {
             contentOffsetYPx = idealY - y,
             contentTopInsetPx = deadZone.roundToInt(),
             cameraGapDp = cameraGap,
-            eventRowDp = eventRow
+            eventRowDp = eventRow,
+            miniPillWidthDp = if (miniEvent) pillWidthDp else 0
         )
     }
 }

@@ -1,6 +1,7 @@
 package com.iqbalwork.capsule.ui.overlay
 
 import androidx.compose.animation.AnimatedContent
+import com.iqbalwork.capsule.platform.accessibility.MiniEventWidth
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -102,11 +103,15 @@ fun CapsuleRootView(
     val motion = remember(settings.animationSpeed, settings.bounce, settings.expandStyle, settings.reduceAnimations) {
         CapsuleMotion.of(settings)
     }
+    // The same estimate the window was sized with, so the pill and its window agree on the width.
+    val miniContent = remember(state.miniEvent, settings.eventStyles) {
+        state.miniEvent?.let { MiniEventWidth.of(it, settings.eventStyle(it.type.category)) }
+    }
     val sizeSpring = if (expanded) motion.expand.spec<Dp>() else motion.collapse.spec<Dp>()
 
     val width by animateDpAsState(
         targetValue = if (expanded) expandedWidth
-        else OverlayPlacement.pillWidthDp(geometry, miniEvent = mode == CapsuleMode.MINI_EVENT, cameraGapDp = cameraGapDp).dp,
+        else OverlayPlacement.pillWidthDp(geometry, miniEvent = mode == CapsuleMode.MINI_EVENT, cameraGapDp = cameraGapDp, content = miniContent).dp,
         animationSpec = sizeSpring,
         label = "capsule_width"
     )

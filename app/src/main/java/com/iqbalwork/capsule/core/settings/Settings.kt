@@ -25,7 +25,7 @@ data class Geometry(
 )
 
 const val DEFAULT_MINI_EXTRA_WIDTH_DP = 110
-const val DEFAULT_MINI_ROW_DP = 30
+const val DEFAULT_MINI_ROW_DP = 28
 val MiniExtraWidthRange = 40..200
 val MiniRowRange = 20..48
 val MiniOffsetXRange = -60..60
